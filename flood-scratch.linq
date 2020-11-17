@@ -27,6 +27,13 @@ canvas.MouseMove += (sender, args) => {
 
 canvas.MouseClick += async (sender, args) => {
     if (!rectangle.Contains(args.Location)) return;
+    
+    var speed = Control.ModifierKeys switch {
+        Keys.Shift => 1,
+        Keys.Control => 20,
+        Keys.Control & Keys.Shift => 10,
+        _ => 5
+    };
 
     switch (args.Button) {
     case MouseButtons.Left:
@@ -37,26 +44,28 @@ canvas.MouseClick += async (sender, args) => {
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
                              args.Location,
-                             Color.Red);
+                             Color.Red,
+                             speed);
         break;
     
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
                              args.Location,
-                             Color.Blue);
+                             Color.Blue,
+                             speed);
         break;
     }
 };
 
-async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
+async Task FloodFillAsync(IFringe<Point> fringe,
+                          Point start,
+                          Color toColor,
+                          int speed)
 {
     var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
     if (fromArgb == toColor.ToArgb()) return;
-    
-    await Task.Yield();
 
-    const int speedup = 15;
-    var count = 0;
+    var area = 0;
 
     for (fringe.Insert(start); fringe.Count != 0; ) {
         var src = fringe.Extract();
@@ -65,11 +74,11 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
                 || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
             continue;
         
-        if (count++ % speedup == 0) await Task.Delay(1);
+        if (area++ % speed == 0) await Task.Delay(1);
         
         bmp.SetPixel(src.X, src.Y, toColor);
         canvas.Invalidate();
-        bmp.GetPixel(src.X, src.Y).Dump("filled color");
+        //bmp.GetPixel(src.X, src.Y).Dump("filled color");
         //Debug.Assert(bmp.GetPixel(src.X, src.Y).ToArgb() == toColor.ToArgb());
 
         fringe.Insert(new(src.X - 1, src.Y));
