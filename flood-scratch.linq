@@ -28,13 +28,6 @@ canvas.MouseMove += (sender, args) => {
 canvas.MouseClick += async (sender, args) => {
     if (!rectangle.Contains(args.Location)) return;
     
-    var speed = Control.ModifierKeys switch {
-        Keys.Shift => 1,
-        Keys.Control => 20,
-        Keys.Control & Keys.Shift => 10,
-        _ => 5
-    };
-
     switch (args.Button) {
     case MouseButtons.Left:
         bmp.SetPixel(args.Location.X, args.Location.Y, Color.Black);
@@ -45,16 +38,23 @@ canvas.MouseClick += async (sender, args) => {
         await FloodFillAsync(new StackFringe<Point>(),
                              args.Location,
                              Color.Red,
-                             speed);
+                             DecideSpeed());
         break;
     
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
                              args.Location,
                              Color.Blue,
-                             speed);
+                             DecideSpeed());
         break;
     }
+};
+
+static int DecideSpeed() => Control.ModifierKeys switch {
+    Keys.Shift => 1,
+    Keys.Control => 20,
+    Keys.Control & Keys.Shift => 10,
+    _ => 5
 };
 
 async Task FloodFillAsync(IFringe<Point> fringe,
