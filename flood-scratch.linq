@@ -17,10 +17,6 @@ var pen = new Pen(Color.Black);
 var oldLocation = Point.Empty;
 
 canvas.MouseMove += (sender, args) => {
-    //if (args.Button == MouseButtons.Left) {
-    //    bmp.SetPixel(args.Location.X, args.Location.Y, Color.Black);
-    //}
-
     if (args.Button == MouseButtons.Left) {
         graphics.DrawLine(pen, oldLocation, args.Location);
         canvas.Invalidate();
@@ -39,24 +35,34 @@ canvas.MouseClick += async (sender, args) => {
         break;
     
     case MouseButtons.Right:
-        await FloodFillAsync(args.Location, Color.Black);
+        await FloodFillAsync(new StackFringe<Point>(),
+                             args.Location,
+                             Color.DarkRed);
+        break;
+    
+    case MouseButtons.Middle:
+        await FloodFillAsync(new QueueFringe<Point>(),
+                             args.Location,
+                             Color.DarkBlue);
         break;
     }
 };
 
-async Task FloodFillAsync(Point start, Color toColor)
+async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 {
+    var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
+    if (fromArgb == toColor.ToArgb()) return;
+    
+    await Task.Yield();
+
     const int speedup = 10;
     var count = 0;
-    
-    var stack = new Stack<Point>();
-    stack.Push(start);
-    
-    while (stack.Count != 0) {
-        var src = stack.Pop();
+
+    for (fringe.Insert(start); fringe.Count != 0; ) {
+        var src = fringe.Extract();
 
         if (!rectangle.Contains(src)
-                || bmp.GetPixel(src.X, src.Y).ToArgb() == toColor.ToArgb())
+                || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
             continue;
         
         if (count++ % speedup == 0) await Task.Delay(1);
@@ -66,13 +72,41 @@ async Task FloodFillAsync(Point start, Color toColor)
         bmp.GetPixel(src.X, src.Y).Dump("filled color");
         //Debug.Assert(bmp.GetPixel(src.X, src.Y).ToArgb() == toColor.ToArgb());
 
-        stack.Push(new(src.X - 1, src.Y));
-        stack.Push(new(src.X + 1, src.Y));
-        stack.Push(new(src.X, src.Y - 1));
-        stack.Push(new(src.X, src.Y + 1));
+        fringe.Insert(new(src.X - 1, src.Y));
+        fringe.Insert(new(src.X + 1, src.Y));
+        fringe.Insert(new(src.X, src.Y - 1));
+        fringe.Insert(new(src.X, src.Y + 1));
     }
     
     //canvas.Invalidate();
 }
 
 canvas.Dump();
+
+internal interface IFringe<T> {
+    int Count { get; }
+
+    void Insert(T vertex);
+    
+    T Extract();
+}
+
+internal sealed class StackFringe<T> : IFringe<T> {
+    public int Count => _stack.Count;
+
+    public void Insert(T vertex) => _stack.Push(vertex);
+    
+    public T Extract() => _stack.Pop();
+
+    private readonly Stack<T> _stack = new();
+}
+
+internal sealed class QueueFringe<T> : IFringe<T> {
+    public int Count => _queue.Count;
+    
+    public void Insert(T vertex) => _queue.Enqueue(vertex);
+    
+    public T Extract() => _queue.Dequeue();
+
+    private readonly Queue<T> _queue = new();
+}
