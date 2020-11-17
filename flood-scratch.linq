@@ -37,13 +37,13 @@ canvas.MouseClick += async (sender, args) => {
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
                              args.Location,
-                             Color.DarkRed);
+                             Color.Red);
         break;
     
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
                              args.Location,
-                             Color.DarkBlue);
+                             Color.Blue);
         break;
     }
 };
@@ -55,7 +55,7 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
     
     await Task.Yield();
 
-    const int speedup = 10;
+    const int speedup = 15;
     var count = 0;
 
     for (fringe.Insert(start); fringe.Count != 0; ) {
