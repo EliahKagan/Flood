@@ -35,37 +35,37 @@ canvas.MouseMove += (sender, args) => {
         graphics.DrawLine(pen, oldLocation, args.Location);
         canvas.Invalidate();
     }
-    
+
     oldLocation = args.Location;
 };
 
 canvas.MouseClick += async (sender, e) => {
     if (!rectangle.Contains(e.Location)) return;
-    
+
     switch (e.Button) {
     case MouseButtons.Left:
         bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
         canvas.Invalidate();
         break;
-    
+
     case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
         await FloodFillAsync(new RandomFringe<Point>(generator),
                              e.Location,
                              Color.Yellow);
         break;
-    
+
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
                              e.Location,
                              Color.Red);
         break;
-    
+
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
                              e.Location,
                              Color.Blue);
         break;
-    
+
     default:
         break; // Other buttons do nothing.
     }
@@ -73,23 +73,21 @@ canvas.MouseClick += async (sender, e) => {
 
 canvas.MouseWheel += (sender, e) => {
     if (!rectangle.Contains(e.Location)) return;
-    
+
     if (e.Delta < 0) // Got upward scroll from wheel.
         neighborEnumerationStrategies.CycleNext();
     else if (e.Delta > 0) // Got downward scroll from wheel.
         neighborEnumerationStrategies.CyclePrev();
     else return; // I'm not sure if this is possible.
-    
+
     UpdateStatus();
 };
 
-async Task FloodFillAsync(IFringe<Point> fringe,
-                          Point start,
-                          Color toColor)
+async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 {
     var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
     if (fromArgb == toColor.ToArgb()) return;
-    
+
     var speed = DecideSpeed();
     var supplier = neighborEnumerationStrategies.Current.GetSupplier();
     var area = 0;
@@ -100,18 +98,14 @@ async Task FloodFillAsync(IFringe<Point> fringe,
         if (!rectangle.Contains(src)
                 || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
             continue;
-        
+
         if (area++ % speed == 0) await Task.Delay(1);
-        
+
         bmp.SetPixel(src.X, src.Y, toColor);
         canvas.Invalidate();
-        //bmp.GetPixel(src.X, src.Y).Dump("filled color");
-        //Debug.Assert(bmp.GetPixel(src.X, src.Y).ToArgb() == toColor.ToArgb());
 
         foreach (var dest in supplier(src)) fringe.Insert(dest);
     }
-    
-    //canvas.Invalidate();
 }
 
 static int DecideSpeed()
@@ -139,7 +133,7 @@ internal interface IFringe<T> {
     int Count { get; }
 
     void Insert(T vertex);
-    
+
     T Extract();
 }
 
@@ -147,7 +141,7 @@ internal sealed class StackFringe<T> : IFringe<T> {
     public int Count => _stack.Count;
 
     public void Insert(T vertex) => _stack.Push(vertex);
-    
+
     public T Extract() => _stack.Pop();
 
     private readonly Stack<T> _stack = new();
@@ -155,9 +149,9 @@ internal sealed class StackFringe<T> : IFringe<T> {
 
 internal sealed class QueueFringe<T> : IFringe<T> {
     public int Count => _queue.Count;
-    
+
     public void Insert(T vertex) => _queue.Enqueue(vertex);
-    
+
     public T Extract() => _queue.Dequeue();
 
     private readonly Queue<T> _queue = new();
@@ -167,9 +161,9 @@ internal sealed class RandomFringe<T> : IFringe<T> {
     internal RandomFringe(Func<int, int> generator) => _generator = generator;
 
     public int Count => _items.Count;
-    
+
     public void Insert(T vertex) => _items.Add(vertex);
-    
+
     public T Extract()
     {
         var index = _generator(Count);
@@ -180,19 +174,9 @@ internal sealed class RandomFringe<T> : IFringe<T> {
     }
 
     private readonly List<T> _items = new();
-    
+
     private readonly Func<int, int> _generator;
 }
-
-//// If this prototype is rewritten with OOP, maybe make this an interface.
-//// The issue is that it uses other configuration information.
-//internal enum NeighborEnumerationStrategy {
-//    Uniform,
-//    RandomEachTime,
-//    RandomPerFill,
-//    //RandomPerPixel,
-//    //Whirlpool,
-//}
 
 internal enum Direction {
     Left,
@@ -222,9 +206,9 @@ internal abstract class NeighborEnumerationStrategy {
     }
 
     internal string Name { get; }
-    
+
     internal virtual string? Detail => null;
-    
+
     internal abstract Func<Point, Point[]> GetSupplier();
 }
 
@@ -238,22 +222,22 @@ internal sealed class UniformStrategy : NeighborEnumerationStrategy {
 
     internal UniformStrategy(params Direction[] uniformOrder) : base("Uniform")
         => _uniformOrder = (Direction[])uniformOrder.Clone();
-    
+
     internal override string Detail
         => new string(Array.ConvertAll(_uniformOrder,
                                        direction => direction.ToString()[0]));
-    
+
     internal override Func<Point, Point[]> GetSupplier()
     {
         var uniformOrder = (Direction[])_uniformOrder.Clone();
-        
+
         return src => Array.ConvertAll(uniformOrder,
                                        direction => src.Go(direction));
     }
-    
+
     // FIXME: Implement methods to cycle the _uniformOrder permutation.
     // (That's why GetSupplier() captures a copy of _uniformOrder.)
-    
+
     private readonly Direction[] _uniformOrder;
 }
 
@@ -270,9 +254,9 @@ internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
             neighbors.Shuffle(generator);
             return neighbors;
         };
-    
+
     internal override Func<Point, Point[]> GetSupplier() => _supply;
-    
+
     private readonly Func<Point, Point[]> _supply;
 }
 
@@ -281,18 +265,18 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
             : base("Random per pixel")
     {
         var perPixelOrders = GeneratePerPixelOrders(size, generator);
-        
+
         _supplier = src => Array.ConvertAll(perPixelOrders[src.X, src.Y],
                                             direction => src.Go(direction));
     }
-    
+
     internal override Func<Point, Point[]> GetSupplier() => _supplier;
-    
+
     private static Direction[,][]
     GeneratePerPixelOrders(Size size, Func<int, int> generator)
     {
         var perPixelOrders = new Direction[size.Width, size.Height][];
-        
+
         for (var x = 0; x < size.Width; ++x) {
             for (var y = 0; y < size.Height; ++y) {
                 var directions = new[] {
@@ -305,36 +289,38 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
                 perPixelOrders[x, y] = directions;
             }
         }
-        
+
         return perPixelOrders;
     }
-    
+
     private readonly Func<Point, Point[]> _supplier;
 }
+
+// TODO: Add RandomPerFillStrategy and WhirlpoolStrategy.
 
 internal static class Permutations {
     internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
     {
         for (var i = items.Length; i > 0; --i) items.Swap(generator(i), i - 1);
     }
-    
+
     private static void Swap<T>(this T[] items, int i, int j)
         => (items[i], items[j]) = (items[j], items[i]);
 }
 
 internal sealed class Carousel<T> {
     internal Carousel(params T[] items) => _items = items[..];
-    
+
     internal T Current => _items[_pos];
-    
+
     internal void CycleNext() => Change(+1);
-    
+
     internal void CyclePrev() => Change(-1);
-    
+
     private void Change(int delta)
         => _pos = (_pos + delta + _items.Length) % _items.Length;
-    
+
     private readonly T[] _items;
-    
+
     private int _pos = 0;
 }
