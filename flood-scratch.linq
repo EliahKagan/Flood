@@ -5,6 +5,8 @@
   <Namespace>System.Windows.Forms</Namespace>
 </Query>
 
+var generator = CreateRandomGenerator();
+
 var canvas = new PictureBox { Size = new Size(width: 600, height: 600) };
 var bmp = new Bitmap(width: canvas.Width, height: canvas.Height);
 canvas.Image = bmp;
@@ -16,8 +18,10 @@ graphics.FillRectangle(Brushes.White, rectangle);
 var pen = new Pen(Color.Black);
 var oldLocation = Point.Empty;
 
-var neighborEnumerationStrategies =
-    new NeighborEnumerationStrategies(canvas.Size);
+var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
+    new UniformStrategy(),
+    new RandomEachTimeStrategy(generator),
+    new RandomPerPixelStrategy(canvas.Size, generator));
 
 var status = new Label { Width = canvas.Width, Height = 20 };
 UpdateStatus();
@@ -44,11 +48,11 @@ canvas.MouseClick += async (sender, e) => {
         canvas.Invalidate();
         break;
     
-    //case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
-    //    await FloodFillAsync(new RandomFringe<Point>(),
-    //                         e.Location,
-    //                         Color.Yellow,
-    //                         DecideSpeed());
+    case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
+        await FloodFillAsync(new RandomFringe<Point>(generator),
+                             e.Location,
+                             Color.Yellow);
+        break;
     
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
@@ -128,6 +132,9 @@ ui.Controls.Add(canvas);
 ui.Controls.Add(status);
 ui.Dump("Watching Paint Dry");
 
+static Func<int, int> CreateRandomGenerator()
+    => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
+
 internal interface IFringe<T> {
     int Count { get; }
 
@@ -154,6 +161,27 @@ internal sealed class QueueFringe<T> : IFringe<T> {
     public T Extract() => _queue.Dequeue();
 
     private readonly Queue<T> _queue = new();
+}
+
+internal sealed class RandomFringe<T> : IFringe<T> {
+    internal RandomFringe(Func<int, int> generator) => _generator = generator;
+
+    public int Count => _items.Count;
+    
+    public void Insert(T vertex) => _items.Add(vertex);
+    
+    public T Extract()
+    {
+        var index = _generator(Count);
+        var vertex = _items[index];
+        _items[index] = _items[Count - 1];
+        _items.RemoveAt(Count - 1);
+        return vertex;
+    }
+
+    private readonly List<T> _items = new();
+    
+    private readonly Func<int, int> _generator;
 }
 
 //// If this prototype is rewritten with OOP, maybe make this an interface.
@@ -284,32 +312,6 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
     private readonly Func<Point, Point[]> _supplier;
 }
 
-internal sealed class NeighborEnumerationStrategies {
-    internal NeighborEnumerationStrategies(Size size)
-    {
-        var random = new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
-        
-        _strategies = new NeighborEnumerationStrategy[] {
-            new UniformStrategy(),
-            new RandomEachTimeStrategy(random.Next),
-            new RandomPerPixelStrategy(size, random.Next),
-        };
-    }
-    
-    internal NeighborEnumerationStrategy Current => _strategies[_pos];
-    
-    internal void CycleNext() => Change(+1);
-    
-    internal void CyclePrev() => Change(-1);
-
-    private void Change(int delta)
-        => _pos = (_pos + delta + _strategies.Length) % _strategies.Length;
-
-    private readonly NeighborEnumerationStrategy[] _strategies;
-    
-    private int _pos = 0;
-}
-
 internal static class Permutations {
     internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
     {
@@ -318,4 +320,21 @@ internal static class Permutations {
     
     private static void Swap<T>(this T[] items, int i, int j)
         => (items[i], items[j]) = (items[j], items[i]);
+}
+
+internal sealed class Carousel<T> {
+    internal Carousel(params T[] items) => _items = items[..];
+    
+    internal T Current => _items[_pos];
+    
+    internal void CycleNext() => Change(+1);
+    
+    internal void CyclePrev() => Change(-1);
+    
+    private void Change(int delta)
+        => _pos = (_pos + delta + _items.Length) % _items.Length;
+    
+    private readonly T[] _items;
+    
+    private int _pos = 0;
 }
