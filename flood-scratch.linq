@@ -301,7 +301,10 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 internal static class Permutations {
     internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
     {
-        for (var i = items.Length; i > 0; --i) items.Swap(generator(i), i - 1);
+        for (var right = items.Length; right > 0; --right) {
+            var left = generator(right);
+            items.Swap(left, right - 1);
+        }
     }
 
     private static void Swap<T>(this T[] items, int i, int j)
