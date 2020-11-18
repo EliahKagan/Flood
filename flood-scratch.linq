@@ -44,19 +44,26 @@ canvas.MouseClick += async (sender, e) => {
         canvas.Invalidate();
         break;
     
+    //case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
+    //    await FloodFillAsync(new RandomFringe<Point>(),
+    //                         e.Location,
+    //                         Color.Yellow,
+    //                         DecideSpeed());
+    
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
                              e.Location,
-                             Color.Red,
-                             DecideSpeed());
+                             Color.Red);
         break;
     
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
                              e.Location,
-                             Color.Blue,
-                             DecideSpeed());
+                             Color.Blue);
         break;
+    
+    default:
+        break; // Other buttons do nothing.
     }
 };
 
@@ -72,23 +79,15 @@ canvas.MouseWheel += (sender, e) => {
     UpdateStatus();
 };
 
-static int DecideSpeed() => Control.ModifierKeys switch {
-    Keys.Shift => 1,
-    Keys.Control => 20,
-    Keys.Control & Keys.Shift => 10,
-    _ => 5
-};
-
 async Task FloodFillAsync(IFringe<Point> fringe,
                           Point start,
-                          Color toColor,
-                          int speed)
+                          Color toColor)
 {
     var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
     if (fromArgb == toColor.ToArgb()) return;
     
+    var speed = DecideSpeed();
     var supplier = neighborEnumerationStrategies.Current.GetSupplier();
-
     var area = 0;
 
     for (fringe.Insert(start); fringe.Count != 0; ) {
@@ -110,6 +109,14 @@ async Task FloodFillAsync(IFringe<Point> fringe,
     
     //canvas.Invalidate();
 }
+
+static int DecideSpeed()
+    => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
+        Keys.Shift => 1,
+        Keys.Control => 20,
+        Keys.Shift | Keys.Control => 10,
+        _ => 5
+    };
 
 var ui = new TableLayoutPanel {
     RowCount = 2,
