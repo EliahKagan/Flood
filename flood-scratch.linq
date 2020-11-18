@@ -1,13 +1,13 @@
 <Query Kind="Statements">
   <Namespace>System.Drawing</Namespace>
+  <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
 </Query>
 
-var canvas = new PictureBox();
-canvas.Size = new Size(width: 600, height: 600);
+var canvas = new PictureBox { Size = new Size(width: 600, height: 600) };
 var bmp = new Bitmap(width: canvas.Width, height: canvas.Height);
-canvas.Image = bmp;// = new Bitmap(width: canvas.Width, height: canvas.Height);
+canvas.Image = bmp;
 
 var graphics = Graphics.FromImage(bmp);
 var rectangle = new Rectangle(new Point(0, 0), canvas.Size);
@@ -15,6 +15,16 @@ graphics.FillRectangle(Brushes.White, rectangle);
 
 var pen = new Pen(Color.Black);
 var oldLocation = Point.Empty;
+
+var neighborEnumerationStrategies =
+    new NeighborEnumerationStrategies(canvas.Size);
+
+var status = new Label { Width = canvas.Width, Height = 20 };
+UpdateStatus();
+
+void UpdateStatus()
+    => status.Text = $"Neighbor enumeration strategy:"
+                   + $" {neighborEnumerationStrategies.Current}";
 
 canvas.MouseMove += (sender, args) => {
     if (args.Button == MouseButtons.Left) {
@@ -25,29 +35,41 @@ canvas.MouseMove += (sender, args) => {
     oldLocation = args.Location;
 };
 
-canvas.MouseClick += async (sender, args) => {
-    if (!rectangle.Contains(args.Location)) return;
+canvas.MouseClick += async (sender, e) => {
+    if (!rectangle.Contains(e.Location)) return;
     
-    switch (args.Button) {
+    switch (e.Button) {
     case MouseButtons.Left:
-        bmp.SetPixel(args.Location.X, args.Location.Y, Color.Black);
+        bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
         canvas.Invalidate();
         break;
     
     case MouseButtons.Right:
         await FloodFillAsync(new StackFringe<Point>(),
-                             args.Location,
+                             e.Location,
                              Color.Red,
                              DecideSpeed());
         break;
     
     case MouseButtons.Middle:
         await FloodFillAsync(new QueueFringe<Point>(),
-                             args.Location,
+                             e.Location,
                              Color.Blue,
                              DecideSpeed());
         break;
     }
+};
+
+canvas.MouseWheel += (sender, e) => {
+    if (!rectangle.Contains(e.Location)) return;
+    
+    if (e.Delta < 0) // Got upward scroll from wheel.
+        neighborEnumerationStrategies.CycleNext();
+    else if (e.Delta > 0) // Got downward scroll from wheel.
+        neighborEnumerationStrategies.CyclePrev();
+    else return; // I'm not sure if this is possible.
+    
+    UpdateStatus();
 };
 
 static int DecideSpeed() => Control.ModifierKeys switch {
@@ -64,6 +86,8 @@ async Task FloodFillAsync(IFringe<Point> fringe,
 {
     var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
     if (fromArgb == toColor.ToArgb()) return;
+    
+    var supplier = neighborEnumerationStrategies.Current.GetSupplier();
 
     var area = 0;
 
@@ -81,16 +105,21 @@ async Task FloodFillAsync(IFringe<Point> fringe,
         //bmp.GetPixel(src.X, src.Y).Dump("filled color");
         //Debug.Assert(bmp.GetPixel(src.X, src.Y).ToArgb() == toColor.ToArgb());
 
-        fringe.Insert(new(src.X - 1, src.Y));
-        fringe.Insert(new(src.X + 1, src.Y));
-        fringe.Insert(new(src.X, src.Y - 1));
-        fringe.Insert(new(src.X, src.Y + 1));
+        foreach (var dest in supplier(src)) fringe.Insert(dest);
     }
     
     //canvas.Invalidate();
 }
 
-canvas.Dump();
+var ui = new TableLayoutPanel {
+    RowCount = 2,
+    ColumnCount = 1,
+    GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+    AutoSize = true,
+};
+ui.Controls.Add(canvas);
+ui.Controls.Add(status);
+ui.Dump("Watching Paint Dry");
 
 internal interface IFringe<T> {
     int Count { get; }
@@ -118,4 +147,168 @@ internal sealed class QueueFringe<T> : IFringe<T> {
     public T Extract() => _queue.Dequeue();
 
     private readonly Queue<T> _queue = new();
+}
+
+//// If this prototype is rewritten with OOP, maybe make this an interface.
+//// The issue is that it uses other configuration information.
+//internal enum NeighborEnumerationStrategy {
+//    Uniform,
+//    RandomEachTime,
+//    RandomPerFill,
+//    //RandomPerPixel,
+//    //Whirlpool,
+//}
+
+internal enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+internal static class PointExtensions {
+    internal static Point Go(this Point src, Direction direction)
+        => direction switch {
+            Direction.Left  => new(src.X - 1, src.Y),
+            Direction.Right => new(src.X + 1, src.Y),
+            Direction.Up    => new(src.X, src.Y - 1),
+            Direction.Down  => new(src.X, src.Y + 1),
+            _ => throw new NotSupportedException("Bug: unrecognized direction")
+        };
+}
+
+internal abstract class NeighborEnumerationStrategy {
+    internal NeighborEnumerationStrategy(string name) => Name = name;
+
+    public sealed override string ToString()
+    {
+        var detail = Detail;
+        return detail is null ? Name : $"{Name} - {detail}";
+    }
+
+    internal string Name { get; }
+    
+    internal virtual string? Detail => null;
+    
+    internal abstract Func<Point, Point[]> GetSupplier();
+}
+
+internal sealed class UniformStrategy : NeighborEnumerationStrategy {
+    internal UniformStrategy() : this(Direction.Left,
+                                      Direction.Right,
+                                      Direction.Up,
+                                      Direction.Down)
+    {
+    }
+
+    internal UniformStrategy(params Direction[] uniformOrder) : base("Uniform")
+        => _uniformOrder = (Direction[])uniformOrder.Clone();
+    
+    internal override string Detail
+        => new string(Array.ConvertAll(_uniformOrder,
+                                       direction => direction.ToString()[0]));
+    
+    internal override Func<Point, Point[]> GetSupplier()
+    {
+        var uniformOrder = (Direction[])_uniformOrder.Clone();
+        
+        return src => Array.ConvertAll(uniformOrder,
+                                       direction => src.Go(direction));
+    }
+    
+    // FIXME: Implement methods to cycle the _uniformOrder permutation.
+    // (That's why GetSupplier() captures a copy of _uniformOrder.)
+    
+    private readonly Direction[] _uniformOrder;
+}
+
+internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
+    internal RandomEachTimeStrategy(Func<int, int> generator)
+            : base("Random each time")
+        => _supply = src => {
+            var neighbors = new[] {
+                src.Go(Direction.Left),
+                src.Go(Direction.Right),
+                src.Go(Direction.Up),
+                src.Go(Direction.Down),
+            };
+            neighbors.Shuffle(generator);
+            return neighbors;
+        };
+    
+    internal override Func<Point, Point[]> GetSupplier() => _supply;
+    
+    private readonly Func<Point, Point[]> _supply;
+}
+
+internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
+    internal RandomPerPixelStrategy(Size size, Func<int, int> generator)
+            : base("Random per pixel")
+    {
+        var perPixelOrders = GeneratePerPixelOrders(size, generator);
+        
+        _supplier = src => Array.ConvertAll(perPixelOrders[src.X, src.Y],
+                                            direction => src.Go(direction));
+    }
+    
+    internal override Func<Point, Point[]> GetSupplier() => _supplier;
+    
+    private static Direction[,][]
+    GeneratePerPixelOrders(Size size, Func<int, int> generator)
+    {
+        var perPixelOrders = new Direction[size.Width, size.Height][];
+        
+        for (var x = 0; x < size.Width; ++x) {
+            for (var y = 0; y < size.Height; ++y) {
+                var directions = new[] {
+                    Direction.Left,
+                    Direction.Right,
+                    Direction.Up,
+                    Direction.Down,
+                };
+                directions.Shuffle(generator);
+                perPixelOrders[x, y] = directions;
+            }
+        }
+        
+        return perPixelOrders;
+    }
+    
+    private readonly Func<Point, Point[]> _supplier;
+}
+
+internal sealed class NeighborEnumerationStrategies {
+    internal NeighborEnumerationStrategies(Size size)
+    {
+        var random = new Random(RandomNumberGenerator.GetInt32(int.MaxValue));
+        
+        _strategies = new NeighborEnumerationStrategy[] {
+            new UniformStrategy(),
+            new RandomEachTimeStrategy(random.Next),
+            new RandomPerPixelStrategy(size, random.Next),
+        };
+    }
+    
+    internal NeighborEnumerationStrategy Current => _strategies[_pos];
+    
+    internal void CycleNext() => Change(+1);
+    
+    internal void CyclePrev() => Change(-1);
+
+    private void Change(int delta)
+        => _pos = (_pos + delta + _strategies.Length) % _strategies.Length;
+
+    private readonly NeighborEnumerationStrategy[] _strategies;
+    
+    private int _pos = 0;
+}
+
+internal static class Permutations {
+    internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
+    {
+        for (var i = items.Length; i > 0; --i) items.Swap(generator(i), i - 1);
+    }
+    
+    private static void Swap<T>(this T[] items, int i, int j)
+        => (items[i], items[j]) = (items[j], items[i]);
 }
