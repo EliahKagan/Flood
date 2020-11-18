@@ -3,6 +3,8 @@
   <Namespace>System.Windows.Forms</Namespace>
 </Query>
 
+// Currently everything interesting is in the prototype, flood-scratch.linq.
+
 internal sealed class FloodWindow : Form {
     internal FloodWindow()
     {
