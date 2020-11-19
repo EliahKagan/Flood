@@ -40,13 +40,14 @@ UpdateStatus();
 var openCloseHelp = new Button {
     Text = "Open Help",
     AutoSize = true,
+    Anchor = AnchorStyles.Top | AnchorStyles.Right,
 };
 
 var infoBar = new TableLayoutPanel {
     RowCount = 1,
     ColumnCount = 2,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    AutoSize = true,
+    Width = canvas.Width,
 };
 infoBar.Controls.Add(status);
 infoBar.Controls.Add(openCloseHelp);
