@@ -28,7 +28,7 @@ var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
 
 var status = new Label {
     AutoSize = true,
-    Font = new Font(TextBox.DefaultFont.FontFamily, 11),
+    Font = new Font(TextBox.DefaultFont.FontFamily, 10),
 };
 
 void UpdateStatus()
@@ -81,6 +81,8 @@ var ui = new TableLayoutPanel {
     ColumnCount = 1,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
     AutoSize = true,
+    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+    AutoScroll = true,
 };
 ui.Controls.Add(canvas);
 ui.Controls.Add(infoBar);
