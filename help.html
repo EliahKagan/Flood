@@ -4,7 +4,7 @@
     <title>Flood (prototype) - Help</title>
   </head>
   <body>
-    <h3 id="table-of-contents">Table of Contents</h3>
+    <h2 id="table-of-contents">Table of Contents</h2>
     <ol>
       <li>
         <a href="#basic-actions">Basic Actions</a>
@@ -14,10 +14,24 @@
       </li>
       <li>
         <a href="#basic-actions">Neighbor Enumeration Strategies</a>
+        <ul>
+          <li>
+            <a href="#uniform">Uniform</a>
+          </li>
+          <li>
+            <a href="#random-per-fill">Random per fill</a>
+          </li>
+          <li>
+            <a href="#random-each-time">Random each time</a>
+          </li>
+          <li>
+            <a href="#radom-per-pixel">Random per pixel</a>
+          </li>
+        </ul>
       </li>
     </ol>
     <hr/>
-    <h3 id="introduction">Flood-Fill Visualization</h3>
+    <h2 id="introduction">Flood-Fill Visualization</h2>
     <p>
       A flood fill is a sparse-graph traversal in which both adjacency and
       visitation information is implicit in the image being read and written.
@@ -49,7 +63,7 @@
       it should be no harder to use without a mouse (or limited mousing) than
       popular raster graphics editors.
     </p>
-    <h3 id="basic-actions">Basic Actions</h3>
+    <h2 id="basic-actions">Basic Actions</h2>
     <ul>
       <li>
         Left-click and drag to draw on the canvas.
@@ -65,7 +79,7 @@
         queue.
       </li>
     </ul>
-    <h3 id="speed-modifiers">Speed Modifiers</h3>
+    <h2 id="speed-modifiers">Speed Modifiers</h2>
     <p>
       By default, fills proceeed at a rate of 5 pixels per frame. You can
       override that by pressing:
@@ -86,9 +100,9 @@
       Modifiers affect the speed of <strong>newly started fills</strong>. That
       way, you can have concurrent fills proceeding at different speeds.
     </p>
-    <h3 id="neighbor-enumeration-strategies">
+    <h2 id="neighbor-enumeration-strategies">
       Neighbor Enumeration Strategies
-    </h3>
+    </h2>
     <p>
       There are several major strategies for the order in which neighbors are
       enumerated, and some (currently, just one) are configurable by the
@@ -99,52 +113,51 @@
       neighbor-enumeration strategies.
     </p>
     <p>
-      Hold down <kbd>Shift</kbd> while using the scroll-wheel to cycle
-      between minor neighbor-enumeration strategies for the currently selected
-      major strategy.
+      Hold down <kbd>Shift</kbd> while using the scroll-wheel to cycle between
+      minor substrategies for the currently selected major strategy.
     </p>
     <p>
       <strong>The mouse pointer must be over the canvas when
       scrolling.</strong> This is to avoid accidentally changing the neighbor
-      enumeration strategy when attempting to scroll something else (such as
-      this help).
+      enumeration strategy when attempting to scroll something else.
     </p>
     <p>
       The available neighbor enumeration strategies (with their substrategies)
       are:
     </p>
-    <ul>
-      <li>
-        <strong>Uniform</strong> - Neighbors are always enumerated in the same
-        order. The substrategy determines which order that is. There are 24
-        substrategies, since that's how many permutations of left, right, up,
-        and down there are. Substrategies are abbreviated by the first letters
-        of each direction, in the order in which neighbors are enumerated. The
-        default substrategy is <strong>LRUD</strong>.
-      </li>
-      <li>
-        <strong>Random per-fill</strong> - Neighbors are enuemrated in an order
-        that is uniform in each fill, but different&mdash;and randomly
-        chosen&mdash;each time a fill is peformed. This is thus the same as
-        using the <strong>Uniform</strong> strategy an choosing a random
-        substrategy immediately before every fill.
-      </li>
-      <li>
-        <strong>Random each time</strong> - Each time neighbors are enumerated,
-        even within the same fill, the order is randomly selected. If the same
-        pixel is reached multiple times, even in the same fill (which is
-        possible in the case of concurrent <em>physically nested</em> fills
-        interfering with each other), a different order may be chosen.
-      </li>
-      <li>
-        <strong>Random per pixel</strong> - Each pixel in the image has an
-        order in which neighbors are always enumerated, and each order is
-        randomly determined separately. If the same pixel is reached multiple
-        times, even in separate fills (whether or not they overlap in time),
-        the same order is chosen for each pixel. Restarting the program
-        generates a different order. Without looking closely, you won't notice
-        the difference between this and <strong>Random each time</strong>.
-      </li>
-    </ul>
+    <h3 id="uniform">Uniform</h3>
+    <p>
+      Neighbors are always enumerated in the same order. The substrategy
+      determines which order that is. There are 24 substrategies, since that's
+      how many permutations of Left, Right, Up, and Down there are.
+      Substrategies are abbreviated by the first letters of each direction, in
+      the order in which neighbors are enumerated. The default substrategy is
+      <strong>LRUD</strong>.
+    </p>
+    <h3 id="random-per-fill">Random per fill</h3>
+    <p>
+      Neighbors are enumerated in an order that is uniform in each fill, but
+      different&mdash;and randomly chosen&mdash;each time a fill is peformed.
+      This is thus the same as using the <a href="#uniform">Uniform</a>
+      strategy an choosing a random substrategy immediately before every fill.
+    </p>
+    <h3 id="random-each-time">Random each time</h3>
+    <p>
+      Each time neighbors are enumerated, even within the same fill, the order
+      is randomly selected. If the same pixel is reached multiple times, even
+      in the same fill (which is possible in the case of concurrent
+      <em>physically nested</em> fills interfering with each other), a
+      different order may be chosen.
+    </p>
+    <h3 id="random-per-pixel">Random per pixel</h3>
+    <p>
+      Each pixel in the image has an order in which neighbors are always
+      enumerated, and each order is randomly determined separately. If the same
+      pixel is reached multiple times, even in separate fills (whether or not
+      they overlap in time), the same order is chosen for each pixel.
+      Restarting the program generates a different order. Without looking
+      closely, you won't notice the difference between this and
+      <a href="#random-each-time">Random each time</a>.
+    </p>
   </body>
 </html>

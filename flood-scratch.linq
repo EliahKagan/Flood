@@ -7,161 +7,6 @@
 
 // flood-scratch.linq - Prototype for interactive flood-fill visualizer.
 
-// TODO: Maybe set numerical values in just one place and interpolate them
-// into this help text, so that the help text won't become wrong as easily.
-// TODO: Write this in Markdown instead of HTML and use CommonMark.NET.
-// TODO: Make a stylesheet instead of abusing <h2> to mean <h1>.
-const string helpText = @"<!DOCTYPE html>
-<html>
-  <head>
-    <title>Flood (prototype) - Help</title>
-  </head>
-  <body>
-    <h3 id=""table-of-contents"">Table of Contents</h3>
-    <ol>
-      <li>
-        <a href=""#basic-actions"">Basic Actions</a>
-      </li>
-      <li>
-        <a href=""#speed-modifiers"">Speed Modifiers</a>
-      </li>
-      <li>
-        <a href=""#basic-actions"">Neighbor Enumeration Strategies</a>
-      </li>
-    </ol>
-    <hr/>
-    <h3 id=""introduction"">Flood-Fill Visualization</h3>
-    <p>
-      A flood fill is a sparse-graph traversal in which both adjacency and
-      visitation information is implicit in the image being read and written.
-      When a flood fill is performed atomically (no other changes to the image
-      while the fill is happening), all variations produce the same results.
-      But the order in which pixels are found and filled depends on:
-    </p>
-    <ul>
-      <li>
-        The data structure used for the <em>fringe</em>, i.e., the vertices
-        (pixel locations) that have been discovered but are not yet filled.
-        This is most often a stack (last-in, first-out) or ""queue"" (first-in,
-        first-out), but any kind of generalized queue will work. See
-        <a href=""#basic-actions"">Basic Actions</a>.
-      </li>
-      <li>
-        The order in which neighboring verties (pixel locations) that may need
-        to be filled are checked and added to the fringe. This is especially
-        significant when a stack is used for the fringe, because with a stack,
-        many steps often progress between when a vertex (pixel location) is
-        added to the fringe and when it is actually filled. See
-        <a href=""#basic-actions"">Neighbor Enumeration Strategies</a>.
-      </li>
-    </ul>
-    <p>
-      This is a prototype, which is why fill type and configuration can only be
-      affected in shortcut-style ways, and not through menus. In addition to
-      fixing that, other accessibility improvements should be made: at minimum,
-      it should be no harder to use without a mouse (or limited mousing) than
-      popular raster graphics editors.
-    </p>
-    <h3 id=""basic-actions"">Basic Actions</h3>
-    <ul>
-      <li>
-        Left-click and drag to draw on the canvas.
-      </li>
-      <li>
-        Right-click to flood-fill with a stack (a LIFO queue).
-      </li>
-      <li>
-        Left-click to flood-fill ""queue"" (i.e., a FIFO queue).
-      </li>
-      <li>
-        <kbd>Alt</kbd> + right-click to flood-fill with random extraction
-        queue.
-      </li>
-    </ul>
-    <h3 id=""speed-modifiers"">Speed Modifiers</h3>
-    <p>
-      By default, fills proceeed at a rate of 5 pixels per frame. You can
-      override that by pressing:
-    </p>
-    <ul>
-      <li>
-        <kbd>Shift</kbd> to fill slowly (1 pixel per frame).
-      </li>
-      <li>
-        <kbd>Ctrl</kbd> to fill very fast (20 pixels per frame).
-      </li>
-      <li>
-        <kbd>Ctrl</kbd>+<kbd>Shift</kbd> to fill pretty fast (10 pixels per
-        frame).
-      </li>
-    </ul>
-    <p>
-      Modifiers affect the speed of <strong>newly started fills</strong>. That
-      way, you can have concurrent fills proceeding at different speeds.
-    </p>
-    <h3 id=""neighbor-enumeration-strategies"">
-      Neighbor Enumeration Strategies
-    </h3>
-    <p>
-      There are several major strategies for the order in which neighbors are
-      enumerated, and some (currently, just one) are configurable by the
-      selection of sub-strategies.
-    </p>
-    <p>
-      Use the scroll-wheel (with no modifier keys) to cycle between major
-      neighbor-enumeration strategies.
-    </p>
-    <p>
-      Hold down <kbd>Shift</kbd> while using the scroll-wheel to cycle
-      between minor neighbor-enumeration strategies for the currently selected
-      major strategy.
-    </p>
-    <p>
-      <strong>The mouse pointer must be over the canvas when
-      scrolling.</strong> This is to avoid accidentally changing the neighbor
-      enumeration strategy when attempting to scroll something else (such as
-      this help).
-    </p>
-    <p>
-      The available neighbor enumeration strategies (with their substrategies)
-      are:
-    </p>
-    <ul>
-      <li>
-        <strong>Uniform</strong> - Neighbors are always enumerated in the same
-        order. The substrategy determines which order that is. There are 24
-        substrategies, since that's how many permutations of left, right, up,
-        and down there are. Substrategies are abbreviated by the first letters
-        of each direction, in the order in which neighbors are enumerated. The
-        default substrategy is <strong>LRUD</strong>.
-      </li>
-      <li>
-        <strong>Random per-fill</strong> - Neighbors are enuemrated in an order
-        that is uniform in each fill, but different&mdash;and randomly
-        chosen&mdash;each time a fill is peformed. This is thus the same as
-        using the <strong>Uniform</strong> strategy an choosing a random
-        substrategy immediately before every fill.
-      </li>
-      <li>
-        <strong>Random each time</strong> - Each time neighbors are enumerated,
-        even within the same fill, the order is randomly selected. If the same
-        pixel is reached multiple times, even in the same fill (which is
-        possible in the case of concurrent <em>physically nested</em> fills
-        interfering with each other), a different order may be chosen.
-      </li>
-      <li>
-        <strong>Random per pixel</strong> - Each pixel in the image has an
-        order in which neighbors are always enumerated, and each order is
-        randomly determined separately. If the same pixel is reached multiple
-        times, even in separate fills (whether or not they overlap in time),
-        the same order is chosen for each pixel. Restarting the program
-        generates a different order. Without looking closely, you won't notice
-        the difference between this and <strong>Random each time</strong>.
-      </li>
-    </ul>
-  </body>
-</html>";
-
 var canvas = new PictureBox { Size = new Size(width: 600, height: 600) };
 var bmp = new Bitmap(width: canvas.Width, height: canvas.Height);
 canvas.Image = bmp;
@@ -186,7 +31,16 @@ var status = new Label {
     Font = new Font(TextBox.DefaultFont.FontFamily, 11),
 };
 
-var showHideHelp = new Button();
+void UpdateStatus()
+    => status.Text = $"Neighbor enumeration strategy:"
+                   + $" {neighborEnumerationStrategies.Current}";
+
+UpdateStatus();
+
+var openCloseHelp = new Button {
+    Text = "Open Help",
+    AutoSize = true,
+};
 
 var infoBar = new TableLayoutPanel {
     RowCount = 1,
@@ -195,33 +49,18 @@ var infoBar = new TableLayoutPanel {
     AutoSize = true,
 };
 infoBar.Controls.Add(status);
-infoBar.Controls.Add(showHideHelp);
+infoBar.Controls.Add(openCloseHelp);
 
-var help = new WebBrowser {
-    Visible = false,
-    Size = new Size(width: 600, height: 300),
-    DocumentText = helpText,
-};
-
-void UpdateStatus()
-    => status.Text = $"Neighbor enumeration strategy:"
-                   + $" {neighborEnumerationStrategies.Current}";
-
-void UpdateShowHideHelp()
-    => showHideHelp.Text = help.Visible ? "Hide Help" : "Show Help";
-
-UpdateStatus();
-UpdateShowHideHelp();
+OutputPanel? helpPanel = null;
 
 var ui = new TableLayoutPanel {
-    RowCount = 3,
+    RowCount = 2,
     ColumnCount = 1,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
     AutoSize = true,
 };
 ui.Controls.Add(canvas);
 ui.Controls.Add(infoBar);
-ui.Controls.Add(help);
 
 canvas.MouseMove += (sender, args) => {
     if (args.Button == MouseButtons.Left) {
@@ -288,12 +127,31 @@ canvas.MouseWheel += (sender, e) => {
     UpdateStatus();
 };
 
-showHideHelp.Click += delegate {
-    help.Visible = !help.Visible;
-    UpdateShowHideHelp();
+openCloseHelp.Click += delegate {
+    const string title = "Flood Fill Visualization - Help";
+
+    if (helpPanel is not null) {
+        helpPanel.Close();
+        return;
+    }
+
+    var dir = Path.GetDirectoryName(Util.CurrentQueryPath);
+    if (dir is null)
+        throw new NotSupportedException("Can't find query directory");
+
+    var helpPath = Path.Combine(dir, "help.html");
+    var help = new WebBrowser { Url = new Uri(helpPath) };
+    helpPanel = PanelManager.DisplayControl(help, title);
+
+    helpPanel.PanelClosed += delegate {
+        helpPanel = null;
+        openCloseHelp.Text = "Open Help";
+    };
+
+    openCloseHelp.Text = "Close Help";
 };
 
-ui.Dump("Watching Paint Dry");
+ui.Dump("Flood Fill Visualization");
 
 async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 {
