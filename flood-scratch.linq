@@ -74,11 +74,23 @@ canvas.MouseClick += async (sender, e) => {
 canvas.MouseWheel += (sender, e) => {
     if (!rectangle.Contains(e.Location)) return;
 
-    if (e.Delta < 0) // Got upward scroll from wheel.
-        neighborEnumerationStrategies.CycleNext();
-    else if (e.Delta > 0) // Got downward scroll from wheel.
-        neighborEnumerationStrategies.CyclePrev();
-    else return; // I'm not sure if this is possible.
+    var scrollingDown = e.Delta < 0;
+    if (e.Delta == 0) return; // I'm not sure if this is possible.
+
+    if ((Control.ModifierKeys & Keys.Shift) == 0) {
+        // Scrolling without Shift cycles neighbor enumeration strategies.
+        if (scrollingDown)
+            neighborEnumerationStrategies.CycleNext();
+        else
+            neighborEnumerationStrategies.CyclePrev();
+    } else if (neighborEnumerationStrategies.Current
+                is ConfigurableNeighborEnumerationStrategy strategy) {
+        // Scrolling with Shift cycles substrategies instead.
+        if (scrollingDown)
+            strategy.CycleNextSubStrategy();
+        else
+            strategy.CyclePrevSubStrategy();
+    } // TODO: Maybe show some message on a nonconfigurable current strategy.
 
     UpdateStatus();
 };
@@ -99,7 +111,7 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
                 || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
             continue;
 
-        if (area++ % speed == 0) await Task.Delay(1);
+        if (area++ % speed == 0) await Task.Delay(10);
 
         bmp.SetPixel(src.X, src.Y, toColor);
         canvas.Invalidate();
@@ -197,46 +209,53 @@ internal static class PointExtensions {
 }
 
 internal abstract class NeighborEnumerationStrategy {
-    internal NeighborEnumerationStrategy(string name) => Name = name;
+    private protected NeighborEnumerationStrategy(string name) => Name = name;
 
-    public sealed override string ToString()
-    {
-        var detail = Detail;
-        return detail is null ? Name : $"{Name} - {detail}";
-    }
+    public override string ToString() => Name;
 
-    internal string Name { get; }
-
-    internal virtual string? Detail => null;
+    private protected string Name { get; }
 
     internal abstract Func<Point, Point[]> GetSupplier();
 }
 
-internal sealed class UniformStrategy : NeighborEnumerationStrategy {
-    internal UniformStrategy() : this(Direction.Left,
-                                      Direction.Right,
-                                      Direction.Up,
-                                      Direction.Down)
-    {
-    }
+internal abstract class ConfigurableNeighborEnumerationStrategy
+        : NeighborEnumerationStrategy {
+    private protected ConfigurableNeighborEnumerationStrategy(string name)
+        : base(name) { }
+
+    public override string ToString() => $"{Name} - {Detail}";
+
+    internal abstract void CycleNextSubStrategy();
+
+    internal abstract void CyclePrevSubStrategy();
+
+    private protected abstract string Detail { get; }
+}
+
+internal sealed class UniformStrategy
+        : ConfigurableNeighborEnumerationStrategy {
+    internal UniformStrategy() : this(FastEnumInfo<Direction>.GetValues()) { }
 
     internal UniformStrategy(params Direction[] uniformOrder) : base("Uniform")
-        => _uniformOrder = (Direction[])uniformOrder.Clone();
+        => _uniformOrder = uniformOrder[..];
 
-    internal override string Detail
+    private protected override string Detail
         => new string(Array.ConvertAll(_uniformOrder,
                                        direction => direction.ToString()[0]));
 
     internal override Func<Point, Point[]> GetSupplier()
     {
-        var uniformOrder = (Direction[])_uniformOrder.Clone();
+        var uniformOrder = _uniformOrder[..];
 
         return src => Array.ConvertAll(uniformOrder,
                                        direction => src.Go(direction));
     }
 
-    // FIXME: Implement methods to cycle the _uniformOrder permutation.
-    // (That's why GetSupplier() captures a copy of _uniformOrder.)
+    internal override void CycleNextSubStrategy()
+        => _uniformOrder.CycleNextPermutation();
+
+    internal override void CyclePrevSubStrategy()
+        => _uniformOrder.CyclePrevPermutation();
 
     private readonly Direction[] _uniformOrder;
 }
@@ -245,12 +264,8 @@ internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
     internal RandomEachTimeStrategy(Func<int, int> generator)
             : base("Random each time")
         => _supply = src => {
-            var neighbors = new[] {
-                src.Go(Direction.Left),
-                src.Go(Direction.Right),
-                src.Go(Direction.Up),
-                src.Go(Direction.Down),
-            };
+            var neighbors = FastEnumInfo<Direction>.ConvertValues(
+                                direction => src.Go(direction));
             neighbors.Shuffle(generator);
             return neighbors;
         };
@@ -279,12 +294,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 
         for (var x = 0; x < size.Width; ++x) {
             for (var y = 0; y < size.Height; ++y) {
-                var directions = new[] {
-                    Direction.Left,
-                    Direction.Right,
-                    Direction.Up,
-                    Direction.Down,
-                };
+                var directions = FastEnumInfo<Direction>.GetValues();
                 directions.Shuffle(generator);
                 perPixelOrders[x, y] = directions;
             }
@@ -297,19 +307,6 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 }
 
 // TODO: Add RandomPerFillStrategy and WhirlpoolStrategy.
-
-internal static class Permutations {
-    internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
-    {
-        for (var right = items.Length; right > 0; --right) {
-            var left = generator(right);
-            items.Swap(left, right - 1);
-        }
-    }
-
-    private static void Swap<T>(this T[] items, int i, int j)
-        => (items[i], items[j]) = (items[j], items[i]);
-}
 
 internal sealed class Carousel<T> {
     internal Carousel(params T[] items) => _items = items[..];
@@ -326,4 +323,71 @@ internal sealed class Carousel<T> {
     private readonly T[] _items;
 
     private int _pos = 0;
+}
+
+internal static class Permutations {
+    internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
+    {
+        for (var right = items.Length; right > 0; --right) {
+            var left = generator(right);
+            items.Swap(left, right - 1);
+        }
+    }
+
+    internal static void CycleNextPermutation<T>(this T[] items)
+        => items.CyclePermutation(Comparer<T>.Default);
+
+    internal static void CyclePrevPermutation<T>(this T[] items)
+        => items.CyclePermutation(ReverseComparer<T>.Default);
+
+    // This cycles from max to min but is otherwise the algorithm described in:
+    // https://en.wikipedia.org/wiki/Permutation#Generation_in_lexicographic_order
+    private static void CyclePermutation<T>(this T[] items,
+                                            IComparer<T> comparer)
+    {
+        var right = items.Length - 2;
+        while (right >= 0
+                && comparer.Compare(items[right], items[right + 1]) >= 0)
+            --right;
+
+        if (right < 0) {
+            // This is the last permutaton (w.r.t. comparer) so cycle around.
+            Array.Reverse(items);
+        } else {
+            // Go to the permutation that comes next (w.r.t. comparer).
+            var left = items.Length - 1;
+            while (comparer.Compare(items[right], items[left]) >= 0) --left;
+            Swap(items, right, left);
+            ReverseBetween(items, right + 1, items.Length);
+        }
+    }
+
+    private static void Swap<T>(this T[] items, int i, int j)
+        => (items[i], items[j]) = (items[j], items[i]);
+
+    private static void ReverseBetween<T>(this T[] items,
+                                          int startInclusive,
+                                          int endExclusive)
+        => Array.Reverse(items, startInclusive, endExclusive - startInclusive);
+}
+
+internal sealed class ReverseComparer<T> : IComparer<T> {
+    internal static IComparer<T> Default { get; } =
+        new ReverseComparer<T>(Comparer<T>.Default);
+
+    public int Compare(T? lhs, T? rhs) => _comparer.Compare(rhs, lhs);
+
+    internal ReverseComparer(IComparer<T> comparer) => _comparer = comparer;
+
+    private readonly IComparer<T> _comparer;
+}
+
+internal static class FastEnumInfo<T> where T : struct, Enum {
+    internal static T[] GetValues() => _values[..];
+
+    internal static TOutput[]
+    ConvertValues<TOutput>(Converter<T, TOutput> converter)
+        => Array.ConvertAll(_values, converter);
+
+    private static readonly T[] _values = Enum.GetValues<T>();
 }
