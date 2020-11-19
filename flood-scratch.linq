@@ -37,31 +37,56 @@ void UpdateStatus()
 
 UpdateStatus();
 
+var showHideTips = new Button {
+    Text = "Show Tips",
+    AutoSize = true,
+    Margin = new Padding(left: 0, top: 0, right: 2, bottom: 0),
+};
+
 var openCloseHelp = new Button {
     Text = "Open Help",
     AutoSize = true,
-    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+    Margin = new Padding(left: 2, top: 0, right: 0, bottom: 0),
 };
+
+var buttons = new TableLayoutPanel {
+    RowCount = 1,
+    ColumnCount = 2,
+    GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+    AutoSize = true,
+    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+    Margin = new Padding(0),
+};
+buttons.Controls.Add(showHideTips);
+buttons.Controls.Add(openCloseHelp);
 
 var infoBar = new TableLayoutPanel {
     RowCount = 1,
     ColumnCount = 2,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    Width = canvas.Width,
+    Size = new Size(width: canvas.Width, height: 30),
 };
 infoBar.Controls.Add(status);
-infoBar.Controls.Add(openCloseHelp);
+infoBar.Controls.Add(buttons);
 
-OutputPanel? helpPanel = null;
+var tips = new WebBrowser {
+    Visible = false,
+    // FIXME: Make this work with width: canvas.Width (600).
+    Size = new Size(width: 700, height: 200),
+    Url = GetDocUrl("tips.html"),
+};
 
 var ui = new TableLayoutPanel {
-    RowCount = 2,
+    RowCount = 3,
     ColumnCount = 1,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
     AutoSize = true,
 };
 ui.Controls.Add(canvas);
 ui.Controls.Add(infoBar);
+ui.Controls.Add(tips);
+
+OutputPanel? helpPanel = null;
 
 canvas.MouseMove += (sender, args) => {
     if (args.Button == MouseButtons.Left) {
@@ -128,6 +153,16 @@ canvas.MouseWheel += (sender, e) => {
     UpdateStatus();
 };
 
+showHideTips.Click += delegate {
+    if (tips.Visible) {
+        tips.Hide();
+        showHideTips.Text = "Show Tips";
+    } else {
+        tips.Show();
+        showHideTips.Text = "Hide Tips";
+    }
+};
+
 openCloseHelp.Click += delegate {
     const string title = "Flood Fill Visualization - Help";
 
@@ -136,12 +171,7 @@ openCloseHelp.Click += delegate {
         return;
     }
 
-    var dir = Path.GetDirectoryName(Util.CurrentQueryPath);
-    if (dir is null)
-        throw new NotSupportedException("Can't find query directory");
-
-    var helpPath = Path.Combine(dir, "help.html");
-    var help = new WebBrowser { Url = new Uri(helpPath) };
+    var help = new WebBrowser { Url = GetDocUrl("help.html") };
     helpPanel = PanelManager.DisplayControl(help, title);
 
     helpPanel.PanelClosed += delegate {
@@ -153,6 +183,9 @@ openCloseHelp.Click += delegate {
 };
 
 ui.Dump("Flood Fill Visualization");
+
+static Func<int, int> CreateRandomGenerator()
+    => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
 
 async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 {
@@ -179,9 +212,6 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
     }
 }
 
-static Func<int, int> CreateRandomGenerator()
-    => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
-
 static int DecideSpeed()
     => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
         Keys.Shift => 1,
@@ -189,6 +219,15 @@ static int DecideSpeed()
         Keys.Shift | Keys.Control => 10,
         _ => 5
     };
+
+static Uri GetDocUrl(string filename)
+{
+    var dir = Path.GetDirectoryName(Util.CurrentQueryPath);
+    if (dir is null)
+        throw new NotSupportedException("Can't find query directory");
+
+    return new Uri(Path.Combine(dir, filename));
+}
 
 internal interface IFringe<T> {
     int Count { get; }
