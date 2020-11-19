@@ -20,6 +20,7 @@ var oldLocation = Point.Empty;
 
 var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
     new UniformStrategy(),
+    new RandomPerFillStrategy(generator),
     new RandomEachTimeStrategy(generator),
     new RandomPerPixelStrategy(canvas.Size, generator));
 
@@ -260,6 +261,21 @@ internal sealed class UniformStrategy
     private readonly Direction[] _uniformOrder;
 }
 
+internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
+    internal RandomPerFillStrategy(Func<int, int> generator)
+            : base("Random per fill")
+        => _generator = generator;
+
+    internal override Func<Point, Point[]> GetSupplier()
+    {
+        var order = FastEnumInfo<Direction>.GetValues();
+        order.Shuffle(_generator);
+        return src => Array.ConvertAll(order, direction => src.Go(direction));
+    }
+
+    private readonly Func<int, int> _generator;
+}
+
 internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
     internal RandomEachTimeStrategy(Func<int, int> generator)
             : base("Random each time")
@@ -306,7 +322,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
     private readonly Func<Point, Point[]> _supplier;
 }
 
-// TODO: Add RandomPerFillStrategy and WhirlpoolStrategy.
+// TODO: Add WhirlpoolStrategy (which will be (counter)clockwise configurable).
 
 internal sealed class Carousel<T> {
     internal Carousel(params T[] items) => _items = items[..];
