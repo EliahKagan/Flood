@@ -72,7 +72,7 @@
         Right-click to flood-fill with a stack (a LIFO queue).
       </li>
       <li>
-        Left-click to flood-fill "queue" (i.e., a FIFO queue).
+        Middle-click to flood-fill "queue" (i.e., a FIFO queue).
       </li>
       <li>
         <kbd>Alt</kbd> + right-click to flood-fill with random extraction
@@ -114,7 +114,7 @@
     </p>
     <p>
       Hold down <kbd>Shift</kbd> while using the scroll-wheel to cycle between
-      minor substrategies for the currently selected major strategy.
+      sub-strategies for the currently selected major strategy.
     </p>
     <p>
       <strong>The mouse pointer must be over the canvas when
@@ -122,16 +122,16 @@
       enumeration strategy when attempting to scroll something else.
     </p>
     <p>
-      The available neighbor enumeration strategies (with their substrategies)
+      The available neighbor enumeration strategies (with their sub-strategies)
       are:
     </p>
     <h3 id="uniform">Uniform</h3>
     <p>
-      Neighbors are always enumerated in the same order. The substrategy
-      determines which order that is. There are 24 substrategies, since that's
+      Neighbors are always enumerated in the same order. The sub-strategy
+      determines which order that is. There are 24 sub-strategies, since that's
       how many permutations of Left, Right, Up, and Down there are.
       Substrategies are abbreviated by the first letters of each direction, in
-      the order in which neighbors are enumerated. The default substrategy is
+      the order in which neighbors are enumerated. The default sub-strategy is
       <strong>LRUD</strong>.
     </p>
     <h3 id="random-per-fill">Random per fill</h3>
@@ -139,7 +139,7 @@
       Neighbors are enumerated in an order that is uniform in each fill, but
       different&mdash;and randomly chosen&mdash;each time a fill is peformed.
       This is thus the same as using the <a href="#uniform">Uniform</a>
-      strategy an choosing a random substrategy immediately before every fill.
+      strategy an choosing a random sub-strategy immediately before every fill.
     </p>
     <h3 id="random-each-time">Random each time</h3>
     <p>
