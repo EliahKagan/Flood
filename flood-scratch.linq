@@ -71,8 +71,7 @@ infoBar.Controls.Add(buttons);
 
 var tips = new WebBrowser {
     Visible = false,
-    // FIXME: Make this work with width: canvas.Width (600).
-    Size = new Size(width: 650, height: 200),
+    Size = new Size(width: canvas.Width, height: 200),
     Url = GetDocUrl("tips.html"),
 };
 

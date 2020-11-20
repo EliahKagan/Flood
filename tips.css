@@ -1,0 +1,14 @@
+table, td {
+  font-family: sans-serif;
+  font-size: small;
+  padding: 1px;
+}
+
+td, th {
+  white-space: nowrap;
+}
+
+thead {
+  background-color: #333;
+  color: #eee;
+}
