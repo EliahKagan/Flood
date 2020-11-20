@@ -28,12 +28,12 @@ var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
 
 var status = new Label {
     AutoSize = true,
-    Font = new Font(TextBox.DefaultFont.FontFamily, 10),
+    Font = new Font(TextBox.DefaultFont.FontFamily, 9),
 };
 
 void UpdateStatus()
-    => status.Text = $"Neighbor enumeration strategy:"
-                   + $" {neighborEnumerationStrategies.Current}";
+    => status.Text =
+        $"Neighbor strategy: {neighborEnumerationStrategies.Current}";
 
 UpdateStatus();
 
