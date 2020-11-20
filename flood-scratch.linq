@@ -72,6 +72,7 @@ infoBar.Controls.Add(buttons);
 var tips = new WebBrowser {
     Visible = false,
     Size = new Size(width: canvas.Width, height: 200),
+    AutoSize = true,
     Url = GetDocUrl("tips.html"),
 };
 
@@ -182,6 +183,13 @@ openCloseHelp.Click += delegate {
     };
 
     openCloseHelp.Text = "Close Help";
+};
+
+tips.DocumentCompleted += delegate {
+    var size = tips.Document.Body.ScrollRectangle.Size;
+    var newSize = new SizeF(width: size.Width * 1.05f,
+                            height: size.Height * 1.2f);
+    tips.Size = Size.Round(newSize);
 };
 
 ui.Dump("Flood Fill Visualization");
