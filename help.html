@@ -22,7 +22,7 @@
             <a href="#random-per-fill">Random per fill</a>
           </li>
           <li>
-            <a href="#random-each-time">Random each time</a>
+            <a href="#random-each-time">Random always</a>
           </li>
           <li>
             <a href="#radom-per-pixel">Random per pixel</a>
@@ -141,7 +141,7 @@
       This is thus the same as using the <a href="#uniform">Uniform</a>
       strategy an choosing a random sub-strategy immediately before every fill.
     </p>
-    <h3 id="random-each-time">Random each time</h3>
+    <h3 id="random-each-time">Random always</h3>
     <p>
       Each time neighbors are enumerated, even within the same fill, the order
       is randomly selected. If the same pixel is reached multiple times, even
@@ -157,7 +157,7 @@
       they overlap in time), the same order is chosen for each pixel.
       Restarting the program generates a different order. Without looking
       closely, you won't notice the difference between this and
-      <a href="#random-each-time">Random each time</a>.
+      <a href="#random-each-time">Random always</a>.
     </p>
   </body>
 </html>

@@ -32,8 +32,11 @@ var status = new Label {
 };
 
 void UpdateStatus()
-    => status.Text =
-        $"Neighbor strategy: {neighborEnumerationStrategies.Current}";
+{
+    var strat = $"Neighbor strategy: {neighborEnumerationStrategies.Current}";
+    var speed = $"Speed: {DecideSpeed()}";
+    status.Text = $"{strat}    {speed}";
+}
 
 UpdateStatus();
 
@@ -190,6 +193,24 @@ tips.DocumentCompleted += delegate {
     var newSize = new SizeF(width: size.Width * 1.05f,
                             height: size.Height * 1.2f);
     tips.Size = Size.Round(newSize);
+};
+
+// FIXME: This is horrendous, but I don't know how to handle key presses from
+// a Windows Forms control dumped in LINQPad. I have nothing on which to set
+// Form.KeyPreview, and KeyDown and KeyUp handlers don't seem to fire on either
+// the outer TableLayoutPanel (ui) or the PictureBox (canvas).
+ui.HandleCreated += async delegate {
+    var prev = Control.ModifierKeys;
+
+    for (; ; ) {
+        await Task.Delay(100);
+
+        var cur = Control.ModifierKeys;
+        if (cur == prev) continue;
+
+        prev = cur;
+        UpdateStatus();
+    }
 };
 
 ui.Dump("Flood Fill Visualization");
@@ -375,7 +396,7 @@ internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
 
 internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
     internal RandomEachTimeStrategy(Func<int, int> generator)
-            : base("Random each time")
+            : base("Random always")
         => _supply = src => {
             var neighbors = FastEnumInfo<Direction>.ConvertValues(
                                 direction => src.Go(direction));
