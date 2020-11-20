@@ -28,7 +28,7 @@ var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
 
 var status = new Label {
     AutoSize = true,
-    Font = new Font(TextBox.DefaultFont.FontFamily, 9),
+    Font = new Font(TextBox.DefaultFont.FontFamily, 10),
 };
 
 void UpdateStatus()
