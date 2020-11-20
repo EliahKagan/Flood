@@ -135,6 +135,7 @@ canvas.MouseWheel += (sender, e) => {
 
     var scrollingDown = e.Delta < 0;
     if (e.Delta == 0) return; // I'm not sure if this is possible.
+    ((HandledMouseEventArgs)e).Handled = true;
 
     if ((Control.ModifierKeys & Keys.Shift) == 0) {
         // Scrolling without Shift cycles neighbor enumeration strategies.
