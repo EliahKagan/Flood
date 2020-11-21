@@ -197,6 +197,18 @@ tips.DocumentCompleted += delegate {
 
 ui.Dump("Flood Fill Visualization");
 
+// FIXME: Since users don't perceive a PluginForm as a UI element distinct from
+// the LINQPad dump visualizer tab it's rendered in, there's no indication that
+// the UI is not in the foreground (as LINQPad itself may be). So the current
+// status bar is often misleading when the user is about to click. Of the two
+// solutions I've thought of, a second polling mechanism to still update it
+// (just more coarsely than would otherwise be desired, for performance) may
+// be better than removing the speed when the UI is in the background. Removing
+// the speed (1) would  be confusing since it is not obvious when the UI is in
+// the foreground and (2) would confuse the user into thinking that the speed
+// pertains to already-started fills instead of future fills, since it would
+// often be displayed at the same time a fill is started (when the click that
+// starts the fill is also what activated the UI).
 var pluginForm = (Form)ui.Parent;
 pluginForm.KeyPreview = true;
 pluginForm.KeyDown += delegate { UpdateStatus(); };
