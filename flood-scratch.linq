@@ -205,6 +205,8 @@ tips.DocumentCompleted += delegate {
 ui.Dump("Flood Fill Visualization");
 
 // Update "Speed" in status from modifier keys, crisply when reasonable.
+// Unlike with an ordinary form, users can't readily see if a PluginForm is
+// active (and it starts inactive) so update it, albeit slower, even when not.
 var timer = new System.Windows.Forms.Timer { Interval = 110 };
 timer.Tick += delegate { UpdateStatus(); };
 var pluginForm = (Form)ui.Parent;
