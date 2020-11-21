@@ -31,11 +31,18 @@ var status = new Label {
     Font = new Font(TextBox.DefaultFont.FontFamily, 10),
 };
 
+NeighborEnumerationStrategy? prevStrategy = null;
+int oldSpeed = -1;
+
 void UpdateStatus()
 {
-    var strat = $"Neighbor strategy: {neighborEnumerationStrategies.Current}";
-    var speed = $"Speed: {DecideSpeed()}";
-    status.Text = $"{strat}    {speed}";
+    var strategy = neighborEnumerationStrategies.Current;
+    var speed = DecideSpeed();
+    if (strategy == prevStrategy && speed == oldSpeed) return;
+
+    prevStrategy = strategy;
+    oldSpeed = speed;
+    status.Text = $"Neighbor strategy: {strategy}   Speed: {speed}";
 }
 
 UpdateStatus();
@@ -197,22 +204,17 @@ tips.DocumentCompleted += delegate {
 
 ui.Dump("Flood Fill Visualization");
 
-// FIXME: Since users don't perceive a PluginForm as a UI element distinct from
-// the LINQPad dump visualizer tab it's rendered in, there's no indication that
-// the UI is not in the foreground (as LINQPad itself may be). So the current
-// status bar is often misleading when the user is about to click. Of the two
-// solutions I've thought of, a second polling mechanism to still update it
-// (just more coarsely than would otherwise be desired, for performance) may
-// be better than removing the speed when the UI is in the background. Removing
-// the speed (1) would  be confusing since it is not obvious when the UI is in
-// the foreground and (2) would confuse the user into thinking that the speed
-// pertains to already-started fills instead of future fills, since it would
-// often be displayed at the same time a fill is started (when the click that
-// starts the fill is also what activated the UI).
+// Update "Speed" in status from modifier keys, crisply when reasonable.
+var timer = new System.Windows.Forms.Timer { Interval = 110 };
+timer.Tick += delegate { UpdateStatus(); };
 var pluginForm = (Form)ui.Parent;
 pluginForm.KeyPreview = true;
 pluginForm.KeyDown += delegate { UpdateStatus(); };
 pluginForm.KeyUp += delegate { UpdateStatus(); };
+pluginForm.Activated += delegate { timer.Stop(); };
+pluginForm.Deactivate += delegate { timer.Start(); };
+pluginForm.FormClosed += delegate { timer.Dispose(); };
+timer.Start();
 
 static Func<int, int> CreateRandomGenerator()
     => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
