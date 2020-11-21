@@ -195,25 +195,12 @@ tips.DocumentCompleted += delegate {
     tips.Size = Size.Round(newSize);
 };
 
-// FIXME: This is horrendous, but I don't know how to handle key presses from
-// a Windows Forms control dumped in LINQPad. I have nothing on which to set
-// Form.KeyPreview, and KeyDown and KeyUp handlers don't seem to fire on either
-// the outer TableLayoutPanel (ui) or the PictureBox (canvas).
-ui.HandleCreated += async delegate {
-    var prev = Control.ModifierKeys;
-
-    for (; ; ) {
-        await Task.Delay(100);
-
-        var cur = Control.ModifierKeys;
-        if (cur == prev) continue;
-
-        prev = cur;
-        UpdateStatus();
-    }
-};
-
 ui.Dump("Flood Fill Visualization");
+
+var pluginForm = (Form)ui.Parent;
+pluginForm.KeyPreview = true;
+pluginForm.KeyDown += delegate { UpdateStatus(); };
+pluginForm.KeyUp += delegate { UpdateStatus(); };
 
 static Func<int, int> CreateRandomGenerator()
     => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
