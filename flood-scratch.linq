@@ -9,16 +9,15 @@
 
 #nullable enable
 
-var canvas = new PictureBox { Size = new Size(width: 600, height: 600) };
-var bmp = new Bitmap(width: canvas.Width, height: canvas.Height);
-canvas.Image = bmp;
-
+var rect = new Rectangle(Point.Empty, new Size(width: 600, height: 600));
+var bmp = new Bitmap(width: rect.Width, height: rect.Height);
 var graphics = Graphics.FromImage(bmp);
-var rectangle = new Rectangle(new Point(0, 0), canvas.Size);
-graphics.FillRectangle(Brushes.White, rectangle);
+graphics.FillRectangle(Brushes.White, rect);
 
-var pen = new Pen(Color.Black);
-var oldLocation = Point.Empty;
+var canvas = new PictureBox {
+    Image = bmp,
+    SizeMode = PictureBoxSizeMode.AutoSize,
+};
 
 var generator = CreateRandomGenerator();
 
@@ -26,18 +25,18 @@ var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
     new UniformStrategy(),
     new RandomPerFillStrategy(generator),
     new RandomEachTimeStrategy(generator),
-    new RandomPerPixelStrategy(canvas.Size, generator));
+    new RandomPerPixelStrategy(rect.Size, generator));
 
+OutputPanel? helpPanel = null;
+var oldStrategy = string.Empty;
+var oldSpeed = -1;
+var oldJobs = -1;
 var jobs = 0;
 
 var status = new Label {
     AutoSize = true,
-    Font = new Font(TextBox.DefaultFont.FontFamily, 10),
+    Font = new(TextBox.DefaultFont.FontFamily, 10),
 };
-
-var oldStrategy = string.Empty;
-var oldSpeed = -1;
-var oldJobs = -1;
 UpdateStatus();
 
 void UpdateStatus()
@@ -56,13 +55,13 @@ void UpdateStatus()
 var showHideTips = new Button {
     Text = "Show Tips",
     AutoSize = true,
-    Margin = new Padding(left: 0, top: 0, right: 2, bottom: 0),
+    Margin = new(left: 0, top: 0, right: 2, bottom: 0),
 };
 
 var openCloseHelp = new Button {
     Text = "Open Help",
     AutoSize = true,
-    Margin = new Padding(left: 2, top: 0, right: 0, bottom: 0),
+    Margin = new(left: 2, top: 0, right: 0, bottom: 0),
 };
 
 var buttons = new TableLayoutPanel {
@@ -71,7 +70,7 @@ var buttons = new TableLayoutPanel {
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
     AutoSize = true,
     Anchor = AnchorStyles.Top | AnchorStyles.Right,
-    Margin = new Padding(0),
+    Margin = Padding.Empty,
 };
 buttons.Controls.Add(showHideTips);
 buttons.Controls.Add(openCloseHelp);
@@ -80,14 +79,14 @@ var infoBar = new TableLayoutPanel {
     RowCount = 1,
     ColumnCount = 2,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    Size = new Size(width: canvas.Width, height: 30),
+    Size = new(width: canvas.Width, height: buttons.Height),
 };
 infoBar.Controls.Add(status);
 infoBar.Controls.Add(buttons);
 
 var tips = new WebBrowser {
     Visible = false,
-    Size = new Size(width: canvas.Width, height: 200),
+    Size = new(width: canvas.Width, height: 200),
     AutoSize = true,
     Url = GetDocUrl("tips.html"),
 };
@@ -104,7 +103,8 @@ ui.Controls.Add(canvas);
 ui.Controls.Add(infoBar);
 ui.Controls.Add(tips);
 
-OutputPanel? helpPanel = null;
+var pen = new Pen(Color.Black);
+var oldLocation = Point.Empty;
 
 canvas.MouseMove += (sender, args) => {
     if (args.Button == MouseButtons.Left) {
@@ -116,7 +116,7 @@ canvas.MouseMove += (sender, args) => {
 };
 
 canvas.MouseClick += async (sender, e) => {
-    if (!rectangle.Contains(e.Location)) return;
+    if (!rect.Contains(e.Location)) return;
 
     switch (e.Button) {
     case MouseButtons.Left:
@@ -148,7 +148,7 @@ canvas.MouseClick += async (sender, e) => {
 };
 
 canvas.MouseWheel += (sender, e) => {
-    if (!rectangle.Contains(e.Location)) return;
+    if (!rect.Contains(e.Location)) return;
 
     var scrollingDown = e.Delta < 0;
     if (e.Delta == 0) return; // I'm not sure if this is possible.
@@ -241,7 +241,7 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
     for (fringe.Insert(start); fringe.Count != 0; ) {
         var src = fringe.Extract();
 
-        if (!rectangle.Contains(src)
+        if (!rect.Contains(src)
                 || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
             continue;
 
@@ -266,13 +266,11 @@ static int DecideSpeed()
     };
 
 static Uri GetDocUrl(string filename)
-{
-    var dir = Path.GetDirectoryName(Util.CurrentQueryPath);
-    if (dir is null)
-        throw new NotSupportedException("Can't find query directory");
+    => new(Path.Combine(GetQueryDirectory(), filename));
 
-    return new Uri(Path.Combine(dir, filename));
-}
+static string GetQueryDirectory()
+    => Path.GetDirectoryName(Util.CurrentQueryPath)
+        ?? throw new NotSupportedException("Can't find query directory");
 
 internal interface IFringe<T> {
     int Count { get; }
