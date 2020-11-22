@@ -1,4 +1,5 @@
 <Query Kind="Statements">
+  <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
@@ -9,7 +10,7 @@
 
 #nullable enable
 
-var rect = new Rectangle(Point.Empty, new Size(width: 600, height: 600));
+var rect = new Rectangle(Point.Empty, await DecideSize());
 var bmp = new Bitmap(width: rect.Width, height: rect.Height);
 var graphics = Graphics.FromImage(bmp);
 graphics.FillRectangle(Brushes.White, rect);
@@ -203,10 +204,8 @@ openCloseHelp.Click += delegate {
 };
 
 tips.DocumentCompleted += delegate {
-    var size = tips.Document.Body.ScrollRectangle.Size;
-    var newSize = new SizeF(width: size.Width * 1.05f,
-                            height: size.Height * 1.2f);
-    tips.Size = Size.Round(newSize);
+    var (width, height) = tips.Document.Body.ScrollRectangle.Size;
+    tips.Size = Size.Round(new(width: width * 1.04f, height: height * 1.2f));
 };
 
 ui.Dump("Flood Fill Visualization");
@@ -265,6 +264,62 @@ static int DecideSpeed()
         Keys.Shift | Keys.Control => 10,
         _ => 5
     };
+
+static async Task<Size> DecideSize()
+    => (Control.ModifierKeys & Keys.Shift) != 0
+        ? await GetSizeFromUserAsync()
+        : GetSizeBasedOnResolution();
+
+static async Task<Size> GetSizeFromUserAsync()
+{
+    var (width, height) = GetSizeBasedOnResolution();
+
+    var widthLabel = new LC.Label("Width");
+    var widthBox = new LC.TextBox(width.ToString());
+    var widthPanel =
+        new LC.StackPanel(horizontal: true, widthLabel, widthBox);
+
+    var heightLabel = new LC.Label("Height");
+    var heightBox = new LC.TextBox(height.ToString());
+    var heightPanel =
+        new LC.StackPanel(horizontal: true, heightLabel, heightBox);
+
+    var sizePanel =
+        new LC.StackPanel(horizontal: false, widthPanel, heightPanel);
+    var dressing = new LC.FieldSet("Custom Canvas Size", sizePanel);
+    var launch = new LC.Button("Launch!");
+    var superPanel = new LC.StackPanel(horizontal: false, dressing, launch);
+
+    void HandleInput(LC.TextBox sender, ref int sink)
+    {
+        const int invalid = -1;
+
+        sink = int.TryParse(sender.Text, out var value) && value > 0
+                ? value
+                : invalid;
+
+        launch.Enabled = width != invalid && height != invalid;
+    }
+    widthBox.TextInput += delegate { HandleInput(widthBox, ref width); };
+    heightBox.TextInput += delegate { HandleInput(heightBox, ref height); };
+
+    var tcs = new TaskCompletionSource<Size>();
+    launch.Click += delegate {
+        launch.Enabled = widthBox.Enabled = heightBox.Enabled = false;
+        launch.Text = "Launched.";
+        tcs.SetResult(new(width: width, height: height));
+    };
+
+    superPanel.Dump("Developer Mode Launcher");
+    return await tcs.Task;
+}
+
+
+static Size GetSizeBasedOnResolution()
+{
+    // FIXME: Actually check the resolution and act accordingly.
+    return new Size(width: 600, height: 600);
+}
 
 static Uri GetDocUrl(string filename)
     => new(Path.Combine(GetQueryDirectory(), filename));
@@ -338,6 +393,13 @@ internal static class PointExtensions {
             Direction.Down  => new(src.X, src.Y + 1),
             _ => throw new NotSupportedException("Bug: unrecognized direction")
         };
+}
+
+internal static class SizeExtensions {
+    internal static void Deconstruct(this Size size,
+                                     out int width,
+                                     out int height)
+    => (width, height) = (size.Width, size.Height);
 }
 
 internal abstract class NeighborEnumerationStrategy {
