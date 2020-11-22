@@ -36,8 +36,8 @@ var status = new Label {
 };
 
 var oldStrategy = string.Empty;
-int oldSpeed = -1;
-int oldJobs = -1;
+var oldSpeed = -1;
+var oldJobs = -1;
 UpdateStatus();
 
 void UpdateStatus()
