@@ -79,10 +79,11 @@ var infoBar = new TableLayoutPanel {
     RowCount = 1,
     ColumnCount = 2,
     GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    Size = new(width: canvas.Width, height: buttons.Height),
+    Width = rect.Width,
 };
 infoBar.Controls.Add(status);
 infoBar.Controls.Add(buttons);
+infoBar.Height = buttons.Height; // Must be after adding buttons.
 
 var tips = new WebBrowser {
     Visible = false,
