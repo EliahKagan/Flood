@@ -311,7 +311,10 @@ static async Task<Size> GetSizeFromUserAsync()
     };
 
     superPanel.Dump("Developer Mode Launcher");
-    return await tcs.Task;
+    Thread.CurrentThread.GetApartmentState().Dump();
+    var ret = await tcs.Task;
+    Thread.CurrentThread.GetApartmentState().Dump();
+    return ret;
 }
 
 
