@@ -7,6 +7,8 @@
 
 // flood-scratch.linq - Prototype for interactive flood-fill visualizer.
 
+#nullable enable
+
 var canvas = new PictureBox { Size = new Size(width: 600, height: 600) };
 var bmp = new Bitmap(width: canvas.Width, height: canvas.Height);
 canvas.Image = bmp;
