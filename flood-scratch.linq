@@ -35,14 +35,14 @@ var status = new Label {
     Font = new Font(TextBox.DefaultFont.FontFamily, 10),
 };
 
-NeighborEnumerationStrategy? oldStrategy = null;
+var oldStrategy = string.Empty;
 int oldSpeed = -1;
 int oldJobs = -1;
 UpdateStatus();
 
 void UpdateStatus()
 {
-    var strategy = neighborEnumerationStrategies.Current;
+    var strategy = neighborEnumerationStrategies.Current.ToString();
     var speed = DecideSpeed();
     if (strategy == oldStrategy && speed == oldSpeed && jobs == oldJobs)
         return;
