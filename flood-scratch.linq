@@ -26,26 +26,30 @@ var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
     new RandomEachTimeStrategy(generator),
     new RandomPerPixelStrategy(canvas.Size, generator));
 
+var jobs = 0;
+
 var status = new Label {
     AutoSize = true,
     Font = new Font(TextBox.DefaultFont.FontFamily, 10),
 };
 
-NeighborEnumerationStrategy? prevStrategy = null;
+NeighborEnumerationStrategy? oldStrategy = null;
 int oldSpeed = -1;
+int oldJobs = -1;
+UpdateStatus();
 
 void UpdateStatus()
 {
     var strategy = neighborEnumerationStrategies.Current;
     var speed = DecideSpeed();
-    if (strategy == prevStrategy && speed == oldSpeed) return;
+    if (strategy == oldStrategy && speed == oldSpeed && jobs == oldJobs)
+        return;
 
-    prevStrategy = strategy;
+    oldStrategy = strategy;
     oldSpeed = speed;
-    status.Text = $"Neighbor strategy: {strategy}   Speed: {speed}";
+    oldJobs = jobs;
+    status.Text = $"Neighbors: {strategy}   Speed: {speed}   Jobs: {jobs}";
 }
-
-UpdateStatus();
 
 var showHideTips = new Button {
     Text = "Show Tips",
@@ -228,6 +232,8 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 
     var speed = DecideSpeed();
     var supplier = neighborEnumerationStrategies.Current.GetSupplier();
+    ++jobs;
+    UpdateStatus();
     var area = 0;
 
     for (fringe.Insert(start); fringe.Count != 0; ) {
@@ -244,6 +250,9 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 
         foreach (var dest in supplier(src)) fringe.Insert(dest);
     }
+
+    --jobs;
+    UpdateStatus();
 }
 
 static int DecideSpeed()
