@@ -11,265 +11,26 @@
 
 #nullable enable
 
+if ((Control.ModifierKeys & Keys.Shift) != 0) {
+    // Use the launcher ("developer mode").
+    var launcher = new Launcher(SuggestCanvasSize());
+    launcher.Launch += (sender, e) => StartUi(e.Size);
+    launcher.Show();
+} else {
+    // Proceed immediately with the automatically suggested size.
+    StartUi(SuggestCanvasSize());
+}
+
 static Size SuggestCanvasSize()
 {
+    // TODO: Maybe try to check which screen the LINQPad window is on.
     var (width, height) = Screen.PrimaryScreen.Bounds.Size;
     var side = Math.Min(width, height) * 5 / 9;
     return new(width: side, height: side);
 }
 
-// FIXME: If shift is held down, go through the Launcher first.
-var rect = new Rectangle(Point.Empty, SuggestCanvasSize());
-var bmp = new Bitmap(width: rect.Width, height: rect.Height);
-var graphics = Graphics.FromImage(bmp);
-graphics.FillRectangle(Brushes.White, rect);
-
-var canvas = new PictureBox {
-    Image = bmp,
-    SizeMode = PictureBoxSizeMode.AutoSize,
-};
-
-var generator = Permutations.CreateRandomGenerator();
-
-var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
-    new UniformStrategy(),
-    new RandomPerFillStrategy(generator),
-    new RandomEachTimeStrategy(generator),
-    new RandomPerPixelStrategy(rect.Size, generator));
-
-OutputPanel? helpPanel = null;
-var oldStrategy = string.Empty;
-var oldSpeed = -1;
-var oldJobs = -1;
-var jobs = 0;
-
-var status = new Label {
-    AutoSize = true,
-    Font = new(TextBox.DefaultFont.FontFamily, 10),
-};
-UpdateStatus();
-
-void UpdateStatus()
-{
-    var strategy = neighborEnumerationStrategies.Current.ToString();
-    var speed = DecideSpeed();
-    if (strategy == oldStrategy && speed == oldSpeed && jobs == oldJobs)
-        return;
-
-    oldStrategy = strategy;
-    oldSpeed = speed;
-    oldJobs = jobs;
-    status.Text = $"Neighbors: {strategy}   Speed: {speed}   Jobs: {jobs}";
-}
-
-var showHideTips = new Button {
-    Text = "Show Tips",
-    AutoSize = true,
-    Margin = new(left: 0, top: 0, right: 2, bottom: 0),
-};
-
-var openCloseHelp = new Button {
-    Text = "Open Help",
-    AutoSize = true,
-    Margin = new(left: 2, top: 0, right: 0, bottom: 0),
-};
-
-var buttons = new TableLayoutPanel {
-    RowCount = 1,
-    ColumnCount = 2,
-    GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    AutoSize = true,
-    Anchor = AnchorStyles.Top | AnchorStyles.Right,
-    Margin = Padding.Empty,
-};
-buttons.Controls.Add(showHideTips);
-buttons.Controls.Add(openCloseHelp);
-
-var infoBar = new TableLayoutPanel {
-    RowCount = 1,
-    ColumnCount = 2,
-    GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    Width = rect.Width,
-};
-infoBar.Controls.Add(status);
-infoBar.Controls.Add(buttons);
-infoBar.Height = buttons.Height; // Must be after adding buttons.
-
-var tips = new WebBrowser {
-    Visible = false,
-    Size = new(width: canvas.Width, height: 200),
-    AutoSize = true,
-    Url = Files.GetDocUrl("tips.html"),
-};
-
-var ui = new TableLayoutPanel {
-    RowCount = 3,
-    ColumnCount = 1,
-    GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-    AutoSize = true,
-    AutoSizeMode = AutoSizeMode.GrowAndShrink,
-    AutoScroll = true,
-};
-ui.Controls.Add(canvas);
-ui.Controls.Add(infoBar);
-ui.Controls.Add(tips);
-
-var pen = new Pen(Color.Black);
-var oldLocation = Point.Empty;
-
-canvas.MouseMove += (sender, args) => {
-    if (args.Button == MouseButtons.Left) {
-        graphics.DrawLine(pen, oldLocation, args.Location);
-        canvas.Invalidate();
-    }
-
-    oldLocation = args.Location;
-};
-
-canvas.MouseClick += async (sender, e) => {
-    if (!rect.Contains(e.Location)) return;
-
-    switch (e.Button) {
-    case MouseButtons.Left:
-        bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
-        canvas.Invalidate();
-        break;
-
-    case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
-        await FloodFillAsync(new RandomFringe<Point>(generator),
-                             e.Location,
-                             Color.Yellow);
-        break;
-
-    case MouseButtons.Right:
-        await FloodFillAsync(new StackFringe<Point>(),
-                             e.Location,
-                             Color.Red);
-        break;
-
-    case MouseButtons.Middle:
-        await FloodFillAsync(new QueueFringe<Point>(),
-                             e.Location,
-                             Color.Blue);
-        break;
-
-    default:
-        break; // Other buttons do nothing.
-    }
-};
-
-canvas.MouseWheel += (sender, e) => {
-    if (!rect.Contains(e.Location)) return;
-
-    var scrollingDown = e.Delta < 0;
-    if (e.Delta == 0) return; // I'm not sure if this is possible.
-    ((HandledMouseEventArgs)e).Handled = true;
-
-    if ((Control.ModifierKeys & Keys.Shift) == 0) {
-        // Scrolling without Shift cycles neighbor enumeration strategies.
-        if (scrollingDown)
-            neighborEnumerationStrategies.CycleNext();
-        else
-            neighborEnumerationStrategies.CyclePrev();
-    } else if (neighborEnumerationStrategies.Current
-                is ConfigurableNeighborEnumerationStrategy strategy) {
-        // Scrolling with Shift cycles substrategies instead.
-        if (scrollingDown)
-            strategy.CycleNextSubStrategy();
-        else
-            strategy.CyclePrevSubStrategy();
-    } // TODO: Maybe show some message on a nonconfigurable current strategy.
-
-    UpdateStatus();
-};
-
-showHideTips.Click += delegate {
-    if (tips.Visible) {
-        tips.Hide();
-        showHideTips.Text = "Show Tips";
-    } else {
-        tips.Show();
-        showHideTips.Text = "Hide Tips";
-    }
-};
-
-openCloseHelp.Click += delegate {
-    const string title = "Flood Fill Visualization - Help";
-
-    if (helpPanel is not null) {
-        helpPanel.Close();
-        return;
-    }
-
-    var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
-    helpPanel = PanelManager.DisplayControl(help, title);
-
-    helpPanel.PanelClosed += delegate {
-        helpPanel = null;
-        openCloseHelp.Text = "Open Help";
-    };
-
-    openCloseHelp.Text = "Close Help";
-};
-
-tips.DocumentCompleted += delegate {
-    var (width, height) = tips.Document.Body.ScrollRectangle.Size;
-    tips.Size = Size.Round(new(width: width * 1.04f, height: height * 1.2f));
-};
-
-ui.Dump("Flood Fill Visualization");
-
-// Update "Speed" in status from modifier keys, crisply when reasonable.
-// Unlike with an ordinary form, users can't readily see if a PluginForm is
-// active (and it starts inactive) so update it, albeit slower, even when not.
-var timer = new System.Windows.Forms.Timer { Interval = 110 };
-timer.Tick += delegate { UpdateStatus(); };
-var pluginForm = (Form)ui.Parent;
-pluginForm.KeyPreview = true;
-pluginForm.KeyDown += delegate { UpdateStatus(); };
-pluginForm.KeyUp += delegate { UpdateStatus(); };
-pluginForm.Activated += delegate { timer.Stop(); };
-pluginForm.Deactivate += delegate { timer.Start(); };
-pluginForm.FormClosed += delegate { timer.Dispose(); };
-timer.Start();
-
-static int DecideSpeed()
-    => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
-        Keys.Shift => 1,
-        Keys.Control => 20,
-        Keys.Shift | Keys.Control => 10,
-        _ => 5
-    };
-
-async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
-{
-    var fromArgb = bmp.GetPixel(start.X, start.Y).ToArgb();
-    if (fromArgb == toColor.ToArgb()) return;
-
-    var speed = DecideSpeed();
-    var supplier = neighborEnumerationStrategies.Current.GetSupplier();
-    ++jobs;
-    UpdateStatus();
-    var area = 0;
-
-    for (fringe.Insert(start); fringe.Count != 0; ) {
-        var src = fringe.Extract();
-
-        if (!rect.Contains(src)
-                || bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-            continue;
-
-        if (area++ % speed == 0) await Task.Delay(10);
-
-        bmp.SetPixel(src.X, src.Y, toColor);
-        canvas.Invalidate();
-
-        foreach (var dest in supplier(src)) fringe.Insert(dest);
-    }
-
-    --jobs;
-    UpdateStatus();
-}
+static void StartUi(Size canvasSize)
+    => new MainPanel(canvasSize).Dump("Flood Fill Visualization");
 
 internal sealed class LauncherEventArgs : EventArgs {
     internal LauncherEventArgs(int width, int height)
@@ -357,6 +118,339 @@ internal sealed class Launcher {
 
     private int _height;
 }
+
+internal sealed class MainPanel : TableLayoutPanel {
+    internal MainPanel(Size canvasSize)
+    {
+        _rect = new Rectangle(Point.Empty, canvasSize);
+        _bmp = new Bitmap(width: _rect.Width, height: _rect.Height);
+        _graphics = Graphics.FromImage(_bmp);
+        _graphics.FillRectangle(Brushes.White, _rect);
+
+        _canvas = new PictureBox {
+            Image = _bmp,
+            SizeMode = PictureBoxSizeMode.AutoSize,
+        };
+
+        _buttons = CreateButtons();
+        _infoBar = CreateInfoBar();
+        _tips = CreateTips();
+        _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
+
+        InitializeMainPanel();
+        UpdateStatus();
+
+        SubscribeEventHandlers();
+    }
+
+    private TableLayoutPanel CreateButtons()
+    {
+        var buttons = new TableLayoutPanel() {
+            RowCount = 1,
+            ColumnCount = 2,
+            GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+            AutoSize = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            Margin = Padding.Empty,
+        };
+
+        buttons.Controls.Add(_showHideTips);
+        buttons.Controls.Add(_openCloseHelp);
+
+        return buttons;
+    }
+
+    private TableLayoutPanel CreateInfoBar()
+    {
+        var infoBar = new TableLayoutPanel {
+            RowCount = 1,
+            ColumnCount = 2,
+            GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+            Width = _rect.Width,
+        };
+
+        infoBar.Controls.Add(_status);
+        infoBar.Controls.Add(_buttons);
+        infoBar.Height = _buttons.Height; // Must be after adding buttons.
+
+        return infoBar;
+    }
+
+    private WebBrowser CreateTips() => new() {
+        Visible = false,
+        Size = new(width: _rect.Width, height: 200),
+        AutoSize = true,
+        Url = Files.GetDocUrl("tips.html"),
+    };
+
+    private Carousel<NeighborEnumerationStrategy>
+    CreateNeighborEnumerationStrategies()
+        => new(new UniformStrategy(),
+               new RandomPerFillStrategy(_generator),
+               new RandomEachTimeStrategy(_generator),
+               new RandomPerPixelStrategy(_rect.Size, _generator));
+
+    private void InitializeMainPanel()
+    {
+        RowCount = 3;
+        ColumnCount = 1;
+        GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        AutoScroll = true;
+
+        Controls.Add(_canvas);
+        Controls.Add(_infoBar);
+        Controls.Add(_tips);
+    }
+
+    private void UpdateStatus()
+    {
+        var strategy = _neighborEnumerationStrategies.Current.ToString();
+        var speed = DecideSpeed();
+
+        if ((strategy, speed, _jobs) == (_oldStrategy, _oldSpeed, _oldJobs))
+            return;
+
+        _oldStrategy = strategy;
+        _oldSpeed = speed;
+        _oldJobs = _jobs;
+
+        _status.Text =
+            $"Neighbors: {strategy}   Speed: {speed}   Jobs: {_jobs}";
+    }
+
+    private static int DecideSpeed()
+        => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
+            Keys.Shift                =>  1,
+            Keys.Control              => 20,
+            Keys.Shift | Keys.Control => 10,
+            _                         =>  5
+        };
+
+    private void SubscribeEventHandlers()
+    {
+        HandleCreated += MainPanel_HandleCreated;
+        HandleDestroyed += delegate { _nonessentialTimer.Dispose(); };
+        _nonessentialTimer.Tick += delegate { UpdateStatus(); };
+
+        _canvas.MouseMove += canvas_MouseMove;
+        _canvas.MouseClick += canvas_MouseClick;
+        _canvas.MouseWheel += canvas_MouseWheel;
+
+        _showHideTips.Click += showHideTips_Click;
+        _openCloseHelp.Click += openCloseHelp_Click;
+        _tips.DocumentCompleted += tips_DocumentCompleted;
+    }
+
+    private void MainPanel_HandleCreated(object? sender, EventArgs e)
+    {
+        // Update "Speed" in status from modifier keys, crisply when
+        // reasonable. Unlike with an ordinary form, users can't readily see if
+        // a PluginForm is active (and it starts inactive) so update it, albeit
+        // slower, even when not.
+        var pluginForm = (Form)Parent;
+        pluginForm.KeyPreview = true;
+        pluginForm.KeyDown += delegate { UpdateStatus(); };
+        pluginForm.KeyUp += delegate { UpdateStatus(); };
+        pluginForm.Activated += delegate { _nonessentialTimer.Stop(); };
+        pluginForm.Deactivate += delegate { _nonessentialTimer.Start(); };
+        _nonessentialTimer.Start();
+    }
+
+    private void canvas_MouseMove(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left) {
+            _graphics.DrawLine(_pen, _oldLocation, e.Location);
+            _canvas.Invalidate();
+        }
+
+        _oldLocation = e.Location;
+    }
+
+    private async void canvas_MouseClick(object? sender, MouseEventArgs e)
+    {
+        if (!_rect.Contains(e.Location)) return;
+
+        switch (e.Button) {
+        case MouseButtons.Left:
+            _bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
+            _canvas.Invalidate();
+            break;
+
+        case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
+            await FloodFillAsync(new RandomFringe<Point>(_generator),
+                                 e.Location,
+                                 Color.Yellow);
+            break;
+
+        case MouseButtons.Right:
+            await FloodFillAsync(new StackFringe<Point>(),
+                                 e.Location,
+                                 Color.Red);
+            break;
+
+        case MouseButtons.Middle:
+            await FloodFillAsync(new QueueFringe<Point>(),
+                                 e.Location,
+                                 Color.Blue);
+            break;
+
+        default:
+            break; // Other buttons do nothing.
+        }
+    }
+
+    private void canvas_MouseWheel(object? sender, MouseEventArgs e)
+    {
+        if (!_rect.Contains(e.Location)) return;
+
+        var scrollingDown = e.Delta < 0;
+        if (e.Delta == 0) return; // I'm not sure if this is possible.
+        ((HandledMouseEventArgs)e).Handled = true;
+
+        if ((Control.ModifierKeys & Keys.Shift) == 0) {
+            // Scrolling without Shift cycles neighbor enumeration strategies.
+            if (scrollingDown)
+                _neighborEnumerationStrategies.CycleNext();
+            else
+                _neighborEnumerationStrategies.CyclePrev();
+        } else if (_neighborEnumerationStrategies.Current
+                    is ConfigurableNeighborEnumerationStrategy strategy) {
+            // Scrolling with Shift cycles substrategies instead.
+            if (scrollingDown)
+                strategy.CycleNextSubStrategy();
+            else
+                strategy.CyclePrevSubStrategy();
+        } // TODO: Maybe show a message on a nonconfigurable current strategy.
+
+        UpdateStatus();
+    }
+
+    private void showHideTips_Click(object? sender, EventArgs e)
+    {
+        if (_tips.Visible) {
+            _tips.Hide();
+            _showHideTips.Text = "Show Tips";
+        } else {
+            _tips.Show();
+            _showHideTips.Text = "Hide Tips";
+        }
+    }
+
+    private void openCloseHelp_Click(object? sender, EventArgs e)
+    {
+        const string title = "Flood Fill Visualization - Help";
+
+        if (_helpPanel is not null) {
+            _helpPanel.Close();
+            return;
+        }
+
+        var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
+        _helpPanel = PanelManager.DisplayControl(help, title);
+
+        _helpPanel.PanelClosed += delegate {
+            _helpPanel = null;
+            _openCloseHelp.Text = "Open Help";
+        };
+
+        _openCloseHelp.Text = "Close Help";
+    }
+
+    private void tips_DocumentCompleted(object sender,
+                                        WebBrowserDocumentCompletedEventArgs e)
+    {
+        var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
+        var newSize = new SizeF(width: width * 1.04f, height: height * 1.2f);
+        _tips.Size = Size.Round(newSize);
+    }
+
+    async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
+    {
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return;
+
+        var speed = DecideSpeed();
+        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+        ++_jobs;
+        UpdateStatus();
+        var area = 0;
+
+        for (fringe.Insert(start); fringe.Count != 0; ) {
+            var src = fringe.Extract();
+
+            if (!_rect.Contains(src)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                continue;
+
+            if (area++ % speed == 0) await Task.Delay(10);
+
+            _bmp.SetPixel(src.X, src.Y, toColor);
+            _canvas.Invalidate();
+
+            foreach (var dest in supplier(src)) fringe.Insert(dest);
+        }
+
+        --_jobs;
+        UpdateStatus();
+    }
+
+    private readonly System.Windows.Forms.Timer _nonessentialTimer = new() {
+        Interval = 110,
+    };
+
+    private readonly Rectangle _rect;
+
+    private readonly Bitmap _bmp;
+
+    private readonly Graphics _graphics;
+
+    private readonly PictureBox _canvas;
+
+    private readonly Pen _pen = new(Color.Black);
+
+    private Point _oldLocation = Point.Empty;
+
+    private readonly Func<int, int> _generator =
+        Permutations.CreateRandomGenerator();
+
+    private readonly Carousel<NeighborEnumerationStrategy>
+    _neighborEnumerationStrategies;
+
+    private readonly TableLayoutPanel _infoBar;
+
+    private readonly Label _status = new() {
+        AutoSize = true,
+        Font = new(TextBox.DefaultFont.FontFamily, 10),
+    };
+
+    private readonly TableLayoutPanel _buttons;
+
+    private readonly Button _showHideTips = new() {
+        Text = "Show Tips",
+        AutoSize = true,
+        Margin = new(left: 0, top: 0, right: 2, bottom: 0),
+    };
+
+    private readonly Button _openCloseHelp = new() {
+        Text = "Open Help",
+        AutoSize = true,
+        Margin = new(left: 2, top: 0, right: 0, bottom: 0),
+    };
+
+    private readonly WebBrowser _tips;
+
+    private OutputPanel? _helpPanel = null;
+
+    private string _oldStrategy = string.Empty;
+
+    private int _oldSpeed = -1;
+
+    private int _oldJobs = -1;
+
+    private int _jobs = 0;
+};
 
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
