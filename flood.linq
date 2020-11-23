@@ -1,7 +1,9 @@
 <Query Kind="Statements">
   <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
+  <Namespace>System.ComponentModel</Namespace>
   <Namespace>System.Drawing</Namespace>
+  <Namespace>System.Runtime.InteropServices</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
@@ -26,8 +28,8 @@ static Size SuggestCanvasSize()
 {
     // TODO: Maybe try to check which screen the LINQPad window is on.
     var (width, height) = Screen.PrimaryScreen.Bounds.Size;
-    var side = Math.Min(width, height) * 5 / 9;
-    return new(width: side, height: side);
+    var sideLength = Math.Min(width, height) * 5 / 9;
+    return new(width: sideLength, height: sideLength);
 }
 
 static void StartUi(Size canvasSize)
@@ -134,6 +136,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         _buttons = CreateButtons();
+        _magnify = CreateMagnify();
         _infoBar = CreateInfoBar();
         _tips = CreateTips();
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
@@ -161,15 +164,22 @@ internal sealed class MainPanel : TableLayoutPanel {
         return buttons;
     }
 
+    private Button CreateMagnify()
+        => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
+                                 _showHideTips.Height) {
+        //TabIndex = 3,
+    };
+
     private TableLayoutPanel CreateInfoBar()
     {
         var infoBar = new TableLayoutPanel {
             RowCount = 1,
-            ColumnCount = 2,
+            ColumnCount = 3,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
         };
 
+        infoBar.Controls.Add(_magnify);
         infoBar.Controls.Add(_status);
         infoBar.Controls.Add(_buttons);
         infoBar.Height = _buttons.Height; // Must be after adding buttons.
@@ -428,6 +438,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly TableLayoutPanel _buttons;
 
+    private readonly Button _magnify;
+
     private readonly Button _showHideTips = new() {
         Text = "Show Tips",
         AutoSize = true,
@@ -453,13 +465,81 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _jobs = 0;
 };
 
+internal sealed class ApplicationButton : Button {
+    internal ApplicationButton(string path, int sideLength)
+    {
+        _path = path;
+
+        BackgroundImage = CreateBitmap(_path);
+        BackgroundImageLayout = ImageLayout.Stretch;
+        Size = new(width: sideLength, height: sideLength);
+        Margin = Padding.Empty;
+
+        Click += ApplicationButton_Click;
+    }
+
+    private static Bitmap CreateBitmap(string path)
+    {
+        var hIcon = ExtractIcon(Process.GetCurrentProcess().Handle, path, 0);
+        try {
+            return Icon.FromHandle(hIcon).ToBitmap();
+        } finally {
+            DestroyIcon(hIcon);
+        }
+    }
+
+    // TODO: Degrade gracefully and use some generic icon on failure instead.
+    private static IntPtr ExtractIconOrThrow(IntPtr hInst,
+                                             string pszExeFileName,
+                                             uint nIconIndex)
+    {
+        var hIcon = ExtractIcon(hInst, pszExeFileName, nIconIndex);
+        if (hIcon == IntPtr.Zero) Throw();
+        return hIcon;
+    }
+
+    private static void DestroyIconOrThrow(IntPtr hIcon)
+    {
+        if (!DestroyIcon(hIcon)) Throw();
+    }
+
+    private static void Throw()
+        => throw new Win32Exception(Marshal.GetLastWin32Error());
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr ExtractIcon(IntPtr hInst,
+                                             string pszExeFileName,
+                                             uint nIconIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
+    private void ApplicationButton_Click(object? sender, EventArgs e)
+    {
+        var process = new Process();
+        process.StartInfo.UseShellExecute = true;
+        process.StartInfo.FileName = _path;
+        process.Start();
+    }
+
+    private readonly string _path;
+}
+
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
         => new(Path.Combine(QueryDirectory, filename));
 
+    internal static string GetSystem32ExePath(string basename)
+        => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
+
     private static string QueryDirectory
         => Path.GetDirectoryName(Util.CurrentQueryPath)
             ?? throw new NotSupportedException("Can't find query directory");
+
+    private static string WindowsDirectory
+        => Environment.GetEnvironmentVariable("windir")
+            ?? throw new InvalidOperationException(
+                    "Can't find Windows directory");
 }
 
 internal interface IFringe<T> {
