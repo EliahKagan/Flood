@@ -138,14 +138,17 @@ internal sealed class MainPanel : TableLayoutPanel {
             SizeMode = PictureBoxSizeMode.AutoSize,
         };
 
-        _buttons = CreateButtons();
+        _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _infoBar = CreateInfoBar();
         _tips = CreateTips();
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
 
         InitializeMainPanel();
+
         UpdateStatus();
+        UpdateShowHideTips();
+        UpdateOpenCloseHelp();
 
         SubscribeEventHandlers();
     }
@@ -156,9 +159,17 @@ internal sealed class MainPanel : TableLayoutPanel {
         base.Dispose(disposing);
     }
 
-    private TableLayoutPanel CreateButtons()
+    private static int DecideSpeed()
+        => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
+            Keys.Shift                =>  1,
+            Keys.Control              => 20,
+            Keys.Shift | Keys.Control => 10,
+            _                         =>  5
+        };
+
+    private TableLayoutPanel CreateToggles()
     {
-        var buttons = new TableLayoutPanel() {
+        var toggles = new TableLayoutPanel() {
             RowCount = 1,
             ColumnCount = 2,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
@@ -167,10 +178,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             Margin = Padding.Empty,
         };
 
-        buttons.Controls.Add(_showHideTips);
-        buttons.Controls.Add(_openCloseHelp);
+        toggles.Controls.Add(_showHideTips);
+        toggles.Controls.Add(_openCloseHelp);
 
-        return buttons;
+        return toggles;
     }
 
     private Button CreateMagnify()
@@ -188,8 +199,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         infoBar.Controls.Add(_status, column: 1, row: 0);
-        infoBar.Controls.Add(_buttons, column: 2, row: 0);
-        infoBar.Height = _buttons.Height; // Must be after adding buttons.
+        infoBar.Controls.Add(_toggles, column: 2, row: 0);
+        infoBar.Height = _toggles.Height; // Must be after adding toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
 
         return infoBar;
@@ -239,13 +250,27 @@ internal sealed class MainPanel : TableLayoutPanel {
             $"Neighbors: {strategy}   Speed: {speed}   Jobs: {_jobs}";
     }
 
-    private static int DecideSpeed()
-        => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
-            Keys.Shift                =>  1,
-            Keys.Control              => 20,
-            Keys.Shift | Keys.Control => 10,
-            _                         =>  5
-        };
+    private void UpdateShowHideTips()
+    {
+        if (_tips.Visible) {
+            _showHideTips.Text = "Hide Tips";
+            _toolTip.SetToolTip(_showHideTips, "Collapse brief help below");
+        } else {
+            _showHideTips.Text = "Show Tips";
+            _toolTip.SetToolTip(_showHideTips, "Expand brief help below");
+        }
+    }
+
+    private void UpdateOpenCloseHelp()
+    {
+        if (_helpPanel is null) {
+            _openCloseHelp.Text = "Open Help";
+            _toolTip.SetToolTip(_openCloseHelp, "View full help in new panel");
+        } else {
+            _openCloseHelp.Text = "Close Help";
+            _toolTip.SetToolTip(_openCloseHelp, "Close panel with full help");
+        }
+    }
 
     private void SubscribeEventHandlers()
     {
@@ -347,13 +372,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void showHideTips_Click(object? sender, EventArgs e)
     {
-        if (_tips.Visible) {
-            _tips.Hide();
-            _showHideTips.Text = "Show Tips";
-        } else {
-            _tips.Show();
-            _showHideTips.Text = "Hide Tips";
-        }
+        _tips.Visible = !_tips.Visible;
+        UpdateShowHideTips();
     }
 
     private void openCloseHelp_Click(object? sender, EventArgs e)
@@ -370,10 +390,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         _helpPanel.PanelClosed += delegate {
             _helpPanel = null;
-            _openCloseHelp.Text = "Open Help";
+            UpdateOpenCloseHelp();
         };
 
-        _openCloseHelp.Text = "Close Help";
+        UpdateOpenCloseHelp();
     }
 
     private void tips_DocumentCompleted(object sender,
@@ -439,18 +459,18 @@ internal sealed class MainPanel : TableLayoutPanel {
         Font = new(TextBox.DefaultFont.FontFamily, 10),
     };
 
-    private readonly TableLayoutPanel _buttons;
+    private readonly TableLayoutPanel _toggles;
 
     private readonly Button _magnify;
 
     private readonly Button _showHideTips = new() {
-        Text = "Show Tips",
+        Text = "??? Tips", // Placeholder text for height computation.
         AutoSize = true,
         Margin = new(left: 0, top: 0, right: 2, bottom: 0),
     };
 
     private readonly Button _openCloseHelp = new() {
-        Text = "Open Help",
+        Text = "??? Help", // Placeholder text for height computation.
         AutoSize = true,
         Margin = new(left: 2, top: 0, right: 0, bottom: 0),
     };
