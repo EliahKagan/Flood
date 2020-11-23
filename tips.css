@@ -27,10 +27,10 @@ kbd {
   padding: 1px 2px;
 }
 
-.cheat-sheet {
-  margin: -5px;
-}
-
 .number-cell {
   text-align: right;
+}
+
+#cheat-sheet {
+  margin: -5px;
 }
