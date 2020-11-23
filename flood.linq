@@ -166,9 +166,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Button CreateMagnify()
         => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
-                                 _showHideTips.Height) {
-        //TabIndex = 3,
-    };
+                                 _showHideTips.Height);
 
     private TableLayoutPanel CreateInfoBar()
     {
@@ -179,10 +177,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             Width = _rect.Width,
         };
 
-        infoBar.Controls.Add(_magnify);
-        infoBar.Controls.Add(_status);
-        infoBar.Controls.Add(_buttons);
+        infoBar.Controls.Add(_status, column: 1, row: 0);
+        infoBar.Controls.Add(_buttons, column: 2, row: 0);
         infoBar.Height = _buttons.Height; // Must be after adding buttons.
+        infoBar.Controls.Add(_magnify, column: 0, row: 0);
 
         return infoBar;
     }
