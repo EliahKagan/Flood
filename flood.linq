@@ -533,7 +533,7 @@ internal static class SizeExtensions {
     internal static void Deconstruct(this Size size,
                                      out int width,
                                      out int height)
-    => (width, height) = (size.Width, size.Height);
+        => (width, height) = (size.Width, size.Height);
 }
 
 internal abstract class NeighborEnumerationStrategy {
