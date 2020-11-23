@@ -363,7 +363,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                                         WebBrowserDocumentCompletedEventArgs e)
     {
         var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
-        var newSize = new SizeF(width: width * 1.04f, height: height * 1.2f);
+        var newSize = new SizeF(width: width * 1.05f, height: height * 1.22f);
         _tips.Size = Size.Round(newSize);
     }
 
