@@ -125,6 +125,9 @@ internal sealed class Launcher {
 internal sealed class MainPanel : TableLayoutPanel {
     internal MainPanel(Size canvasSize)
     {
+        _nonessentialTimer = new(_components) { Interval = 110 };
+        _toolTip = new(_components) { ShowAlways = true };
+
         _rect = new Rectangle(Point.Empty, canvasSize);
         _bmp = new Bitmap(width: _rect.Width, height: _rect.Height);
         _graphics = Graphics.FromImage(_bmp);
@@ -147,6 +150,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         SubscribeEventHandlers();
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
     private TableLayoutPanel CreateButtons()
     {
         var buttons = new TableLayoutPanel() {
@@ -166,7 +175,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Button CreateMagnify()
         => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
-                                 _showHideTips.Height);
+                                 _showHideTips.Height,
+                                 _toolTip);
 
     private TableLayoutPanel CreateInfoBar()
     {
@@ -240,7 +250,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void SubscribeEventHandlers()
     {
         HandleCreated += MainPanel_HandleCreated;
-        HandleDestroyed += delegate { _nonessentialTimer.Dispose(); };
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _canvas.MouseMove += canvas_MouseMove;
@@ -405,9 +414,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
-    private readonly System.Windows.Forms.Timer _nonessentialTimer = new() {
-        Interval = 110,
-    };
+    private readonly IContainer _components = new Container();
+
+    private readonly System.Windows.Forms.Timer _nonessentialTimer;
+
+    private readonly ToolTip _toolTip;
 
     private readonly Rectangle _rect;
 
@@ -420,12 +431,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Pen _pen = new(Color.Black);
 
     private Point _oldLocation = Point.Empty;
-
-    private readonly Func<int, int> _generator =
-        Permutations.CreateRandomGenerator();
-
-    private readonly Carousel<NeighborEnumerationStrategy>
-    _neighborEnumerationStrategies;
 
     private readonly TableLayoutPanel _infoBar;
 
@@ -454,6 +459,12 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private OutputPanel? _helpPanel = null;
 
+    private readonly Func<int, int> _generator =
+        Permutations.CreateRandomGenerator();
+
+    private readonly Carousel<NeighborEnumerationStrategy>
+    _neighborEnumerationStrategies;
+
     private string _oldStrategy = string.Empty;
 
     private int _oldSpeed = -1;
@@ -464,7 +475,9 @@ internal sealed class MainPanel : TableLayoutPanel {
 };
 
 internal sealed class ApplicationButton : Button {
-    internal ApplicationButton(string path, int sideLength)
+    internal ApplicationButton(string path,
+                               int sideLength,
+                               ToolTip? toolTip = null)
     {
         _path = path;
 
@@ -472,6 +485,10 @@ internal sealed class ApplicationButton : Button {
         BackgroundImageLayout = ImageLayout.Stretch;
         Size = new(width: sideLength, height: sideLength);
         Margin = Padding.Empty;
+
+        toolTip?.SetToolTip(
+            this,
+            FileVersionInfo.GetVersionInfo(_path).FileDescription);
 
         Click += ApplicationButton_Click;
     }
