@@ -5,9 +5,10 @@
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
+  <RuntimeVersion>5.0</RuntimeVersion>
 </Query>
 
-// flood-scratch.linq - Prototype for interactive flood-fill visualizer.
+// flood.linq - Interactive flood-fill visualizer.
 
 #nullable enable
 
