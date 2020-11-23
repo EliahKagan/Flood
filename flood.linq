@@ -818,8 +818,8 @@ internal static class Permutations {
             // Go to the permutation that comes next (w.r.t. comparer).
             var left = items.Length - 1;
             while (comparer.Compare(items[right], items[left]) >= 0) --left;
-            Swap(items, right, left);
-            ReverseBetween(items, right + 1, items.Length);
+            items.Swap(left, right);
+            items.ReverseBetween(right + 1, items.Length);
         }
     }
 
