@@ -1,5 +1,6 @@
 <Query Kind="Statements">
   <Namespace>LC = LINQPad.Controls</Namespace>
+  <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
@@ -10,7 +11,15 @@
 
 #nullable enable
 
-var rect = new Rectangle(Point.Empty, await DecideSize());
+static Size SuggestCanvasSize()
+{
+    var (width, height) = Screen.PrimaryScreen.Bounds.Size;
+    var side = Math.Min(width, height) * 5 / 9;
+    return new(width: side, height: side);
+}
+
+// FIXME: If shift is held down, go through the Launcher first.
+var rect = new Rectangle(Point.Empty, SuggestCanvasSize());
 var bmp = new Bitmap(width: rect.Width, height: rect.Height);
 var graphics = Graphics.FromImage(bmp);
 graphics.FillRectangle(Brushes.White, rect);
@@ -20,7 +29,7 @@ var canvas = new PictureBox {
     SizeMode = PictureBoxSizeMode.AutoSize,
 };
 
-var generator = CreateRandomGenerator();
+var generator = Permutations.CreateRandomGenerator();
 
 var neighborEnumerationStrategies = new Carousel<NeighborEnumerationStrategy>(
     new UniformStrategy(),
@@ -90,7 +99,7 @@ var tips = new WebBrowser {
     Visible = false,
     Size = new(width: canvas.Width, height: 200),
     AutoSize = true,
-    Url = GetDocUrl("tips.html"),
+    Url = Files.GetDocUrl("tips.html"),
 };
 
 var ui = new TableLayoutPanel {
@@ -192,7 +201,7 @@ openCloseHelp.Click += delegate {
         return;
     }
 
-    var help = new WebBrowser { Url = GetDocUrl("help.html") };
+    var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
     helpPanel = PanelManager.DisplayControl(help, title);
 
     helpPanel.PanelClosed += delegate {
@@ -224,8 +233,13 @@ pluginForm.Deactivate += delegate { timer.Start(); };
 pluginForm.FormClosed += delegate { timer.Dispose(); };
 timer.Start();
 
-static Func<int, int> CreateRandomGenerator()
-    => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
+static int DecideSpeed()
+    => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
+        Keys.Shift => 1,
+        Keys.Control => 20,
+        Keys.Shift | Keys.Control => 10,
+        _ => 5
+    };
 
 async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
 {
@@ -257,40 +271,70 @@ async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
     UpdateStatus();
 }
 
-static int DecideSpeed()
-    => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
-        Keys.Shift => 1,
-        Keys.Control => 20,
-        Keys.Shift | Keys.Control => 10,
-        _ => 5
-    };
+internal sealed class LauncherEventArgs : EventArgs {
+    internal LauncherEventArgs(int width, int height)
+        : this(new(width: width, height: height)) { }
 
-static async Task<Size> DecideSize()
-    => (Control.ModifierKeys & Keys.Shift) != 0
-        ? await GetSizeFromUserAsync()
-        : GetSizeBasedOnResolution();
+    internal LauncherEventArgs(Size size) => Size = size;
 
-static async Task<Size> GetSizeFromUserAsync()
-{
-    var (width, height) = GetSizeBasedOnResolution();
+    internal Size Size { get; }
+};
 
-    var widthLabel = new LC.Label("Width");
-    var widthBox = new LC.TextBox(width.ToString());
-    var widthPanel =
-        new LC.StackPanel(horizontal: true, widthLabel, widthBox);
+internal delegate void LauncherEventHandler(Launcher sender,
+                                            LauncherEventArgs e);
 
-    var heightLabel = new LC.Label("Height");
-    var heightBox = new LC.TextBox(height.ToString());
-    var heightPanel =
-        new LC.StackPanel(horizontal: true, heightLabel, heightBox);
+internal sealed class Launcher {
+    internal Launcher(Size defaultSize)
+    {
+        (_width, _height) = defaultSize;
 
-    var sizePanel =
-        new LC.StackPanel(horizontal: false, widthPanel, heightPanel);
-    var dressing = new LC.FieldSet("Custom Canvas Size", sizePanel);
-    var launch = new LC.Button("Launch!");
-    var superPanel = new LC.StackPanel(horizontal: false, dressing, launch);
+        const string textBoxWidth = "5em";
+        _widthBox = new(_width.ToString()) { Width = textBoxWidth };
+        _heightBox = new(_height.ToString()) { Width = textBoxWidth };
 
-    void HandleInput(LC.TextBox sender, ref int sink)
+        _panel = new(horizontal: false,
+                     new LC.FieldSet("Custom Canvas Size", CreateTable()),
+                     _launch);
+
+        SubscribePrivateHandlers();
+    }
+
+    internal event LauncherEventHandler? Launch = null;
+
+    internal void Show() => _panel.Dump("Developer Mode Launcher");
+
+    private LC.Table CreateTable()
+    {
+        var table = new LC.Table(noBorders: true,
+                                 cellPaddingStyle: ".3em .3em",
+                                 cellVerticalAlign: "middle");
+
+        table.Rows.Add(new LC.Label("Width"), _widthBox);
+        table.Rows.Add(new LC.Label("Height"), _heightBox);
+
+        return table;
+    }
+
+    private void SubscribePrivateHandlers()
+    {
+        _widthBox.TextInput += widthBox_TextInput;
+        _heightBox.TextInput += heightBox_TextInput;
+        _launch.Click += launch_Click;
+    }
+
+    private void widthBox_TextInput(object? sender, EventArgs e)
+        => HandleInput(_widthBox, ref _width);
+
+    private void heightBox_TextInput(object? sender, EventArgs e)
+        => HandleInput(_heightBox, ref _height);
+
+    private void launch_Click(object? sender, EventArgs e)
+    {
+        _widthBox.Enabled = _heightBox.Enabled = _launch.Enabled = false;
+        Launch?.Invoke(this, new(width: _width, height: _height));
+    }
+
+    private void HandleInput(LC.TextBox sender, ref int sink)
     {
         const int invalid = -1;
 
@@ -298,38 +342,30 @@ static async Task<Size> GetSizeFromUserAsync()
                 ? value
                 : invalid;
 
-        launch.Enabled = width != invalid && height != invalid;
+        _launch.Enabled = _width != invalid && _height != invalid;
     }
-    widthBox.TextInput += delegate { HandleInput(widthBox, ref width); };
-    heightBox.TextInput += delegate { HandleInput(heightBox, ref height); };
 
-    var tcs = new TaskCompletionSource<Size>();
-    launch.Click += delegate {
-        launch.Enabled = widthBox.Enabled = heightBox.Enabled = false;
-        launch.Text = "Launched.";
-        tcs.SetResult(new(width: width, height: height));
-    };
+    private readonly LC.TextBox _widthBox;
 
-    superPanel.Dump("Developer Mode Launcher");
-    Thread.CurrentThread.GetApartmentState().Dump();
-    var ret = await tcs.Task;
-    Thread.CurrentThread.GetApartmentState().Dump();
-    return ret;
+    private readonly LC.TextBox _heightBox;
+
+    private readonly LC.Button _launch = new LC.Button("Launch!");
+
+    private readonly LC.StackPanel _panel;
+
+    private int _width;
+
+    private int _height;
 }
 
+internal static class Files {
+    internal static Uri GetDocUrl(string filename)
+        => new(Path.Combine(QueryDirectory, filename));
 
-static Size GetSizeBasedOnResolution()
-{
-    // FIXME: Actually check the resolution and act accordingly.
-    return new Size(width: 600, height: 600);
+    private static string QueryDirectory
+        => Path.GetDirectoryName(Util.CurrentQueryPath)
+            ?? throw new NotSupportedException("Can't find query directory");
 }
-
-static Uri GetDocUrl(string filename)
-    => new(Path.Combine(GetQueryDirectory(), filename));
-
-static string GetQueryDirectory()
-    => Path.GetDirectoryName(Util.CurrentQueryPath)
-        ?? throw new NotSupportedException("Can't find query directory");
 
 internal interface IFringe<T> {
     int Count { get; }
@@ -538,6 +574,9 @@ internal sealed class Carousel<T> {
 }
 
 internal static class Permutations {
+    internal static Func<int, int> CreateRandomGenerator()
+        => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
+
     internal static void Shuffle<T>(this T[] items, Func<int, int> generator)
     {
         for (var right = items.Length; right > 0; --right) {
