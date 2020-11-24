@@ -418,7 +418,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         _tips.Size = Size.Round(newSize);
     }
 
-    async Task FloodFillAsync(IFringe<Point> fringe, Point start, Color toColor)
+    private async Task FloodFillAsync(IFringe<Point> fringe,
+                                      Point start,
+                                      Color toColor)
     {
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
         if (fromArgb == toColor.ToArgb()) return;
