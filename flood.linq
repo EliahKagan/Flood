@@ -35,6 +35,9 @@ static Size SuggestCanvasSize()
 static void StartUi(Size canvasSize)
     => new MainPanel(canvasSize).Dump("Flood Fill Visualization");
 
+/// <summary>
+/// Provides a canvas size for the <see cref="Launcher.Launch"/> event.
+/// </summary>
 internal sealed class LauncherEventArgs : EventArgs {
     internal LauncherEventArgs(int width, int height)
         : this(new(width: width, height: height)) { }
@@ -44,9 +47,16 @@ internal sealed class LauncherEventArgs : EventArgs {
     internal Size Size { get; }
 };
 
+/// <summary>
+/// Represents a method that will handle the <see cref="Launcher.Launch"/>
+/// event.
+/// </summary>
 internal delegate void LauncherEventHandler(Launcher sender,
                                             LauncherEventArgs e);
 
+/// <summary>
+/// "Developer mode" launcher allowing the user to specify a canvas size.
+/// </summary>
 internal sealed class Launcher {
     internal Launcher(Size defaultSize)
     {
@@ -122,6 +132,10 @@ internal sealed class Launcher {
     private int _height;
 }
 
+/// <summary>
+/// The main user interface, containing an interactive canvas, an info bar, and
+/// expandable/collapsable tips.
+/// </summary>
 internal sealed class MainPanel : TableLayoutPanel {
     internal MainPanel(Size canvasSize)
     {
@@ -494,6 +508,10 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _jobs = 0;
 };
 
+/// <summary>
+/// A button to launch an application, showing an icon and (optionally) toolip
+/// obtained from the executable's metadata.
+/// </summary>
 internal sealed class ApplicationButton : Button {
     internal ApplicationButton(string path,
                                int sideLength,
@@ -560,6 +578,10 @@ internal sealed class ApplicationButton : Button {
     private readonly string _path;
 }
 
+/// <summary>
+/// Convenience methods for getting information about files and directories
+/// this program uses and expects to be present.
+/// </summary>
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
         => new(Path.Combine(QueryDirectory, filename));
@@ -577,6 +599,11 @@ internal static class Files {
                     "Can't find Windows directory");
 }
 
+/// <summary>
+/// Represents a collection of vertices that have been encountered during
+/// graph traversal and must still be visited.
+/// </summary>
+/// <typeparam name="T">The vertex type.</typeparam>
 internal interface IFringe<T> {
     int Count { get; }
 
@@ -585,33 +612,59 @@ internal interface IFringe<T> {
     T Extract();
 }
 
+/// <summary>
+/// A last-in first-out (LIFO, i.e., stack) collection of vertices for graph
+/// traversal.
+/// </summary>
+/// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class StackFringe<T> : IFringe<T> {
+    /// <summary>The number of vertices currently stored.</summary>
     public int Count => _stack.Count;
 
+    /// <summary>Puts a vertex into this fringe.</summary>
+    /// <param name="vertex">The vertex to be inserted.</param>
     public void Insert(T vertex) => _stack.Push(vertex);
 
+    /// <summary>Takes a vertex out of this fringe.</summary>
+    /// <returns>The extracted vertex.</returns>
     public T Extract() => _stack.Pop();
 
     private readonly Stack<T> _stack = new();
 }
 
+/// <summary>
+/// A first-in first-out (FIFO, i.e., "queue") collection of vertices for
+/// graph traversal.
+/// </summary>
+/// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class QueueFringe<T> : IFringe<T> {
+    /// <inheritdoc/>
     public int Count => _queue.Count;
 
+    /// <inheritdoc/>
     public void Insert(T vertex) => _queue.Enqueue(vertex);
 
+    /// <inheritdoc/>
     public T Extract() => _queue.Dequeue();
 
     private readonly Queue<T> _queue = new();
 }
 
+/// <summary>
+/// A collection of vertices for graph traversal that selects vertices for
+/// extraction by uniform random sampling.
+/// </summary>
+/// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class RandomFringe<T> : IFringe<T> {
     internal RandomFringe(Func<int, int> generator) => _generator = generator;
 
+    /// <inheritdoc/>
     public int Count => _items.Count;
 
+    /// <inheritdoc/>
     public void Insert(T vertex) => _items.Add(vertex);
 
+    /// <inheritdoc/>
     public T Extract()
     {
         var index = _generator(Count);
@@ -626,6 +679,10 @@ internal sealed class RandomFringe<T> : IFringe<T> {
     private readonly Func<int, int> _generator;
 }
 
+/// <summary>
+/// A direction to look for a neighbor in a bitmap whose pixels are regarded as
+/// vertices with four-way adjacency.
+/// </summary>
 internal enum Direction {
     Left,
     Right,
@@ -633,6 +690,10 @@ internal enum Direction {
     Down,
 }
 
+/// <summary>
+/// Provides an extension method for finding an adjacent point (in an image)
+/// in a specified direction.
+/// </summary>
 internal static class PointExtensions {
     internal static Point Go(this Point src, Direction direction)
         => direction switch {
@@ -644,6 +705,10 @@ internal static class PointExtensions {
         };
 }
 
+/// <summary>
+/// Provies an extension method for deconstructing the size (of an image or
+/// control) into its constituent dimensions.
+/// </summary>
 internal static class SizeExtensions {
     internal static void Deconstruct(this Size size,
                                      out int width,
@@ -651,30 +716,61 @@ internal static class SizeExtensions {
         => (width, height) = (size.Width, size.Height);
 }
 
+/// <summary>
+/// This abstract base class represents an order in which to enumerate
+/// neighbors while traversing the implicit graph of a bitmap image with
+/// four-way adjacency, or an algorithm for determining such an order.
+/// </summary>
 internal abstract class NeighborEnumerationStrategy {
     private protected NeighborEnumerationStrategy(string name) => Name = name;
 
+    /// <inheritdoc/>
     public override string ToString() => Name;
 
+    /// <summary>The name of this strategy, to appear in the UI.</summary>
+    /// <remarks>Not affected by substrategy, if any.</remarks>
     private protected string Name { get; }
 
+    /// <summary>
+    /// Creates a delegate that accepts a point and returns and array of its
+    /// four neighbors, in an order determined by the concrete implementation.
+    /// </summary>
     internal abstract Func<Point, Point[]> GetSupplier();
 }
 
+/// <summary>
+/// Represents an algorithm for determining an order in which to enumerate
+/// neighbors while traversing the implicit graph of a bitmap image with
+/// four-way adjacency, which is configurable by selecting a substrategy.
+/// </summary>
 internal abstract class ConfigurableNeighborEnumerationStrategy
         : NeighborEnumerationStrategy {
     private protected ConfigurableNeighborEnumerationStrategy(string name)
         : base(name) { }
 
+    /// <inheritdoc/>
     public override string ToString() => $"{Name} - {Detail}";
 
+    /// <summary>
+    /// Switches to the next substrategy, or from the last to the first.
+    /// </summary>
     internal abstract void CycleNextSubStrategy();
 
+    /// <summary>
+    /// Switches to the previous substrategy, or from the first to the last.
+    /// </summary>
     internal abstract void CyclePrevSubStrategy();
 
+    /// <summary>
+    /// Inforamtion about the current substrategy, to appear in the UI.
+    /// </summary>
     private protected abstract string Detail { get; }
 }
 
+/// <summary>
+/// Enumerates neighbors in the same order, within and across fills.
+/// </summary>
+/// <remarks>The substrategy determines the specific order used.</remarks>
 internal sealed class UniformStrategy
         : ConfigurableNeighborEnumerationStrategy {
     internal UniformStrategy() : this(FastEnumInfo<Direction>.GetValues()) { }
@@ -682,10 +778,12 @@ internal sealed class UniformStrategy
     internal UniformStrategy(params Direction[] uniformOrder) : base("Uniform")
         => _uniformOrder = uniformOrder[..];
 
+    /// <inheritdoc/>
     private protected override string Detail
         => new string(Array.ConvertAll(_uniformOrder,
                                        direction => direction.ToString()[0]));
 
+    /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier()
     {
         var uniformOrder = _uniformOrder[..];
@@ -694,20 +792,27 @@ internal sealed class UniformStrategy
                                        direction => src.Go(direction));
     }
 
+    /// <inheritdoc/>
     internal override void CycleNextSubStrategy()
         => _uniformOrder.CycleNextPermutation();
 
+    /// <inheritdoc/>
     internal override void CyclePrevSubStrategy()
         => _uniformOrder.CyclePrevPermutation();
 
     private readonly Direction[] _uniformOrder;
 }
 
+/// <summary>
+/// Enumerates neighbors in an order that differs randomly across fills but is
+/// the same within any one fill.
+/// </summary>
 internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
     internal RandomPerFillStrategy(Func<int, int> generator)
             : base("Random per fill")
         => _generator = generator;
 
+    /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier()
     {
         var order = FastEnumInfo<Direction>.GetValues();
@@ -718,6 +823,12 @@ internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
     private readonly Func<int, int> _generator;
 }
 
+/// <summary>
+/// Enumerates neighbors in an order that differs randomly each each time, even
+/// within the same fill, and even (as can happen in the case of interference
+/// from a concurrent fill) for multiple traversals from the same source pixel
+/// in the same fill.
+/// </summary>
 internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
     internal RandomEachTimeStrategy(Func<int, int> generator)
             : base("Random always")
@@ -728,11 +839,16 @@ internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
             return neighbors;
         };
 
+    /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier() => _supply;
 
     private readonly Func<Point, Point[]> _supply;
 }
 
+/// <summary>
+/// Enumerates neighbors in randomly determined orders that differ between
+/// pixels. Each pixel has a random order that is fixed even across fills.
+/// </summary>
 internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
     internal RandomPerPixelStrategy(Size size, Func<int, int> generator)
             : base("Random per pixel")
@@ -743,6 +859,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
                                             direction => src.Go(direction));
     }
 
+    /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier() => _supplier;
 
     private static Direction[,][]
@@ -766,6 +883,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 
 // TODO: Add WhirlpoolStrategy (which will be (counter)clockwise configurable).
 
+/// <summary>A cyclic sequence of items and a current position in it.</summary>
 internal sealed class Carousel<T> {
     internal Carousel(params T[] items) => _items = items[..];
 
@@ -783,6 +901,10 @@ internal sealed class Carousel<T> {
     private int _pos = 0;
 }
 
+
+/// <summary>
+/// Methods for generating random and non-random permutations.
+/// </summary>
 internal static class Permutations {
     internal static Func<int, int> CreateRandomGenerator()
         => new Random(RandomNumberGenerator.GetInt32(int.MaxValue)).Next;
@@ -812,7 +934,7 @@ internal static class Permutations {
             --right;
 
         if (right < 0) {
-            // This is the last permutaton (w.r.t. comparer) so cycle around.
+            // This is the last permutation (w.r.t. comparer) so cycle around.
             Array.Reverse(items);
         } else {
             // Go to the permutation that comes next (w.r.t. comparer).
@@ -832,6 +954,8 @@ internal static class Permutations {
         => Array.Reverse(items, startInclusive, endExclusive - startInclusive);
 }
 
+/// <summary>Adaptor for reversing the direction of a comparer.</summary>
+/// <typeparam name="T">The element type the comparer accepts.</typeparam>
 internal sealed class ReverseComparer<T> : IComparer<T> {
     internal static IComparer<T> Default { get; } =
         new ReverseComparer<T>(Comparer<T>.Default);
@@ -843,6 +967,11 @@ internal sealed class ReverseComparer<T> : IComparer<T> {
     private readonly IComparer<T> _comparer;
 }
 
+/// <summary>
+/// Methods to access information about enums quickly by caching the
+/// results of reflection.
+/// </summary>
+/// <typeparam name="T">The enum to provide information about.</typeparam>
 internal static class FastEnumInfo<T> where T : struct, Enum {
     internal static T[] GetValues() => _values[..];
 
