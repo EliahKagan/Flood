@@ -11,35 +11,40 @@
           <td>
             <table>
               <thead>
-                <tr>
+                <tr title="Draw on the canvas or fill a region.
+Different fills use different data structures for the fringe, which affects the order pixel locations are TAKEN OUT OF the fringe.">
                   <th colspan="3">Basic Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
+                <tr title="Draw a 1-pixel curve (or dot).">
                   <td>
-                    <div class="color-box color-box-draw"></div>
+                    <div alt="black" class="color-box color-box-draw">
+                    </div>
                   </td>
                   <td>Draw</td>
                   <td>Left click/drag</td>
                 </tr>
-                <tr>
+                <tr title="Use a stack/LIFO (last-in first-out) for the fringe.">
                   <td>
-                    <div class="color-box color-box-stack-fill"></div>
+                    <div alt="red" class="color-box color-box-stack-fill">
+                    </div>
                   </td>
                   <td>Stack fill</td>
                   <td>Right click</td>
                 </tr>
-                <tr>
+                <tr title="Use a queue/FIFO (first-in first-out) for the fringe.">
                   <td>
-                    <div class="color-box color-box-queue-fill"></div>
+                    <div alt="blue" class="color-box color-box-queue-fill">
+                    </div>
                   </td>
                   <td>Queue fill</td>
                   <td>Middle click</td>
                 </tr>
-                <tr>
+                <tr title="Use a fringe where extraction is by random selection.">
                   <td>
-                    <div class="color-box color-box-random-fill"></div>
+                    <div alt="yellow" class="color-box color-box-random-fill">
+                    </div>
                   </td>
                   <td>Random fill</td>
                   <td><kbd>Alt</kbd>+Right-click</td>
@@ -50,24 +55,24 @@
           <td>
             <table>
               <thead>
-                <tr>
+                <tr title="The speed of a fill is determined by how many pixels are drawn before the canvas is updated. (Each running fill updates the canvas in roughly equal intervals.)">
                   <th colspan="2">Speed Modifiers</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
+                <tr title="Update the canvas for each pixel.">
                   <td><kbd>Shift</kbd></td>
                   <td class="number-cell">1x</td>
                 </tr>
-                <tr>
+                <tr title="Update the canvas after every 5 pixels.">
                   <td>(default)</td>
                   <td class="number-cell">5x</td>
                 </tr>
-                <tr>
+                <tr title="Update the canvas after every 10 pixels.">
                   <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd></td>
                   <td class="number-cell">10x</td>
                 </tr>
-                <tr>
+                <tr title="Update the canvas after every 20 pixels.">
                   <td><kbd>Ctrl</kbd></td>
                   <td class="number-cell">20x</td>
                 </tr>
@@ -77,27 +82,34 @@
           <td>
             <table>
               <thead>
-                <tr>
+                <tr title="The order neighbors are enumerated in, or the algorithm for picking an order dynamically. This is the order pixel locations are PUT INTO the fringe.">
                   <th colspan="2">Neighbor Enumeration Strategies</th>
                 </tr>
-                <tr>
+                <tr title="Scroll down with the mouse wheel to pick the next strategy, or up to pick the previous strategy. To change substrategy instead, hold Shift while scrolling. Currently, only the Uniform strategy has substrategies.">
                   <th colspan="2">Cycle with the scroll wheel.</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Uniform</td>
-                  <td><kbd>Shift</kbd>+scroll to set order</td>
+                  <td title="Add neighbors to the fringe in a specific, fixed order.">
+                    Uniform
+                  </td>
+                  <td title="Choose between the 24 orders:
+LRUD, LRDU, LURD, etc.">
+                    <kbd>Shift</kbd>+scroll to set order
+                  </td>
                 </tr>
-                <tr>
+                <tr title="In a fill, add neighbors to the fringe in the same order.
+But choose this order randomly at the start of each fill.">
                   <td>Random per fill</td>
                   <td>(order same within a fill)</td>
                 </tr>
-                <tr>
+                <tr title="Add neighbors to the fringe in random order.
+Pick an order each time neighbors are added.">
                   <td>Random always</td>
                   <td>(random during traversal)</td>
                 </tr>
-                <tr>
+                <tr title="Each pixel has a predetermined order of it neighbors, randomly chosen when the program starts and used in all fills. (This looks very similar to &quot;Random always&quot;.)">
                   <td>Random per pixel</td>
                   <td>(randomized on launch)</td>
                 </tr>
