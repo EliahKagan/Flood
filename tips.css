@@ -54,6 +54,10 @@ kbd {
   background-color: yellow;
 }
 
+.color-box-deque-fill {
+  background-color: purple;
+}
+
 .number-cell {
   text-align: right;
 }

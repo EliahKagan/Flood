@@ -65,6 +65,7 @@
       runs on Windows, which is not ideal.
     </p>
     <h2 id="basic-actions">Basic Actions</h2>
+    <!-- TODO: Add expanded explanations, converting to paragraphs. -->
     <ul>
       <li>
         Left-click and drag to draw on the canvas.
@@ -73,11 +74,15 @@
         Right-click to flood-fill with a stack (a LIFO queue).
       </li>
       <li>
-        Middle-click to flood-fill "queue" (i.e., a FIFO queue).
+        Middle-click to flood-fill with a "queue" (i.e., a FIFO queue).
       </li>
       <li>
-        <kbd>Alt</kbd> + right-click to flood-fill with random extraction
-        queue.
+        <kbd>Alt</kbd> + right-click to flood-fill with a random extraction
+        queue. Extraction selects any element with equal probability.
+      </li>
+      <li>
+        <kbd>Alt</kbd> + middle-click to flood-fill with a deque. Extraction
+        randomly selects the front or back with equal probability.
       </li>
     </ul>
     <h2 id="speed-modifiers">Speed Modifiers</h2>

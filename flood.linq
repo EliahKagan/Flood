@@ -1,5 +1,7 @@
 <Query Kind="Statements">
+  <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>LC = LINQPad.Controls</Namespace>
+  <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>System.ComponentModel</Namespace>
   <Namespace>System.Drawing</Namespace>
@@ -173,6 +175,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         base.Dispose(disposing);
     }
 
+    private static bool AltIsPressed => (Control.ModifierKeys & Keys.Alt) != 0;
+
     private static int DecideSpeed()
         => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -335,7 +339,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             _canvas.Invalidate();
             break;
 
-        case MouseButtons.Right when (Control.ModifierKeys & Keys.Alt) != 0:
+        case MouseButtons.Right when AltIsPressed:
             await FloodFillAsync(new RandomFringe<Point>(_generator),
                                  e.Location,
                                  Color.Yellow);
@@ -345,6 +349,12 @@ internal sealed class MainPanel : TableLayoutPanel {
             await FloodFillAsync(new StackFringe<Point>(),
                                  e.Location,
                                  Color.Red);
+            break;
+
+        case MouseButtons.Middle when AltIsPressed:
+            await FloodFillAsync(new DequeFringe<Point>(_generator),
+                                 e.Location,
+                                 Color.Purple);
             break;
 
         case MouseButtons.Middle:
@@ -677,6 +687,33 @@ internal sealed class RandomFringe<T> : IFringe<T> {
     }
 
     private readonly List<T> _items = new();
+
+    private readonly Func<int, int> _generator;
+}
+
+/// <summary>
+/// A deque-based collection of vertices for graph traversal that selects the
+/// most or least recently inserted vertex with equal probability.
+/// </summary>
+/// <typeparam name="T">The vertex type.</typeparam>
+internal sealed class DequeFringe<T> : IFringe<T> {
+    internal DequeFringe(Func<int, int> generator) => _generator = generator;
+
+    /// <inheritdoc/>
+    public int Count => _deque.Count;
+
+    /// <inheritdoc/>
+    public void Insert(T vertex) => _deque.AddToBack(vertex);
+
+    /// <inheritdoc/>
+    public T Extract() => _generator(2) switch {
+        0 => _deque.RemoveFromFront(),
+        1 => _deque.RemoveFromBack(),
+        var other
+            => throw new IndexOutOfRangeException($"Need 0 or 1, got {other}.")
+    };
+
+    private readonly Deque<T> _deque = new();
 
     private readonly Func<int, int> _generator;
 }
