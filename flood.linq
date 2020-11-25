@@ -177,6 +177,11 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static bool AltIsPressed => (Control.ModifierKeys & Keys.Alt) != 0;
 
+    // FIXME: Check that this actually works.
+    private static bool SuperIsPressed
+        => System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LWin)
+        || System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.RWin);
+
     private static int DecideSpeed()
         => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -339,6 +344,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             _canvas.Invalidate();
             break;
 
+        case MouseButtons.Right when SuperIsPressed:
+            await RecursiveFloodFillAsync(e.Location, Color.Orange);
+            break;
+
         case MouseButtons.Right when AltIsPressed:
             await FloodFillAsync(new RandomFringe<Point>(_generator),
                                  e.Location,
@@ -456,6 +465,38 @@ internal sealed class MainPanel : TableLayoutPanel {
             foreach (var dest in supplier(src)) fringe.Insert(dest);
         }
 
+        --_jobs;
+        UpdateStatus();
+    }
+
+    // FIXME: If this is kept, refactor eliminate (or at least decrease) the
+    // code duplication between FloodFillAsync and RecursiveFloodFillAsync.
+    private async Task RecursiveFloodFillAsync(Point start, Color toColor)
+    {
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return;
+
+        var speed = DecideSpeed();
+        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+        var area = 0;
+
+        async Task FillFromAsync(Point src)
+        {
+            if (!_rect.Contains(src)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                return;
+
+            if (area++ % speed == 0) await Task.Delay(10);
+
+            _bmp.SetPixel(src.X, src.Y, toColor);
+            _canvas.Invalidate();
+
+            foreach (var dest in supplier(src)) await FillFromAsync(dest);
+        }
+
+        ++_jobs;
+        UpdateStatus();
+        await FillFromAsync(start);
         --_jobs;
         UpdateStatus();
     }
