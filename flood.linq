@@ -16,7 +16,7 @@
 
 #nullable enable
 
-if ((Control.ModifierKeys & Keys.Shift) != 0) {
+if (Control.ModifierKeys.HasFlag(Keys.Shift)) {
     // Use the launcher ("developer mode").
     var launcher = new Launcher(SuggestCanvasSize());
     launcher.Launch += (sender, e) => StartUi(e.Size);
@@ -175,7 +175,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         base.Dispose(disposing);
     }
 
-    private static bool AltIsPressed => (Control.ModifierKeys & Keys.Alt) != 0;
+    private static bool AltIsPressed => Control.ModifierKeys.HasFlag(Keys.Alt);
 
     // FIXME: Check that this actually works.
     private static bool SuperIsPressed
@@ -389,7 +389,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (e.Delta == 0) return; // I'm not sure if this is possible.
         ((HandledMouseEventArgs)e).Handled = true;
 
-        if ((Control.ModifierKeys & Keys.Shift) == 0) {
+        if (!Control.ModifierKeys.HasFlag(Keys.Shift)) {
             // Scrolling without Shift cycles neighbor enumeration strategies.
             if (scrollingDown)
                 _neighborEnumerationStrategies.CycleNext();
