@@ -19,11 +19,11 @@
 if (Control.ModifierKeys.HasFlag(Keys.Shift)) {
     // Use the launcher ("developer mode").
     var launcher = new Launcher(SuggestCanvasSize());
-    launcher.Launch += (sender, e) => StartUi(e.Size);
-    launcher.Show();
+    launcher.Launch += launcher_Launch;
+    launcher.Display();
 } else {
     // Proceed immediately with the automatically suggested size.
-    StartUi(SuggestCanvasSize());
+    new MainPanel(SuggestCanvasSize()).Display();
 }
 
 static Size SuggestCanvasSize()
@@ -34,8 +34,10 @@ static Size SuggestCanvasSize()
     return new(width: sideLength, height: sideLength);
 }
 
-static void StartUi(Size canvasSize)
-    => new MainPanel(canvasSize).Dump("Flood Fill Visualization");
+static void launcher_Launch(Launcher sender, LauncherEventArgs e)
+    => new MainPanel(e.Size) {
+        ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
+    }.Display();
 
 /// <summary>
 /// Provides a canvas size for the <see cref="Launcher.Launch"/> event.
@@ -69,17 +71,20 @@ internal sealed class Launcher {
         _heightBox = new(_height.ToString()) { Width = textBoxWidth };
 
         _panel = new(horizontal: false,
-                     new LC.FieldSet("Custom Canvas Size", CreateTable()),
-                     _launch);
+            new LC.FieldSet("Custom Canvas Size", CreateSizeTable()),
+            new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
+            _launch);
 
         SubscribePrivateHandlers();
     }
 
     internal event LauncherEventHandler? Launch = null;
 
-    internal void Show() => _panel.Dump("Developer Mode Launcher");
+    internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
-    private LC.Table CreateTable()
+    internal void Display() => _panel.Dump("Developer Mode Launcher");
+
+    private LC.Table CreateSizeTable()
     {
         var table = new LC.Table(noBorders: true,
                                  cellPaddingStyle: ".3em .3em",
@@ -125,6 +130,9 @@ internal sealed class Launcher {
 
     private readonly LC.TextBox _heightBox;
 
+    private readonly LC.CheckBox _showPluginFormInTaskbar =
+        new LC.CheckBox("Show PluginForm in Taskbar");
+
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
     private readonly LC.StackPanel _panel;
@@ -169,6 +177,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         SubscribeEventHandlers();
     }
 
+    internal bool ShowParentInTaskbar { get; init; } = false;
+
+    internal void Display() => this.Dump("Flood Fill Visualization");
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) _components.Dispose();
@@ -192,7 +204,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private TableLayoutPanel CreateToggles()
     {
-        var toggles = new TableLayoutPanel() {
+        var toggles = new TableLayoutPanel {
             RowCount = 1,
             ColumnCount = 2,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
@@ -311,11 +323,14 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void MainPanel_HandleCreated(object? sender, EventArgs e)
     {
+        var pluginForm = (Form)Parent;
+
+        if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
+
         // Update "Speed" in status from modifier keys, crisply when
         // reasonable. Unlike with an ordinary form, users can't readily see if
         // a PluginForm is active (and it starts inactive) so update it, albeit
         // slower, even when not.
-        var pluginForm = (Form)Parent;
         pluginForm.KeyPreview = true;
         pluginForm.KeyDown += delegate { UpdateStatus(); };
         pluginForm.KeyUp += delegate { UpdateStatus(); };
