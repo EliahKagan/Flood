@@ -1,5 +1,7 @@
 <Query Kind="Statements">
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
+  <Namespace>Key = System.Windows.Input.Key</Namespace>
+  <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
   <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
@@ -189,10 +191,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static bool AltIsPressed => Control.ModifierKeys.HasFlag(Keys.Alt);
 
-    // FIXME: Check that this actually works.
     private static bool SuperIsPressed
-        => System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LWin)
-        || System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.RWin);
+        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
 
     private static int DecideSpeed()
         => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
