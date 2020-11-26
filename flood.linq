@@ -339,6 +339,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (!_rect.Contains(e.Location)) return;
 
         switch (e.Button) {
+        case MouseButtons.Left when SuperIsPressed:
+            ImmediateFill(e.Location, Color.Black);
+            break;
+
         case MouseButtons.Left:
             _bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
             _canvas.Invalidate();
@@ -499,6 +503,35 @@ internal sealed class MainPanel : TableLayoutPanel {
         await FillFromAsync(start);
         --_jobs;
         UpdateStatus();
+    }
+
+    // FIXME: Right now this is implemented analogously to
+    // RecursiveFloodFullAsync, to test whether stack overflow is averted there
+    // only due to the use of async/await (since the call stack at runtime is
+    // built up separately across continuations). At minimum, this should use
+    // LockBits. Better would be to use an API function; if Bitmap doesn't
+    // provide one, then ExtFloodFill (in the Windows API) could be used.
+    private void ImmediateFill(Point start, Color toColor)
+    {
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return;
+
+        void FillFrom(Point src)
+        {
+            if (!_rect.Contains(src)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                return;
+
+            _bmp.SetPixel(src.X, src.Y, toColor);
+
+            FillFrom(src.Go(Direction.Left));
+            FillFrom(src.Go(Direction.Right));
+            FillFrom(src.Go(Direction.Up));
+            FillFrom(src.Go(Direction.Down));
+        }
+
+        FillFrom(start);
+        _canvas.Invalidate();
     }
 
     private readonly IContainer _components = new Container();
