@@ -2,18 +2,45 @@
 <html lang="en">
   <head>
     <title>Flood - Help</title>
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="help.css" />
   </head>
   <body>
     <h2 id="table-of-contents">Table of Contents</h2>
     <ol>
       <li>
-        <a href="#basic-actions">Basic Actions</a>
+        <a href="#drawing">
+          Drawing
+        </a>
       </li>
       <li>
-        <a href="#speed-modifiers">Speed Modifiers</a>
+        <a href="#fills">
+          Fills
+        </a>
+        <ul>
+          <li>
+            <a href="#stack">Stack (LIFO)</a>
+          </li>
+          <li>
+            <a href="#queue">Queue (FIFO)</a>
+          </li>
+          <li>
+            <a href="#random">Random</a>
+          </li>
+          <li>
+            <a href="#deque">Deque</a>
+          </li>
+        </ul>
       </li>
       <li>
-        <a href="#basic-actions">Neighbor Enumeration Strategies</a>
+        <a href="#speed-modifiers">
+          Speed Modifiers
+        </a>
+      </li>
+      <li>
+        <a href="#neighbor-enumeration-strategies">
+          Neighbor Enumeration Strategies
+        </a>
         <ul>
           <li>
             <a href="#uniform">Uniform</a>
@@ -34,7 +61,7 @@
     <h2 id="introduction">Flood-Fill Visualization</h2>
     <p>
       A flood fill is a sparse-graph traversal in which both adjacency and
-      visitation information is implicit in the image being read and written.
+      visitation information are implicit in the image being read and written.
       When a flood fill is performed atomically (no other changes to the image
       while the fill is happening), all variations produce the same results.
       But the order in which pixels are found and filled depends on:
@@ -45,49 +72,100 @@
         (pixel locations) that have been discovered but are not yet filled.
         This is most often a stack (last-in, first-out) or "queue" (first-in,
         first-out), but any kind of generalized queue will work. See
-        <a href="#basic-actions">Basic Actions</a>.
+        <a href="#fills">Fills</a>.
       </li>
       <li>
-        The order in which neighboring verties (pixel locations) that may need
+        The order in which neighboring vertices (pixel locations) that may need
         to be filled are checked and added to the fringe. This is especially
         significant when a stack is used for the fringe, because with a stack,
         many steps often progress between when a vertex (pixel location) is
-        added to the fringe and when it is actually filled. See
-        <a href="#basic-actions">Neighbor Enumeration Strategies</a>.
+        added to the fringe and when it is actually colored. See
+        <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
+        Strategies</a>.
       </li>
     </ul>
     <p>
-      This is an early version, perhaps even a prototype for a different design.
-      Fill type and configuration can only be speified through shortcuts, not
-      menus. Besides fixing that, other accessibility improvements should be
-      made: at minimum, it should be no harder to use without a mouse (or
-      limited mousing) than popular raster graphics editors. This also only
-      runs on Windows, which is not ideal.
+      This is an early version, perhaps even a prototype for a different
+      design. Fill type and configuration can only be specified through
+      shortcuts, not menus. Besides fixing that, other accessibility
+      improvements should be made: at minimum, it should be no harder to use
+      without a mouse (or limited mousing) than popular raster graphics
+      editors. This also only runs on Windows, which is not ideal.
     </p>
-    <h2 id="basic-actions">Basic Actions</h2>
-    <!-- TODO: Add expanded explanations, converting to paragraphs. -->
-    <ul>
-      <li>
-        Left-click and drag to draw on the canvas.
-      </li>
-      <li>
-        Right-click to flood-fill with a stack (a LIFO queue).
-      </li>
-      <li>
-        Middle-click to flood-fill with a "queue" (i.e., a FIFO queue).
-      </li>
-      <li>
-        <kbd>Alt</kbd> + right-click to flood-fill with a random extraction
-        queue. Extraction selects any element with equal probability.
-      </li>
-      <li>
-        <kbd>Alt</kbd> + middle-click to flood-fill with a deque. Extraction
-        randomly selects the front or back with equal probability.
-      </li>
-    </ul>
+    <h2 id="drawing">Drawing</h2>
+    <p>
+      To draw in <span class="box box-black"></span>&#8239;black on the canvas,
+      click and drag with the left mouse button.
+    </p>
+    <p>
+      The breadth of the curve drawn is 1 pixel. (Clicking without dragging
+      draws a single pixel.)
+    </p>
+    <h2 id="fills">Fills</h2>
+    <p>
+      The different fills are identified by the data structure used for the
+      <em>fringe</em>. This determines the order in which vertices (pixel
+      locations) are <em>taken out</em> of the fringe. (For the order in which
+      they are <em>put in</em>, see
+      <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
+      Strategies</a>.)
+    </p>
+    <h3 id="stack">Stack (LIFO)</h3>
+    <p>
+      Use <strong>right-click</strong> to flood-fill with a stack. This data
+      structure is last-in first-out (LIFO).
+    </p>
+    <p>
+      Stack fill uses <span class="box box-red"></span>&#8239;red.
+    </p>
+    <h3 id="queue">Queue (FIFO)</h3>
+    <p>
+      Use <strong>middle click</strong> to flood-fill with a queue. This data
+      structure is first-in first-out (FIFO).
+    </p>
+    <p>
+      Queue fill uses <span class="box box-blue"></span>&#8239;blue.
+    </p>
+    <p>
+      The word "queue" has two common meanings. In the broad sense, a queue is
+      any data structure that supports insertion as well as extraction of
+      inserted elements. (It is in this sense that a priority queue is a
+      queue.) In that sense, all the data types used as fringes, in this
+      program or any program, are queues.
+    </p>
+    <p>
+      Here I mean "queue" in the narrow sense: a FIFO queue, which supports
+      breadth-first traversals in a manner analogous to how stacks ("LIFO
+      queues") support depth-first traversals.
+    </p>
+    <h3 id="random">Random</h3>
+    <p>
+      Use <strong><kbd>Alt</kbd>+right-click</strong> to flood-fill with a
+      random extraction queue. Extraction selects any element with equal
+      probability.
+    </p>
+    <p>
+      Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
+    </p>
+    <h3 id="deque">Deque</h3>
+    <p>
+      Use <strong><kbd>Alt</kbd>+middle-click</strong> to flood-fill with a
+      deque, where extraction randomly selects the front or back, each with 50%
+      probability.
+    </p>
+    <p>
+      Deque fill uses <span class="box box-purple"></span>&#8239;purple.
+    </p>
+    <p>
+      Picking randomly between the front and back of a deque is, of course,
+      <em>not</em> an operation provided by deques. Deques (double-ended
+      queues) provide two extraction operations. So the data structure being
+      used here as the fringe is not, strictly speaking, a deque, but rather is
+      implemented, in a straightforward way, <em>in terms of</em> a deque.
+    </p>
     <h2 id="speed-modifiers">Speed Modifiers</h2>
     <p>
-      By default, fills proceeed at a rate of 5 pixels per frame. You can
+      By default, fills proceed at a rate of 5 pixels per frame. You can
       override that by pressing:
     </p>
     <ul>
@@ -105,6 +183,12 @@
     <p>
       Modifiers affect the speed of <strong>newly started fills</strong>. That
       way, you can have concurrent fills proceeding at different speeds.
+    </p>
+    <p>
+      The <em>speed</em> shown in the status bar (immediately below the canvas)
+      is therefore <em>not</em> necessarily the speed of any of the currently
+      running fills, but rather the speed a fill started now would use, so long
+      as you're still pressing the same modifier keys.
     </p>
     <h2 id="neighbor-enumeration-strategies">
       Neighbor Enumeration Strategies
@@ -139,13 +223,15 @@
       Substrategies are abbreviated by the first letters of each direction, in
       the order in which neighbors are enumerated. The default sub-strategy is
       <strong>LRUD</strong>.
+      <!-- TODO: Style "LRUD" with dotted underline and give it title text. -->
     </p>
     <h3 id="random-per-fill">Random per fill</h3>
     <p>
       Neighbors are enumerated in an order that is uniform in each fill, but
-      different&mdash;and randomly chosen&mdash;each time a fill is peformed.
+      different&mdash;and randomly chosen&mdash;each time a fill is performed.
       This is thus the same as using the <a href="#uniform">Uniform</a>
-      strategy an choosing a random sub-strategy immediately before every fill.
+      strategy and choosing a random sub-strategy immediately before every
+      fill.
     </p>
     <h3 id="random-each-time">Random always</h3>
     <p>

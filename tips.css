@@ -13,20 +13,6 @@ thead {
   color: #eee;
 }
 
-/* Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
- * but simplified and also modified so elements take up a little less space.
- */
-kbd {
-  background-color: #eee;
-  border: 1px solid #b4b4b4;
-  border-radius: 1px;
-  color: #333;
-  display: inline-block;
-  font-size: .85em;
-  font-weight: 700;
-  padding: 1px 2px;
-}
-
 .cheat-sheet {
   margin-left: -10px;
   margin-top: -15px;
