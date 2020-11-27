@@ -58,6 +58,10 @@ kbd {
   background-color: purple;
 }
 
+.color-box-recursive-fill {
+  background-color: orange;
+}
+
 .number-cell {
   text-align: right;
 }
