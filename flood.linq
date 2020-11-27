@@ -7,6 +7,7 @@
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>System.ComponentModel</Namespace>
   <Namespace>System.Drawing</Namespace>
+  <Namespace>System.Drawing.Imaging</Namespace>
   <Namespace>System.Runtime.InteropServices</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
@@ -520,32 +521,29 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
-    // FIXME: Right now this is implemented analogously to
-    // RecursiveFloodFullAsync, to test whether stack overflow is averted there
-    // only due to the use of async/await (since the call stack at runtime is
-    // built up separately across continuations). At minimum, this should use
-    // LockBits. Better would be to use an API function; if Bitmap doesn't
-    // provide one, then ExtFloodFill (in the Windows API) could be used.
     private void ImmediateFill(Point start, Color toColor)
     {
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
-        if (fromArgb == toColor.ToArgb()) return;
+        var toArgb = toColor.ToArgb();
 
-        void FillFrom(Point src)
-        {
-            if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-                return;
+        using (var lb = new LockedBits(_bmp, _rect)) {
+            var fromArgb = lb[start.X, start.Y];
+            if (fromArgb == toArgb) return;
 
-            _bmp.SetPixel(src.X, src.Y, toColor);
+            var fringe = new Stack<(int x, int y)>();
 
-            FillFrom(src.Go(Direction.Left));
-            FillFrom(src.Go(Direction.Right));
-            FillFrom(src.Go(Direction.Up));
-            FillFrom(src.Go(Direction.Down));
+            for (fringe.Push((start.X, start.Y)); fringe.Count != 0; ) {
+                var (x, y) = fringe.Pop();
+                if (!lb.Has(x, y) || lb[x, y] != fromArgb) continue;
+
+                lb[x, y] = toArgb;
+
+                fringe.Push((x - 1, y));
+                fringe.Push((x + 1, y));
+                fringe.Push((x, y - 1));
+                fringe.Push((x, y + 1));
+            }
         }
 
-        FillFrom(start);
         _canvas.Invalidate();
     }
 
@@ -1108,4 +1106,52 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
         => Array.ConvertAll(_values, converter);
 
     private static readonly T[] _values = Enum.GetValues<T>();
+}
+
+/// <summary>
+/// A specialized 2-dimensional span managing lifetime and access to a
+/// region in a 32-bit ARGB bitmap image.
+/// </summary>
+internal readonly ref struct LockedBits {
+    internal LockedBits(Bitmap bmp, Rectangle rect)
+    {
+        _bmp = bmp;
+        _metadata = _bmp.LockBits(rect,
+                                  ImageLockMode.ReadWrite,
+                                  PixelFormat.Format32bppArgb);
+        Width = _metadata.Width;
+        Height = _metadata.Height;
+        unsafe {
+            _argbs = new(_metadata.Scan0.ToPointer(), Width * Height);
+        }
+    }
+
+    internal void Dispose() => _bmp.UnlockBits(_metadata);
+
+    internal int this[int x, int y]
+    {
+        get => _argbs[GetIndex(x, y)];
+        set => _argbs[GetIndex(x, y)] = value;
+    }
+
+    internal int Width { get; }
+
+    internal int Height { get; }
+
+    internal bool Has(int x, int y) => HasX(x) && HasY(y);
+
+    private bool HasX(int x) => 0 <= x && x < Width;
+
+    private bool HasY(int y) => 0 <= y && y < Height;
+
+    private int GetIndex(int x, int y)
+        => Has(x, y)
+            ? y * Width + x
+            : throw new IndexOutOfRangeException("Coordinates out of range.");
+
+    private readonly Bitmap _bmp;
+
+    private readonly BitmapData _metadata;
+
+    private readonly Span<int> _argbs;
 }
