@@ -8,14 +8,13 @@ td, th {
   white-space: nowrap;
 }
 
+tfoot {
+  text-align: center;
+}
+
 thead {
   background-color: #333;
   color: #eee;
-}
-
-.subheading {
-  background-color: lightgray;
-  color: black;
 }
 
 .cheat-sheet {
@@ -56,4 +55,15 @@ thead {
 
 .number-cell {
   text-align: right;
+}
+
+.standalone {
+  background-color: #eef;
+  color: black;
+  text-align: center;
+}
+
+.subheading {
+  background-color: lightgray;
+  color: black;
 }

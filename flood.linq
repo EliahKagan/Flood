@@ -356,7 +356,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         switch (e.Button) {
         case MouseButtons.Left when SuperIsPressed:
-            ImmediateFill(e.Location, Color.Black);
+            InstantFill(e.Location, Color.Black);
             break;
 
         case MouseButtons.Left:
@@ -453,7 +453,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                                         WebBrowserDocumentCompletedEventArgs e)
     {
         var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
-        var newSize = new SizeF(width: width * 1.05f, height: height * 1.22f);
+        var newSize = new SizeF(width: width * 1.05f, height: height * 1.18f);
         _tips.Size = Size.Round(newSize);
     }
 
@@ -521,7 +521,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
-    private void ImmediateFill(Point start, Color toColor)
+    private void InstantFill(Point start, Color toColor)
     {
         var toArgb = toColor.ToArgb();
 
