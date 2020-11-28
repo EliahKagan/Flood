@@ -1,3 +1,8 @@
+abbr {
+  background-color: #ffc;
+  text-decoration: none;
+}
+
 .box {
   border: 1px solid black;
   display: inline-block;
@@ -23,4 +28,20 @@
 
 .box-purple {
   background-color: purple;
+}
+
+.box-orange {
+  background-color: orange;
+}
+
+.proselike {
+  margin: 10px 0;
+}
+
+.toc-section {
+  margin: 8px 0;
+}
+
+.toc-subsection {
+  margin: 3px 0;
 }

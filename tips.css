@@ -8,6 +8,10 @@ td, th {
   white-space: nowrap;
 }
 
+tfoot {
+  text-align: center;
+}
+
 thead {
   background-color: #333;
   color: #eee;
@@ -20,11 +24,12 @@ thead {
 
 .color-box {
   border: 1px solid black;
+  display: inline-block;
   height: 1em;
   width: 1em;
 }
 
-.color-box-draw {
+.color-box-draw, .color-box-instant-fill {
   background-color: black;
 }
 
@@ -44,6 +49,21 @@ thead {
   background-color: purple;
 }
 
+.color-box-recursive-fill {
+  background-color: orange;
+}
+
 .number-cell {
   text-align: right;
+}
+
+.standalone {
+  background-color: #eef;
+  color: black;
+  text-align: center;
+}
+
+.subheading {
+  background-color: lightgray;
+  color: black;
 }

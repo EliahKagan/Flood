@@ -1,10 +1,13 @@
 <Query Kind="Statements">
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
+  <Namespace>Key = System.Windows.Input.Key</Namespace>
+  <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
   <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>System.ComponentModel</Namespace>
   <Namespace>System.Drawing</Namespace>
+  <Namespace>System.Drawing.Imaging</Namespace>
   <Namespace>System.Runtime.InteropServices</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
@@ -194,6 +197,9 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static bool AltIsPressed => Control.ModifierKeys.HasFlag(Keys.Alt);
 
+    private static bool SuperIsPressed
+        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
+
     private static int DecideSpeed()
         => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -354,9 +360,17 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (!_rect.Contains(e.Location)) return;
 
         switch (e.Button) {
+        case MouseButtons.Left when SuperIsPressed:
+            InstantFill(e.Location, Color.Black);
+            break;
+
         case MouseButtons.Left:
             _bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
             _canvas.Invalidate();
+            break;
+
+        case MouseButtons.Right when SuperIsPressed:
+            await RecursiveFloodFillAsync(e.Location, Color.Orange);
             break;
 
         case MouseButtons.Right when AltIsPressed:
@@ -444,7 +458,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                                         WebBrowserDocumentCompletedEventArgs e)
     {
         var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
-        var newSize = new SizeF(width: width * 1.05f, height: height * 1.22f);
+        var newSize = new SizeF(width: width * 1.05f, height: height * 1.18f);
         _tips.Size = Size.Round(newSize);
     }
 
@@ -478,6 +492,64 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         --_jobs;
         UpdateStatus();
+    }
+
+    // FIXME: If this is kept, refactor eliminate (or at least decrease) the
+    // code duplication between FloodFillAsync and RecursiveFloodFillAsync.
+    private async Task RecursiveFloodFillAsync(Point start, Color toColor)
+    {
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return;
+
+        var speed = DecideSpeed();
+        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+        var area = 0;
+
+        async Task FillFromAsync(Point src)
+        {
+            if (!_rect.Contains(src)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                return;
+
+            if (area++ % speed == 0) await Task.Delay(10);
+
+            _bmp.SetPixel(src.X, src.Y, toColor);
+            _canvas.Invalidate();
+
+            foreach (var dest in supplier(src)) await FillFromAsync(dest);
+        }
+
+        ++_jobs;
+        UpdateStatus();
+        await FillFromAsync(start);
+        --_jobs;
+        UpdateStatus();
+    }
+
+    private void InstantFill(Point start, Color toColor)
+    {
+        var toArgb = toColor.ToArgb();
+
+        using (var lb = new LockedBits(_bmp, _rect)) {
+            var fromArgb = lb[start.X, start.Y];
+            if (fromArgb == toArgb) return;
+
+            var fringe = new Stack<(int x, int y)>();
+
+            for (fringe.Push((start.X, start.Y)); fringe.Count != 0; ) {
+                var (x, y) = fringe.Pop();
+                if (!lb.Has(x, y) || lb[x, y] != fromArgb) continue;
+
+                lb[x, y] = toArgb;
+
+                fringe.Push((x - 1, y));
+                fringe.Push((x + 1, y));
+                fringe.Push((x, y - 1));
+                fringe.Push((x, y + 1));
+            }
+        }
+
+        _canvas.Invalidate();
     }
 
     private readonly IContainer _components = new Container();
@@ -1039,4 +1111,52 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
         => Array.ConvertAll(_values, converter);
 
     private static readonly T[] _values = Enum.GetValues<T>();
+}
+
+/// <summary>
+/// A specialized 2-dimensional span managing lifetime and access to a
+/// region in a 32-bit ARGB bitmap image.
+/// </summary>
+internal readonly ref struct LockedBits {
+    internal LockedBits(Bitmap bmp, Rectangle rect)
+    {
+        _bmp = bmp;
+        _metadata = _bmp.LockBits(rect,
+                                  ImageLockMode.ReadWrite,
+                                  PixelFormat.Format32bppArgb);
+        Width = _metadata.Width;
+        Height = _metadata.Height;
+        unsafe {
+            _argbs = new(_metadata.Scan0.ToPointer(), Width * Height);
+        }
+    }
+
+    internal void Dispose() => _bmp.UnlockBits(_metadata);
+
+    internal int this[int x, int y]
+    {
+        get => _argbs[GetIndex(x, y)];
+        set => _argbs[GetIndex(x, y)] = value;
+    }
+
+    internal int Width { get; }
+
+    internal int Height { get; }
+
+    internal bool Has(int x, int y) => HasX(x) && HasY(y);
+
+    private bool HasX(int x) => 0 <= x && x < Width;
+
+    private bool HasY(int y) => 0 <= y && y < Height;
+
+    private int GetIndex(int x, int y)
+        => Has(x, y)
+            ? y * Width + x
+            : throw new IndexOutOfRangeException("Coordinates out of range.");
+
+    private readonly Bitmap _bmp;
+
+    private readonly BitmapData _metadata;
+
+    private readonly Span<int> _argbs;
 }
