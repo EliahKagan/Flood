@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
   <head>
     <title>Flood - Help</title>
@@ -141,8 +142,9 @@
       insertion. This produces visible behavior that some people find
       unintuitive: since the <a href="#neighbor-enumeration-strategies">order
       in which neighbors are enumerated</a> is the reverse of the order in
-      which they are visited, <span class="permutation">LRUD</span> goes down
-      and up (when it can) before it goes right and left.
+      which they are visited,
+      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+      goes down and up (when it can) before it goes right and left.
     </p>
     <p>
       This corresponds to the need, when converting a recursive left-to-right
@@ -214,9 +216,10 @@
     </p>
     <p>
       Thus a recursive fill taking neighbors in (for example)
-      <span class="permutation">LRUD</span> order has the same observable
-      behavior as a stack fill taking neighbors in
-      <span class="permutation">DURL</span> order.
+      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+      order has the same observable behavior as a stack fill taking neighbors in
+      <abbr title="&#129095; &#129093; &#129094; &#129092; (down, up, right, left)">DURL</abbr>
+      order.
     </p>
     <p>
       Although <a href="#queue">queue fill</a> also visits neighbors in the
@@ -335,8 +338,9 @@
       The choice of algorithm, data structure, and neighbor enumeration order
       is thus an implementation detail that does not affect any observable
       behavior. As of this writing, it happens to be a flood fill with a stack,
-      enumerating neighbors in <span class="permutation">LRUD</span> order.
-      (But there are other differences between this and
+      enumerating neighbors in
+      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+      order. (But there are other differences between this and
       <a href="#stack">stack fill</a>, related to performance.)
     </p>
     <h1 id="speed-modifiers">Speed Modifiers</h1>
@@ -398,7 +402,7 @@
       how many permutations of Left, Right, Up, and Down there are.
       Sub-strategies are abbreviated by the first letters of each direction, in
       the order in which neighbors are enumerated. The default sub-strategy is
-      <span class="permutation">LRUD</span>.
+      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
     </p>
     <h2 id="random-per-fill">Random per fill</h2>
     <p>

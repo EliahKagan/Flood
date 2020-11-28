@@ -1,3 +1,8 @@
+abbr {
+  background-color: #ffc;
+  text-decoration: none;
+}
+
 .box {
   border: 1px solid black;
   display: inline-block;
