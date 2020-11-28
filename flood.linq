@@ -84,6 +84,11 @@ internal sealed class Launcher {
 
     internal void Display() => _panel.Dump("Developer Mode Launcher");
 
+    private static void Disable(params LC.Control[] controls)
+    {
+        foreach (var control in controls) control.Enabled = false;
+    }
+
     private LC.Table CreateSizeTable()
     {
         var table = new LC.Table(noBorders: true,
@@ -111,7 +116,7 @@ internal sealed class Launcher {
 
     private void launch_Click(object? sender, EventArgs e)
     {
-        _widthBox.Enabled = _heightBox.Enabled = _launch.Enabled = false;
+        Disable(_widthBox, _heightBox, _launch, _showPluginFormInTaskbar);
         Launch?.Invoke(this, new(width: _width, height: _height));
     }
 
