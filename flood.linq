@@ -39,6 +39,7 @@ static Size SuggestCanvasSize()
 
 static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     => new MainPanel(e.Size) {
+        DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
     }.Display();
 
@@ -67,14 +68,16 @@ internal delegate void LauncherEventHandler(Launcher sender,
 internal sealed class Launcher {
     internal Launcher(Size defaultSize)
     {
-        (_width, _height) = defaultSize;
+        _width = defaultSize.Width;
+        _height = defaultSize.Height;
 
-        const string textBoxWidth = "5em";
-        _widthBox = new(_width.ToString()) { Width = textBoxWidth };
-        _heightBox = new(_height.ToString()) { Width = textBoxWidth };
+        _widthBox = CreateNumberBox(_width);
+        _heightBox = CreateNumberBox(_height);
+        _delayBox = CreateNumberBox(_delay);
 
         _panel = new(horizontal: false,
             new LC.FieldSet("Custom Canvas Size", CreateSizeTable()),
+            new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             _launch);
 
@@ -83,9 +86,20 @@ internal sealed class Launcher {
 
     internal event LauncherEventHandler? Launch = null;
 
+    internal int DelayInMilliseconds
+        => _delay is int delay
+            ? delay
+            : throw new NotSupportedException(
+                "Bug: Launch button enabled without delay set.");
+
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
     internal void Display() => _panel.Dump("Developer Mode Launcher");
+
+    private const string NumberBoxWidth = "5em";
+
+    private static LC.TextBox CreateNumberBox(int? initialValue)
+        => new(initialValue.ToString()) { Width = NumberBoxWidth };
 
     private static void Disable(params LC.Control[] controls)
     {
@@ -104,39 +118,72 @@ internal sealed class Launcher {
         return table;
     }
 
+    private LC.StackPanel CreateDelayPanel()
+    {
+        var table = new LC.Table(noBorders: true,
+                                 cellPaddingStyle: ".3em .3em",
+                                 cellVerticalAlign: "middle");
+
+        table.Rows.Add(new LC.Label("Delay(ms)"), _delayBox);
+
+        var label = new LC.Label("This is the minimum delay between frames.");
+
+        return new(horizontal: false, table, label);
+    }
+
     private void SubscribePrivateHandlers()
     {
         _widthBox.TextInput += widthBox_TextInput;
         _heightBox.TextInput += heightBox_TextInput;
+        _delayBox.TextInput += delayBox_TextInput;
         _launch.Click += launch_Click;
     }
 
     private void widthBox_TextInput(object? sender, EventArgs e)
-        => HandleInput(_widthBox, ref _width);
+        => HandleNumberInput(_widthBox, ref _width);
 
     private void heightBox_TextInput(object? sender, EventArgs e)
-        => HandleInput(_heightBox, ref _height);
+        => HandleNumberInput(_heightBox, ref _height);
+
+    private void delayBox_TextInput(object? sender, EventArgs e)
+        => HandleNumberInput(_delayBox, ref _delay);
 
     private void launch_Click(object? sender, EventArgs e)
     {
-        Disable(_widthBox, _heightBox, _launch, _showPluginFormInTaskbar);
-        Launch?.Invoke(this, new(width: _width, height: _height));
+        if (_width is not int width || _height is not int height) {
+            throw new NotSupportedException(
+                "Bug: Launch button enabled without width and height set.");
+        }
+
+        DisableInteractiveControls();
+        Launch?.Invoke(this, new(width: width, height: height));
     }
 
-    private void HandleInput(LC.TextBox sender, ref int sink)
+    private void HandleNumberInput(LC.TextBox sender, ref int? sink)
     {
-        const int invalid = -1;
+        if (int.TryParse(sender.Text, out var value) && value > 0)
+            sink = value;
+        else
+            sink = null;
 
-        sink = int.TryParse(sender.Text, out var value) && value > 0
-                ? value
-                : invalid;
-
-        _launch.Enabled = _width != invalid && _height != invalid;
+        UpdateLaunchButton();
     }
+
+    private void UpdateLaunchButton()
+        => _launch.Enabled = _width is int && _height is int && _delay is int;
+
+    private void DisableInteractiveControls()
+        => Disable(_widthBox,
+                   _heightBox,
+                   _delayBox,
+                   _launch,
+                   _showPluginFormInTaskbar);
 
     private readonly LC.TextBox _widthBox;
 
     private readonly LC.TextBox _heightBox;
+
+    private readonly LC.TextBox _delayBox;
 
     private readonly LC.CheckBox _showPluginFormInTaskbar =
         new LC.CheckBox("Show PluginForm in Taskbar");
@@ -145,9 +192,11 @@ internal sealed class Launcher {
 
     private readonly LC.StackPanel _panel;
 
-    private int _width;
+    private int? _width;
 
-    private int _height;
+    private int? _height;
+
+    private int? _delay = MainPanel.DefaultDelayInMilliseconds;
 }
 
 /// <summary>
@@ -155,6 +204,8 @@ internal sealed class Launcher {
 /// expandable/collapsable tips.
 /// </summary>
 internal sealed class MainPanel : TableLayoutPanel {
+    internal const int DefaultDelayInMilliseconds = 10;
+
     internal MainPanel(Size canvasSize)
     {
         _nonessentialTimer = new(_components) { Interval = 110 };
@@ -184,6 +235,9 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         SubscribeEventHandlers();
     }
+
+    internal int DelayInMilliseconds { get; init; } =
+        DefaultDelayInMilliseconds;
 
     internal bool ShowParentInTaskbar { get; init; } = false;
 
@@ -482,7 +536,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 continue;
 
-            if (area++ % speed == 0) await Task.Delay(10);
+            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate();
@@ -494,8 +548,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
-    // FIXME: If this is kept, refactor eliminate (or at least decrease) the
-    // code duplication between FloodFillAsync and RecursiveFloodFillAsync.
+    // TODO: Refactor to eliminate (or at least decrease) code duplication
+    // between FloodFillAsync and RecursiveFloodFillAsync.
     private async Task RecursiveFloodFillAsync(Point start, Color toColor)
     {
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
@@ -511,7 +565,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 return;
 
-            if (area++ % speed == 0) await Task.Delay(10);
+            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate();
