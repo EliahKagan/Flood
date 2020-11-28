@@ -13,6 +13,11 @@ thead {
   color: #eee;
 }
 
+.subheading {
+  background-color: lightgray;
+  color: black;
+}
+
 .cheat-sheet {
   margin-left: -10px;
   margin-top: -15px;
@@ -20,11 +25,12 @@ thead {
 
 .color-box {
   border: 1px solid black;
+  display: inline-block;
   height: 1em;
   width: 1em;
 }
 
-.color-box-draw {
+.color-box-draw, .color-box-instant-fill {
   background-color: black;
 }
 
