@@ -24,3 +24,19 @@
 .box-purple {
   background-color: purple;
 }
+
+.box-orange {
+  background-color: orange;
+}
+
+.proselike {
+  margin: 10px 0;
+}
+
+.toc-section {
+  margin: 8px 0;
+}
+
+.toc-subsection {
+  margin: 3px 0;
+}
