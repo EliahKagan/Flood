@@ -4,8 +4,8 @@
   <head>
     <meta charset="utf-8">
     <title>Flood - Help</title>
-    <link rel="stylesheet" href="shared.css" />
-    <link rel="stylesheet" href="help.css" />
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="help.css">
   </head>
   <body>
     <h1 id="toc">Table of Contents</h1>
@@ -66,7 +66,7 @@
         </ol>
       </li>
     </ol>
-    <hr/>
+    <hr>
     <h1 id="introduction">Flood-Fill Visualization</h1>
     <p>
       A flood fill is a sparse-graph traversal in which both adjacency and
@@ -77,11 +77,11 @@
     </p>
     <ul>
       <li class="proselike">
-        The data structure used for the <em>fringe</em>, i.e., the vertices
-        (pixel locations) that have been discovered but are not yet filled.
-        This is most often a stack (last-in, first-out) or "queue" (first-in,
-        first-out), but any kind of generalized queue will work. See
-        <a href="#fills">Fills</a>.
+        The data structure used for the <dfn>fringe</dfn>: the collection of
+        vertices (pixel locations) that have been discovered but are not yet
+        filled. This is most often a stack (last-in, first-out) or
+        &ldquo;queue&rdquo; (first-in, first-out), but any kind of generalized
+        queue will work. See <a href="#fills">Fills</a>.
       </li>
       <li class="proselike">
         The order in which neighboring vertices (pixel locations) that may need
@@ -131,9 +131,8 @@
     </p>
     <h2 id="stack">Stack (LIFO)</h2>
     <p>
-      Use <strong>right click</strong> to flood-fill with a stack. This data
-      structure is last-in first-out (LIFO). The filled area expands
-      depth-first.
+      Use <b>right click</b> to flood-fill with a stack. This data structure is
+      last-in first-out (LIFO). The filled area expands depth-first.
     </p>
     <p>
       Stack fill uses <span class="box box-red"></span>&#8239;red.
@@ -155,39 +154,36 @@
     </p>
     <h2 id="queue">Queue (FIFO)</h2>
     <p>
-      Use <strong>middle click</strong> to flood-fill with a queue. This data
-      structure is first-in first-out (FIFO). The filled area expands
-      breadth-first.
+      Use <b>middle click</b> to flood-fill with a queue. This data structure
+      is first-in first-out (FIFO). The filled area expands breadth-first.
     </p>
     <p>
       Queue fill uses <span class="box box-blue"></span>&#8239;blue.
     </p>
     <p>
-      The word "queue" has two common meanings. In the broad sense, a queue is
-      any data structure that supports insertion as well as extraction of
-      inserted elements. (It is in this sense that a priority queue is a
-      queue.) In that sense, all the data types used as fringes, in this
-      program or any program, are queues.
+      The word &ldquo;queue&rdquo; has two common meanings. In the broad sense,
+      a queue is any data structure that supports insertion as well as
+      extraction of inserted elements. (It is in this sense that a priority
+      queue is a queue.) In that sense, all the data types used as fringes, in
+      this program or any program, are queues.
     </p>
     <p>
-      Here I mean "queue" in the narrow sense: a FIFO queue, which supports
-      breadth-first traversals in a manner analogous to how stacks ("LIFO
-      queues") support depth-first traversals.
+      Here I mean &ldquo;queue&rdquo; in the narrow sense: a FIFO queue, which
+      supports breadth-first traversals in a manner analogous to how stacks
+      (&ldquo;LIFO queues&rdquo;) support depth-first traversals.
     </p>
     <h2 id="random">Random</h2>
     <p>
-      Use <strong><kbd>Alt</kbd>+right-click</strong> to flood-fill with a
-      random extraction queue. Extraction selects any element with equal
-      probability.
+      Use <b><kbd>Alt</kbd>+right-click</b> to flood-fill with a random
+      extraction queue. Extraction selects any element with equal probability.
     </p>
     <p>
       Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
     </p>
     <h2 id="deque">Deque</h2>
     <p>
-      Use <strong><kbd>Alt</kbd>+middle-click</strong> to flood-fill with a
-      deque, where extraction randomly selects the front or back, each with 50%
-      probability.
+      Use <b><kbd>Alt</kbd>+middle-click</b> to flood-fill with a deque, where
+      extraction randomly selects the front or back, each with 50% probability.
     </p>
     <p>
       Deque fill uses <span class="box box-purple"></span>&#8239;purple.
@@ -201,8 +197,8 @@
     </p>
     <h2 id="recursive">Recursive</h2>
     <p>
-      Use <strong><kbd>&#8862;&#8202;Win</kbd>+right-click</strong> to
-      flood-fill recursively. This is depth-first, as with a stack.
+      Use <b><kbd>&#8862;&#8202;Win</kbd>+right-click</b> to flood-fill
+      recursively. This is depth-first, as with a stack.
     </p>
     <p>
       Recursive fill uses <span class="box box-orange"></span>&#8239;orange.
@@ -314,10 +310,10 @@
     </p>
     <h2 id="instant">Instant</h2>
     <p>
-      Use <strong><kbd>&#8862;&#8202;Win</kbd>+left-click</strong> to
-      flood-fill instantly: the algorithm runs very quickly, rather than
-      being broken up into pieces separated by delays, and the canvas is not
-      updated between the beginning and the end of the fill.
+      Use <b><kbd>&#8862;&#8202;Win</kbd>+left-click</b> to flood-fill
+      instantly: the algorithm runs very quickly, rather than being broken up
+      into pieces separated by delays, and the canvas is not updated between
+      the beginning and the end of the fill.
     </p>
     <p>
       Instant fill uses <span class="box box-black"></span>&#8239;black.
