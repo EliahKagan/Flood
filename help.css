@@ -1,5 +1,19 @@
 body {
-  max-width: 45em;
+  background-color: #f8f8f8;
+  font-size: 1.2em;
+  max-width: 40em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Open Sans', sans-serif;
+}
+
+p, li {
+  font-family: 'Crimson Pro', serif;
+}
+
+code {
+  font-family: 'Consolas', 'Source Code Pro', monospace;
 }
 
 abbr {
