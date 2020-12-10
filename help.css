@@ -4,21 +4,37 @@ body {
   max-width: 40em;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Open Sans', sans-serif;
+h1 {
+  font-family: 'Ubuntu', sans-serif;
 }
 
-p, li {
+h2, h3 {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+h4, dt {
+  font-family: 'DM Sans', sans-serif;
+}
+
+p, li, dd {
   font-family: 'Crimson Pro', serif;
+}
+
+dt {
+  margin-top: .5em;
+}
+
+abbr {
+  background-color: #ffc;
+  text-decoration: none;
 }
 
 code {
   font-family: 'Consolas', 'Source Code Pro', monospace;
 }
 
-abbr {
-  background-color: #ffc;
-  text-decoration: none;
+kbd, .command {
+  background-color: #eef;
 }
 
 .box {
