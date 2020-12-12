@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en-US">
   <head>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Flood - Help</title>
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro&family=DM+Sans&family=Noto+Sans&family=Source+Code+Pro&family=Ubuntu&display=swap">
@@ -39,7 +40,7 @@
             <ul>
               <li>
                 <a href="#why-no-crash">
-                  But shouldn't this overflow the stack and crash?
+                  But shouldn&rsquo;t this overflow the stack and crash?
                 </a>
               </li>
             </ul>
@@ -113,8 +114,10 @@
       click and drag with the left mouse button.
     </p>
     <p>
-      The breadth of the curve drawn is 1 pixel. (Clicking without dragging
-      draws a single pixel.)
+      The breadth of the curve drawn is 1 pixel.
+    </p>
+    <p>
+      Clicking without dragging draws a single pixel.
     </p>
     <h2 id="fills">Fills</h2>
     <p>
@@ -132,8 +135,8 @@
     <p>
       However, <a href="#recursive">recursive fill</a> does not use an explicit
       fringe data structure, and <a href="#instant">instant fill</a> completes
-      immediately (rather than animating over time) so it doesn't matter (for
-      using the program) how it is implemented.
+      immediately (rather than animating over time) so it doesn&rsquo;t matter
+      (for using the program) how it is implemented.
     </p>
     <h3 id="stack">Stack (LIFO)</h3>
     <p>
@@ -156,8 +159,8 @@
     <p>
       This corresponds to the need, when converting a recursive left-to-right
       depth-first binary-tree traversal to use iteration instead (in the usual
-      way), to push each node's right child to the fringe (which is a stack)
-      before its left child. See <a href="#recursive">Recursive</a>.
+      way), to push each node&rsquo;s right child to the fringe (which is a
+      stack) before its left child. See <a href="#recursive">Recursive</a>.
     </p>
     <h3 id="queue">Queue (FIFO)</h3>
     <p>
@@ -182,18 +185,18 @@
     </p>
     <h3 id="random">Random</h3>
     <p>
-      Use <b class="command"><kbd>Alt</kbd>+right-click</b> to flood-fill with
-      a random extraction queue. Extraction selects any element with equal
-      probability.
+      Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;right-click</b> to
+      flood-fill with a random extraction queue. Extraction selects any element
+      with equal probability.
     </p>
     <p>
       Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
     </p>
     <h3 id="deque">Deque</h3>
     <p>
-      Use <b class="command"><kbd>Alt</kbd>+middle-click</b> to flood-fill with
-      a deque, where extraction randomly selects the front or back, each with
-      50% probability.
+      Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b> to
+      flood-fill with a deque, where extraction randomly selects the front or
+      back, each with 50% probability.
     </p>
     <p>
       Deque fill uses <span class="box box-purple"></span>&#8239;purple.
@@ -216,10 +219,10 @@
     <p>
       The visible difference between recursive fill and
       <a href="#stack">stack fill</a> is that recursive fill visits each
-      location's neighbors in the order in which they neighbors are enumerated,
-      whereas stack fill visits them in the opposite order (since they are
-      inserted into the fringe in the order they are enumerated, and thus
-      extracted in the opposite order since the fringe is a stack).
+      location&rsquo;s neighbors in the order in which the neighbors are
+      enumerated, whereas stack fill visits them in the opposite order (since
+      they are inserted into the fringe in the order they are enumerated, and
+      thus extracted in the opposite order since the fringe is a stack).
     </p>
     <p>
       Thus a recursive fill taking neighbors in (for example)
@@ -238,7 +241,9 @@
       recursive fill will sometimes even visit most of the remaining region to
       be filled before it gets back to the next neighbor.
     </p>
-    <h4 id="why-no-crash">But shouldn't this overflow the stack and crash?</h4>
+    <h4 id="why-no-crash">
+      But shouldn&rsquo;t this overflow the stack and crash?
+    </h4>
     <p>
       The most interesting thing about recursive fill, in this program, is that
       it does not crash.
@@ -249,7 +254,7 @@
     </p>
     <p>
       With most languages and implementations/environments, unbounded recursion
-      risks overflowing the call stack and crashing (if you're lucky) or
+      risks overflowing the call stack and crashing (if you&rsquo;re lucky) or
       otherwise behaving erratically, and this is a major source of security
       vulnerabilities. So while recursion has many good practical uses,
       including in some graph traversal problems, recursive flood fill is
@@ -281,12 +286,12 @@
       the solution used here.
     </p>
     <p>
-      The reason recursive fill doesn't crash this program is a consequence (or
-      accident) of the asynchronous mechanism through which concurrently
-      running fills have their work broken up into pieces, which are performed
-      with intervening delays so you can see the fills being gradually applied,
-      and which are interleaved with one another (and other operations that
-      maintain UI responsiveness).
+      The reason recursive fill doesn&rsquo;t crash this program is a
+      consequence (or accident) of the asynchronous mechanism through which
+      concurrently running fills have their work broken up into pieces, which
+      are performed with intervening delays so you can see the fills being
+      gradually applied, and which are interleaved with one another (and other
+      operations that maintain UI responsiveness).
     </p>
     <p>
       The recursive fill is coded recursively, in direct style. Like the other
@@ -310,7 +315,7 @@
       all its recursive calls are tail calls) carries data corresponding to a
       call stack if it were implemented in direct style. The continuation
       comprises this structure together with information about what step to
-      resume at (the "state" of the state machine).
+      resume at (the &ldquo;state&rdquo; of the state machine).
     </p>
     <p>
       In this program, those data exist, in part, as a chain of asynchronous
@@ -321,10 +326,11 @@
     </p>
     <h3 id="instant">Instant</h3>
     <p>
-      Use <b class="command"><kbd>&#8862;&#8202;Win</kbd>+left-click</b> to
-      flood-fill instantly: the algorithm runs very quickly, rather than being
-      broken up into pieces separated by delays, and the canvas is not updated
-      between the beginning and the end of the fill.
+      Use
+      <b class="command"><kbd>&#8862;&#8202;Win</kbd>&hairsp;+&hairsp;left-click</b>
+      to flood-fill instantly: the algorithm runs very quickly, rather than
+      being broken up into pieces separated by delays, and the canvas is not
+      updated between the beginning and the end of the fill.
     </p>
     <p>
       Instant fill uses <span class="box box-black"></span>&#8239;black.
@@ -378,7 +384,7 @@
       The <em>speed</em> shown in the status bar (immediately below the canvas)
       is therefore <em>not</em> necessarily the speed of any of the currently
       running fills, but rather the speed a fill started now would use, so long
-      as you're still pressing the same modifier keys.
+      as you&rsquo;re still pressing the same modifier keys.
     </p>
     <h2 id="neighbor-enumeration-strategies">
       Neighbor Enumeration Strategies
@@ -410,9 +416,9 @@
       <dd>
         Neighbors are always enumerated in the same order. The sub-strategy
         determines which order that is. There are 24 sub-strategies, since
-        that's how many permutations of Left, Right, Up, and Down there are.
-        Sub-strategies are abbreviated by the first letters of each direction,
-        in the order in which neighbors are enumerated. The default
+        that&rsquo;s how many permutations of Left, Right, Up, and Down there
+        are. Sub-strategies are abbreviated by the first letters of each
+        direction, in the order in which neighbors are enumerated. The default
         sub-strategy is
         <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
       </dd>
@@ -440,7 +446,7 @@
         same pixel is reached multiple times, even in separate fills (whether
         or not they overlap in time), the same order is chosen for each pixel.
         Restarting the program generates a different order. Without looking
-        closely, you won't notice the difference between this and
+        closely, you won&rsquo;t notice the difference between this and
         <a href="#random-each-time">Random always</a>.
       </dd>
     </dl>

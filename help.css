@@ -1,7 +1,10 @@
 body {
   background-color: #f8f8f8;
-  font-size: 1.2em;
-  max-width: 40em;
+  font-size: 1.4em;
+  margin: 0 auto;
+  max-width: 30em;
+  padding: 0 5px;
+  text-rendering: optimizeLegibility;
 }
 
 h1 {
@@ -16,17 +19,33 @@ h4, dt {
   font-family: 'DM Sans', sans-serif;
 }
 
-p, li, dd {
-  font-family: 'Crimson Pro', serif;
-}
-
 dt {
   margin-top: .5em;
 }
 
+p, li, dd {
+  font-family: 'Crimson Pro', serif;
+  font-feature-settings: 'liga' on;
+  hyphens: auto;
+  -ms-hyphenate-limit-chars: 7 2 2;
+  -ms-hyphens: auto;
+}
+
+a, abbr, kbd, .command {
+  hyphens: none;
+  -ms-hyphens: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 abbr {
   background-color: #ffc;
-  text-decoration: none;
 }
 
 code {
