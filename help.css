@@ -1,8 +1,8 @@
 body {
   background-color: #f8f8f8;
-  font-size: 1.4em;
+  font-size: 1.35em;
   margin: 0 auto;
-  max-width: 30em;
+  max-width: 32em;
   padding: 0 5px;
   text-rendering: optimizeLegibility;
 }
@@ -24,7 +24,7 @@ dt {
 }
 
 p, li, dd {
-  font-family: 'Crimson Text', serif;
+  font-family: 'Source Serif Pro', serif;
   font-feature-settings: 'liga' on;
   hyphens: auto;
   -ms-hyphenate-limit-chars: 7 2 2;
@@ -60,7 +60,7 @@ kbd, .command {
   border: 1px solid black;
   display: inline-block;
   height: .9em;
-  vertical-align: text-bottom;
+  vertical-align: -10%;
   width: .9em;
 }
 
