@@ -24,7 +24,7 @@ dt {
 }
 
 p, li, dd {
-  font-family: 'Charter ITC TT', 'Crimson Pro', serif;
+  font-family: 'Crimson Pro', serif;
   font-feature-settings: 'liga' on;
   hyphens: auto;
   -ms-hyphenate-limit-chars: 7 2 2;
