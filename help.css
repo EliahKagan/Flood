@@ -24,7 +24,7 @@ dt {
 }
 
 p, li, dd {
-  font-family: 'Crimson Pro', serif;
+  font-family: 'Crimson Text', serif;
   font-feature-settings: 'liga' on;
   hyphens: auto;
   -ms-hyphenate-limit-chars: 7 2 2;
