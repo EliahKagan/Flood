@@ -60,6 +60,7 @@ kbd, .command {
   border: 1px solid black;
   display: inline-block;
   height: .9em;
+  vertical-align: text-bottom;
   width: .9em;
 }
 
