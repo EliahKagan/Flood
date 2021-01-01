@@ -17,6 +17,7 @@ h2, h3 {
 
 h4, dt {
   font-family: 'DM Sans', sans-serif;
+  font-feature-settings: 'liga' off;
 }
 
 dt {
