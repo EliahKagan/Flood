@@ -38,12 +38,24 @@ a, abbr, kbd, .command {
   -ms-hyphens: none;
 }
 
-a {
+a, abbr {
   text-decoration: none;
+}
+
+a.external:link, a.external:visited {
+  color: inherit;
 }
 
 a:hover {
   text-decoration: underline;
+}
+
+a:link, a.external:hover:link {
+  color: #0066CC;
+}
+
+a:visited, a.external:hover:visited {
+  color: #800080;
 }
 
 abbr {
@@ -88,6 +100,18 @@ kbd, .command {
 
 .box-orange {
   background-color: orange;
+}
+
+/* https://stackoverflow.com/a/31330454 */
+a.external:after {
+  text-decoration: underline;
+}
+
+a.external::after {
+  content: "\01F4A7"; /* water drop */
+  font-size: x-small;
+  vertical-align: 60%;
+  text-decoration: none;
 }
 
 .proselike {

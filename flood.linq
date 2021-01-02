@@ -498,6 +498,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
+        help.Navigating += help_Navigating;
         _helpPanel = PanelManager.DisplayControl(help, title);
 
         _helpPanel.PanelClosed += delegate {
@@ -514,6 +515,19 @@ internal sealed class MainPanel : TableLayoutPanel {
         var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
         var newSize = new SizeF(width: width * 1.05f, height: height * 1.18f);
         _tips.Size = Size.Round(newSize);
+    }
+
+    private static void help_Navigating(object sender,
+                                        WebBrowserNavigatingEventArgs e)
+    {
+        if (e.Url.HasScheme("https", "http")) {
+            e.Cancel = true;
+
+            Process.Start(new ProcessStartInfo() {
+                FileName = e.Url.AbsoluteUri,
+                UseShellExecute = true,
+            });
+        }
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -749,12 +763,12 @@ internal static class Files {
 
     private static string QueryDirectory
         => Path.GetDirectoryName(Util.CurrentQueryPath)
-            ?? throw new NotSupportedException("Can't find query directory");
+            ?? throw new NotSupportedException("Can't find query directory.");
 
     private static string WindowsDirectory
         => Environment.GetEnvironmentVariable("windir")
             ?? throw new InvalidOperationException(
-                    "Can't find Windows directory");
+                    "Can't find Windows directory.");
 }
 
 /// <summary>
@@ -899,6 +913,24 @@ internal static class SizeExtensions {
                                      out int width,
                                      out int height)
         => (width, height) = (size.Width, size.Height);
+}
+
+/// <summary>
+/// Provides an extension method for checking a URI's scheme case-insensitively
+/// against one or more other schemes.
+/// </summary>
+internal static class UriExtensions {
+    internal static bool HasScheme(this Uri uri, params string[] schemes)
+    {
+        if (schemes.Length == 0) {
+            throw new ArgumentException(
+                    paramName: nameof(schemes),
+                    message: "Must compare to at least one scheme.");
+        }
+
+        return schemes.Any(scheme =>
+            uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 /// <summary>
