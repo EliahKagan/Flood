@@ -7,7 +7,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1 {
+h1, h4, dt {
   font-family: 'Ubuntu', sans-serif;
 }
 
@@ -15,12 +15,8 @@ h2, h3 {
   font-family: 'Noto Sans', sans-serif;
 }
 
-h4, dt {
-  font-family: 'DM Sans', sans-serif;
-  font-feature-settings: 'liga' off;
-}
-
 dt {
+  font-weight: bold;
   margin-top: .5em;
 }
 
