@@ -42,7 +42,7 @@ a, abbr {
   text-decoration: none;
 }
 
-a.external:link, a.external:visited {
+.external > a:link, .external > a:visited {
   color: inherit;
 }
 
@@ -50,11 +50,11 @@ a:hover {
   text-decoration: underline;
 }
 
-a:link, a.external:hover:link {
+a:link, .external > a:hover:link {
   color: #0066CC;
 }
 
-a:visited, a.external:hover:visited {
+a:visited, .external > a:hover:visited {
   color: #800080;
 }
 
@@ -102,12 +102,8 @@ kbd, .command {
   background-color: orange;
 }
 
-/* https://stackoverflow.com/a/31330454 */
-a.external:after {
-  text-decoration: underline;
-}
-
-a.external::after {
+.external::after {
+  color: #00bcf2;
   content: "\01F4A7"; /* water drop */
   font-size: x-small;
   vertical-align: 60%;
