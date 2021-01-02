@@ -21,6 +21,7 @@ h4, dt {
 }
 
 dt {
+  font-weight: bold;
   margin-top: .5em;
 }
 
