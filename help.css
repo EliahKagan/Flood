@@ -42,20 +42,40 @@ a, abbr {
   text-decoration: none;
 }
 
-.external > a:link, .external > a:visited {
+a.external:link, a.external:visited {
   color: inherit;
 }
 
 a:hover {
+  background-color: azure;
   text-decoration: underline;
 }
 
-a:link, .external > a:hover:link {
+a:link, a.external:hover:link {
   color: #0066CC;
 }
 
-a:visited, .external > a:hover:visited {
+a:visited, a.external:hover:visited {
   color: #800080;
+}
+
+/* Set text decoration before later removing it, so IE/WebBrowser applies the
+ * removal. For other browsers, setting inline-block, as below, makes it work.
+ * For IE, this hack does it, with or without inline-block. I don't know why.
+ * See https://stackoverflow.com/a/31330454 (answer to "Stop link's :before
+ * content from being underlined by rule applied to the link" on Stack Overflow
+ * by https://stackoverflow.com/users/5100822/user5100822). */
+a.external:after {
+  text-decoration: underline;
+}
+
+a.external::after {
+  color: #00bcf2;
+  content: "\01F4A7"; /* water drop emoji */
+  display: inline-block;
+  font-size: x-small;
+  vertical-align: 60%;
+  text-decoration: none;
 }
 
 abbr {
@@ -100,14 +120,6 @@ kbd, .command {
 
 .box-orange {
   background-color: orange;
-}
-
-.external::after {
-  color: #00bcf2;
-  content: "\01F4A7"; /* water drop */
-  font-size: x-small;
-  vertical-align: 60%;
-  text-decoration: none;
 }
 
 .proselike {
