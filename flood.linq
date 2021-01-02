@@ -520,7 +520,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static void help_Navigating(object sender,
                                         WebBrowserNavigatingEventArgs e)
     {
-        if (e.Url.HasScheme("https", "http")) {
+        if (e.Url.IsHttpOrHttps()) {
             e.Cancel = true;
 
             Process.Start(new ProcessStartInfo() {
@@ -920,17 +920,11 @@ internal static class SizeExtensions {
 /// against one or more other schemes.
 /// </summary>
 internal static class UriExtensions {
-    internal static bool HasScheme(this Uri uri, params string[] schemes)
-    {
-        if (schemes.Length == 0) {
-            throw new ArgumentException(
-                    paramName: nameof(schemes),
-                    message: "Must compare to at least one scheme.");
-        }
+    internal static bool IsHttpOrHttps(this Uri uri)
+        => uri.IsScheme(Uri.UriSchemeHttp) || uri.IsScheme(Uri.UriSchemeHttps);
 
-        return schemes.Any(scheme =>
-            uri.Scheme.Equals(scheme, StringComparison.OrdinalIgnoreCase));
-    }
+    private static bool IsScheme(this Uri uri, string scheme)
+        => uri.Scheme.Equals(scheme, StringComparison.Ordinal);
 }
 
 /// <summary>
