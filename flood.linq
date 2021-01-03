@@ -498,6 +498,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
+        help.Navigating += help_Navigating;
         _helpPanel = PanelManager.DisplayControl(help, title);
 
         _helpPanel.PanelClosed += delegate {
@@ -514,6 +515,27 @@ internal sealed class MainPanel : TableLayoutPanel {
         var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
         var newSize = new SizeF(width: width * 1.05f, height: height * 1.18f);
         _tips.Size = Size.Round(newSize);
+    }
+
+    private static void help_Navigating(object sender,
+                                        WebBrowserNavigatingEventArgs e)
+    {
+        // Make sure this link would actually be opened in a web browser, i.e.,
+        // a program (or COM object) registered as an appropriate protocol
+        // handler. We can't guarantee the user won't manage to navigate
+        // somewhere that offers up a hyperlink that starts with something
+        // that ShellExecute will take to be a Windows executable. Thus even
+        // if a better way to ensure we're only specially handling navigation
+        // to external sites is used, this protocol check is still essential
+        // for security.
+        if (!e.Url.IsHttpsOrHttp()) return;
+
+        e.Cancel = true;
+
+        Process.Start(new ProcessStartInfo() {
+            FileName = e.Url.AbsoluteUri,
+            UseShellExecute = true,
+        });
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -749,12 +771,12 @@ internal static class Files {
 
     private static string QueryDirectory
         => Path.GetDirectoryName(Util.CurrentQueryPath)
-            ?? throw new NotSupportedException("Can't find query directory");
+            ?? throw new NotSupportedException("Can't find query directory.");
 
     private static string WindowsDirectory
         => Environment.GetEnvironmentVariable("windir")
             ?? throw new InvalidOperationException(
-                    "Can't find Windows directory");
+                    "Can't find Windows directory.");
 }
 
 /// <summary>
@@ -899,6 +921,18 @@ internal static class SizeExtensions {
                                      out int width,
                                      out int height)
         => (width, height) = (size.Width, size.Height);
+}
+
+/// <summary>
+/// Provides an extension method for checking a URI's scheme case-insensitively
+/// against one or more other schemes.
+/// </summary>
+internal static class UriExtensions {
+    internal static bool IsHttpsOrHttp(this Uri uri)
+        => uri.IsScheme(Uri.UriSchemeHttp) || uri.IsScheme(Uri.UriSchemeHttps);
+
+    private static bool IsScheme(this Uri uri, string scheme)
+        => uri.Scheme.Equals(scheme, StringComparison.Ordinal);
 }
 
 /// <summary>

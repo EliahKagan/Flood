@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Flood - Help</title>
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro&family=DM+Sans&family=Noto+Sans&family=Source+Code+Pro&family=Ubuntu&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans&family=Noto+Sans&family=Source+Serif+Pro:wght@400;600;700&family=Source+Code+Pro&family=Ubuntu&display=swap">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="help.css">
   </head>
@@ -40,7 +40,7 @@
             <ul>
               <li>
                 <a href="#why-no-crash">
-                  But shouldn&rsquo;t this overflow the stack and crash?
+                  But shouldn&rsquo;t this overflow the call stack and crash?
                 </a>
               </li>
             </ul>
@@ -76,28 +76,52 @@
     <hr>
     <h2 id="introduction">Introduction</h2>
     <p>
-      A flood fill is a sparse-graph traversal in which both adjacency and
-      visitation information are implicit in the image being read and written.
-      When a flood fill is performed atomically (no other changes to the image
-      while the fill is happening), all variations produce the same results.
-      But the order in which pixels are found and filled depends on:
+      A
+      <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
+         title="Flood fill - Wikipedia">flood fill</a>
+      is a sparse-graph
+      <a class="external" href="https://en.wikipedia.org/wiki/Graph_traversal"
+         title="Graph traversal - Wikipedia">traversal</a>
+      in which both adjacency and visitation information are implicit in the
+      image being read and written. When a flood fill is performed atomically
+      (no other changes to the image while the fill is happening), all
+      variations produce the same results. But the order in which pixels are
+      found and filled depends on:
     </p>
     <ul>
       <li class="proselike">
         The data structure used for the <dfn>fringe</dfn>&#8202;: the
-        collection of vertices (pixel locations) that have been discovered but
-        are not yet filled. This is most often a stack (last-in, first-out) or
-        &ldquo;queue&rdquo; (first-in, first-out), but any kind of generalized
-        queue will work. See <a href="#fills">Fills</a>.
+        collection of
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+           title="Vertex (graph theory) - Wikipedia">nodes</a>
+        (pixel locations) that have been discovered but are
+        not yet filled. This is most often a
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+           title="Stack (abstract data type) - Wikipedia">stack</a>
+        (last-in, first-out) or
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+           title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>
+        (first-in, first-out), but any kind of generalized queue will work.
+        <b>See <a href="#fills">Fills</a>.</b>
       </li>
       <li class="proselike">
-        The order in which neighboring vertices (pixel locations) that may need
-        to be filled are checked and added to the fringe. This is especially
-        significant when a stack is used for the fringe, because with a stack,
-        many steps often progress between when a vertex (pixel location) is
-        added to the fringe and when it is actually colored. See
+        The order in which neighboring
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+           title="Vertex (graph theory) - Wikipedia">nodes</a>
+        (pixel locations) that may need to be filled are checked and added to
+        the fringe. This is especially significant when a
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+           title="Stack (abstract data type) - Wikipedia">stack</a>
+        is used for the fringe, because with a stack, many steps often progress
+        between when a node (pixel location) is added to the fringe and when it
+        is actually colored. <b>See
         <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
-        Strategies</a>.
+        Strategies</a>.</b>
       </li>
     </ul>
     <p>
@@ -127,9 +151,13 @@
       terms of an abstract <em>fringe</em> data type, and the difference
       between them is how that type is implemented. Specifically, the
       difference is due to the behavior of the extraction operation, which
-      determines the order in which vertices (pixel locations) are
-      <em>taken out</em> of the fringe. For the order in which they are put in,
-      see <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
+      determines the order in which
+      <a class="external"
+          href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+          title="Vertex (graph theory) - Wikipedia">nodes</a>
+      (pixel locations) are <em>taken out</em> of the fringe. For the order in
+      which they are put in, see
+      <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
       Strategies</a>.
     </p>
     <p>
@@ -140,9 +168,14 @@
     </p>
     <h3 id="stack">Stack (LIFO)</h3>
     <p>
-      Use <b class="command">right click</b> to flood-fill with a stack. This
-      data structure is last-in first-out (LIFO). The filled area expands
-      depth-first.
+      Use <b class="command">right click</b> to flood-fill with a
+      <a class="external"
+          href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+          title="Stack (abstract data type) - Wikipedia">stack</a>.
+      This data structure is last-in first-out (LIFO). The filled area expands
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Depth-first_search"
+         title="Depth-first search - Wikipedia">depth-first</a>.
     </p>
     <p>
       Stack fill uses <span class="box box-red"></span>&#8239;red.
@@ -164,9 +197,14 @@
     </p>
     <h3 id="queue">Queue (FIFO)</h3>
     <p>
-      Use <b class="command">middle click</b> to flood-fill with a queue. This
-      data structure is first-in first-out (FIFO). The filled area expands
-      breadth-first.
+      Use <b class="command">middle click</b> to flood-fill with a
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+         title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>.
+      This data structure is first-in first-out (FIFO). The filled area expands
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Breadth-first_search"
+         title="Breadth-first search - Wikipedia">breadth-first</a>.
     </p>
     <p>
       Queue fill uses <span class="box box-blue"></span>&#8239;blue.
@@ -174,14 +212,31 @@
     <p>
       The word &ldquo;queue&rdquo; has two common meanings. In the broad sense,
       a queue is any data structure that supports insertion as well as
-      extraction of inserted elements. (It is in this sense that a priority
-      queue is a queue.) In that sense, all the data types used as fringes, in
-      this program or any program, are queues.
+      extraction of inserted elements. (It is in this sense that a
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Priority_queue"
+         title="Priority queue - Wikipedia">priority queue</a>
+      is a queue.) In that sense, all the data types used as fringes, in this
+      program or any program, are queues.
     </p>
     <p>
-      Here I mean &ldquo;queue&rdquo; in the narrow sense: a FIFO queue, which
-      supports breadth-first traversals in a manner analogous to how stacks
-      (&ldquo;LIFO queues&rdquo;) support depth-first traversals.
+      Here I mean &ldquo;queue&rdquo; in the narrow sense: a
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+         title="Queue (abstract data type) - Wikipedia">FIFO queue</a>,
+      which supports
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Breadth-first_search"
+         title="Breadth-first search - Wikipedia">breadth-first</a>
+      traversals in a manner analogous to how
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+         title="Stack (abstract data type) - Wikipedia">stacks</a>
+      (&ldquo;LIFO queues&rdquo;) support
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Depth-first_search"
+         title="Depth-first search - Wikipedia">depth-first</a>
+      traversals.
     </p>
     <h3 id="random">Random</h3>
     <p>
@@ -195,8 +250,12 @@
     <h3 id="deque">Deque</h3>
     <p>
       Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b> to
-      flood-fill with a deque, where extraction randomly selects the front or
-      back, each with 50% probability.
+      flood-fill with a
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Double-ended_queue"
+         title="Double-ended queue - Wikipedia">deque</a>,
+      where extraction randomly selects the front or back, each with 50%
+      probability.
     </p>
     <p>
       Deque fill uses <span class="box box-purple"></span>&#8239;purple.
@@ -211,7 +270,15 @@
     <h3 id="recursive">Recursive</h3>
     <p>
       Use <b class="command"><kbd>&#8862;&#8202;Win</kbd>+right-click</b> to
-      flood-fill recursively. This is depth-first, as with a stack.
+      flood-fill
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Recursion_(computer_science)"
+         title="Recursion (computer science) - Wikipedia">recursively</a>.
+      This is
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Depth-first_search"
+         title="Depth-first search - Wikipedia">depth-first</a>,
+      as with a stack.
     </p>
     <p>
       Recursive fill uses <span class="box box-orange"></span>&#8239;orange.
@@ -242,7 +309,7 @@
       be filled before it gets back to the next neighbor.
     </p>
     <h4 id="why-no-crash">
-      But shouldn&rsquo;t this overflow the stack and crash?
+      But shouldn&rsquo;t this overflow the call stack and crash?
     </h4>
     <p>
       The most interesting thing about recursive fill, in this program, is that
@@ -254,26 +321,44 @@
     </p>
     <p>
       With most languages and implementations/environments, unbounded recursion
-      risks overflowing the call stack and crashing (if you&rsquo;re lucky) or
-      otherwise behaving erratically, and this is a major source of security
-      vulnerabilities. So while recursion has many good practical uses,
-      including in some graph traversal problems, recursive flood fill is
-      mostly good only for demonstration and some testing purposes. Common
-      image sizes are too large for recursive flood fills to work, except when
-      the region being filled happens to be small.
+      risks overflowing the
+      <a class="external" href="https://en.wikipedia.org/wiki/Call_stack"
+         title="Call stack - Wikipedia">call stack</a>
+      and crashing (if you&rsquo;re lucky) or otherwise behaving erratically,
+      and this is a major source of security vulnerabilities. So while
+      recursion has many good practical uses, including in some graph traversal
+      problems, recursive flood fill is mostly good only for demonstration and
+      some testing purposes. Common image sizes are too large for recursive
+      flood fills to work, except when the region being filled happens to be
+      small.
     </p>
     <p>
-      This program is written in C# and targets .NET 5. C# (with that or other
+      This program is written in C# and targets
+      <a class="external"
+         href="https://en.wikipedia.org/w/index.php?title=.NET_5"
+         title=".NET Core - Wikipedia
+[redirect from &ldquo;.NET 5&rdquo;]">.NET 5</a>.
+      C# (with that or other
       framework implementations) is no exception to this: the call stack is
       strictly limited and non-expanding at runtime. The runtime can usually
       detect the stack overflow and throw a
-      <code>StackOverflowException</code>, which terminates the application
-      abnormally, i.e., crashes it. (An exception handler cannot actually catch
-      exceptions of that type, nor would such an ability enable a fill
-      written this way to actually complete.)
+      <a class="external"
+         href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0"
+         title="StackOverflowException Class (System) | Microsoft Docs"><code>StackOverflowException</code></a>,
+      which terminates the application
+      abnormally, i.e., crashes it. (An exception handler
+      <a class="external wide"
+         href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0#remarks"
+         title="StackOverflowException Class (System) | Microsoft Docs #Remarks">cannot actually catch</a>
+      exceptions of that type, nor would such an ability enable a fill written
+      this way to complete.)
     </p>
     <p>
-      Tail-call elimination is not a solution, since even in languages that
+      <a class="external wide"
+         href="https://en.wikipedia.org/w/index.php?title=Tail-call_elimination"
+         title="Tail call - Wikipedia
+[redirect from &ldquo;Tail-call elimination&rdquo;]">Tail-call elimination</a>
+      is not a solution, since even in languages that
       guarantee it in all eligible cases, it can only apply to the the call
       that visits the last neighbor enumerated. (C# never guarantees it
       anyway.)
@@ -287,23 +372,45 @@
     </p>
     <p>
       The reason recursive fill doesn&rsquo;t crash this program is a
-      consequence (or accident) of the asynchronous mechanism through which
+      consequence (or accident) of the
+      <a class="external"
+         href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/"
+         title="Asynchronous programming in C# | Microsoft Docs">asynchronous</a>
+      mechanism through which
       concurrently running fills have their work broken up into pieces, which
       are performed with intervening delays so you can see the fills being
       gradually applied, and which are interleaved with one another (and other
       operations that maintain UI responsiveness).
     </p>
     <p>
-      The recursive fill is coded recursively, in direct style. Like the other
-      fills described above, it is an asynchronous method. After some number of
-      pixels (see <a href="#speed-modifiers">Speed Modifiers</a>) are colored
-      synchronously, it awaits a delay task and is scheduled to continue, on
-      the same thread (the UI thread), when the delay has completed.
+      The recursive fill is coded recursively, in
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Direct_style"
+         title="Continuation-passing style - Wikipedia
+[redirect from &ldquo;Direct style&rdquo;]">direct style</a>.
+      Like the other fills described above, it is an asynchronous method. After
+      some number of pixels (see
+      <a href="#speed-modifiers">Speed Modifiers</a>) are colored
+      synchronously, it awaits a
+      <a class="external wide"
+         href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.task.delay?view=net-5.0"
+         title="Task.Delay Method (System.Threading.Tasks) | Microsoft Docs">delay task</a>
+      and is scheduled to continue, on the same thread (the
+      <a class="external wide"
+         href="https://devblogs.microsoft.com/pfxteam/await-and-ui-and-deadlocks-oh-my/"
+         title="Await, and UI, and deadlocks! Oh my! | .NET Parallel Programming">UI thread</a>),
+      when the delay has completed.
     </p>
     <p>
-      Roslyn, the C# compiler, achieves this by converting the code written in
-      direct style, representing an entire fill operation with interleaved
-      delays, into corresponding code in continuation-passing style,
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Roslyn_(compiler)"
+         title="Roslyn (compiler) - Wikipedia">Roslyn</a>,
+      the C# compiler, achieves this by converting the code written in direct
+      style, representing an entire fill operation with interleaved delays,
+      into corresponding code in
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Continuation-passing_style"
+         title="Continuation-passing style - Wikipedia">continuation-passing style</a>,
       representing the work to do from when the task is resumed (or first
       started) to when it is suspended (or finishes), as well as the
       transformation from a description of the work that must be done before
@@ -315,14 +422,24 @@
       all its recursive calls are tail calls) carries data corresponding to a
       call stack if it were implemented in direct style. The continuation
       comprises this structure together with information about what step to
-      resume at (the &ldquo;state&rdquo; of the state machine).
+      resume at (the &ldquo;state&rdquo; of the
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Finite-state_machine"
+         title="Finite-state machine - Wikipedia">state machine</a>).
     </p>
     <p>
-      In this program, those data exist, in part, as a chain of asynchronous
-      tasks linked by continuations. If the goal were to do a fill as quickly
-      and efficiently as possible (see <a href="#instant">Instant</a>), this
-      would be unsuitable. But the goal here is deliberately to run slowly, to
-      visualize the incremental work done by the fill.
+      In this program, those data exist, in part, as a chain of
+      <a class="external wide"
+         href="https://docs.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap"
+         title="Task-based Asynchronous Pattern (TAP) | Microsoft Docs">asynchronous tasks</a>
+      linked by
+      <a class="external"
+         href="https://en.wikipedia.org/wiki/Continuation#Programming_language_support"
+         title="Continuation - Wikipedia #Programming language support">continuations</a>.
+      If the goal were to do a fill as quickly and efficiently as possible (see
+      <a href="#instant">Instant</a>), this would be unsuitable. But the goal
+      here is deliberately to run slowly, to visualize the incremental work
+      done by the fill.
     </p>
     <h3 id="instant">Instant</h3>
     <p>
