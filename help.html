@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Flood - Help</title>
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro&family=DM+Sans&family=Noto+Sans&family=Source+Code+Pro&family=Ubuntu&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans&family=Noto+Sans&family=Source+Serif+Pro:wght@400;600;700&family=Source+Code+Pro&family=Ubuntu&display=swap">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="help.css">
   </head>
@@ -76,30 +76,41 @@
     <hr>
     <h2 id="introduction">Introduction</h2>
     <p>
-      A <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
-           title="&ldquo;Flood fill&rdquo; on English Wikipedia">flood fill</a>
-      is a sparse-graph traversal in which both adjacency and visitation
-      information are implicit in the image being read and written. When a
-      flood fill is performed atomically (no other changes to the image while
-      the fill is happening), all variations produce the same results. But the
-      order in which pixels are found and filled depends on:
+      A
+      <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
+         title="Flood fill - Wikipedia">flood fill</a>
+      is a sparse-graph
+      <a class="external" href="https://en.wikipedia.org/wiki/Graph_traversal"
+          title="Graph traversal - Wikipedia">traversal</a>
+      in which both adjacency and visitation information are implicit in the
+      image being read and written. When a flood fill is performed atomically
+      (no other changes to the image while the fill is happening), all
+      variations produce the same results. But the order in which pixels are
+      found and filled depends on:
     </p>
     <ul>
       <li class="proselike">
         The data structure used for the <dfn>fringe</dfn>&#8202;: the
         collection of vertices (pixel locations) that have been discovered but
-        are not yet filled. This is most often a stack (last-in, first-out) or
-        &ldquo;queue&rdquo; (first-in, first-out), but any kind of generalized
-        queue will work. See <a href="#fills">Fills</a>.
+        are not yet filled. This is most often a
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+           title="Stack (abstract data type) - Wikipedia">stack</a>
+        (last-in, first-out) or
+        <a class="external"
+           href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+           title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>
+        (first-in, first-out), but any kind of generalized queue will work. <b>See
+        <a href="#fills">Fills</a>.</b>
       </li>
       <li class="proselike">
         The order in which neighboring vertices (pixel locations) that may need
         to be filled are checked and added to the fringe. This is especially
         significant when a stack is used for the fringe, because with a stack,
         many steps often progress between when a vertex (pixel location) is
-        added to the fringe and when it is actually colored. See
+        added to the fringe and when it is actually colored. <b>See
         <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
-        Strategies</a>.
+        Strategies</a>.</b>
       </li>
     </ul>
     <p>
@@ -296,16 +307,24 @@
       operations that maintain UI responsiveness).
     </p>
     <p>
-      The recursive fill is coded recursively, in direct style. Like the other
-      fills described above, it is an asynchronous method. After some number of
-      pixels (see <a href="#speed-modifiers">Speed Modifiers</a>) are colored
+      The recursive fill is coded recursively, in
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Direct_style"
+         title="Continuation-passing style - Wikipedia
+(redirect from &ldquo;Direct style&rdquo;)">direct style</a>.
+      Like the other fills described above, it is an asynchronous method. After
+      some number of pixels (see
+      <a href="#speed-modifiers">Speed Modifiers</a>) are colored
       synchronously, it awaits a delay task and is scheduled to continue, on
       the same thread (the UI thread), when the delay has completed.
     </p>
     <p>
       Roslyn, the C# compiler, achieves this by converting the code written in
       direct style, representing an entire fill operation with interleaved
-      delays, into corresponding code in continuation-passing style,
+      delays, into corresponding code in
+      <a class="external wide"
+         href="https://en.wikipedia.org/wiki/Continuation-passing_style"
+         title="Continuation-passing style - Wikipedia">continuation-passing style</a>,
       representing the work to do from when the task is resumed (or first
       started) to when it is suspended (or finishes), as well as the
       transformation from a description of the work that must be done before

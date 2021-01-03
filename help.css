@@ -42,6 +42,16 @@ a, abbr {
   text-decoration: none;
 }
 
+a.external {
+  white-space: nowrap;
+}
+
+a.external.wide {
+  hyphens: auto;
+  -ms-hyphens: auto;
+  white-space: normal;
+}
+
 a.external:link, a.external:visited {
   color: inherit;
 }
@@ -71,7 +81,7 @@ a.external:after {
 
 a.external::after {
   color: #00bcf2;
-  content: "\01F4A7"; /* water drop emoji */
+  content: "\02060\01F4A7"; /* word-joiner, water drop emoji */
   display: inline-block;
   font-size: x-small;
   vertical-align: 60%;
@@ -80,6 +90,11 @@ a.external::after {
 
 abbr {
   background-color: #ffc;
+}
+
+b {
+  font-style: normal;
+  font-weight: 600; /* semi-bold */
 }
 
 code {
