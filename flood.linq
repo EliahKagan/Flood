@@ -520,14 +520,22 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static void help_Navigating(object sender,
                                         WebBrowserNavigatingEventArgs e)
     {
-        if (e.Url.IsHttpOrHttps()) {
-            e.Cancel = true;
+        // Make sure this link would actually be opened in a web browser, i.e.,
+        // a program (or COM object) registered as an appropriate protocol
+        // handler. We can't guarantee the user won't manage to navigate
+        // somewhere that offers up a hyperlink that starts with something
+        // that ShellExecute will take to be a Windows executable. Thus even
+        // if a better way to ensure we're only specially handling navigation
+        // to external sites is used, this protocol check is still essential
+        // for security.
+        if (!e.Url.IsHttpsOrHttp()) return;
 
-            Process.Start(new ProcessStartInfo() {
-                FileName = e.Url.AbsoluteUri,
-                UseShellExecute = true,
-            });
-        }
+        e.Cancel = true;
+
+        Process.Start(new ProcessStartInfo() {
+            FileName = e.Url.AbsoluteUri,
+            UseShellExecute = true,
+        });
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -920,7 +928,7 @@ internal static class SizeExtensions {
 /// against one or more other schemes.
 /// </summary>
 internal static class UriExtensions {
-    internal static bool IsHttpOrHttps(this Uri uri)
+    internal static bool IsHttpsOrHttp(this Uri uri)
         => uri.IsScheme(Uri.UriSchemeHttp) || uri.IsScheme(Uri.UriSchemeHttps);
 
     private static bool IsScheme(this Uri uri, string scheme)
