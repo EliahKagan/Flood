@@ -26,7 +26,8 @@ if (Control.ModifierKeys.HasFlag(Keys.Shift)) {
     launcher.Display();
 } else {
     // Proceed immediately with the automatically suggested size.
-    new MainPanel(SuggestCanvasSize()).Display();
+    new MainPanel(SuggestCanvasSize(), GetBestHelpViewerSupplier())
+        .Display();
 }
 
 static Size SuggestCanvasSize()
@@ -37,22 +38,34 @@ static Size SuggestCanvasSize()
     return new(width: sideLength, height: sideLength);
 }
 
+// FIXME: Try WebVew2/Edge-based HelpViewer, with WebBrowser/IE as a fallback.
+static HelpViewerSupplier GetBestHelpViewerSupplier()
+    => GetOldHelpViewerSupplier();
+
+static HelpViewerSupplier GetOldHelpViewerSupplier()
+    => () => new WebBrowserHelpViewer();
+
 static void launcher_Launch(Launcher sender, LauncherEventArgs e)
-    => new MainPanel(e.Size) {
+{
+    var supplier = (e.UseOldWebBrowser ? GetOldHelpViewerSupplier()
+                                       : GetBestHelpViewerSupplier());
+
+    new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
     }.Display();
+}
 
 /// <summary>
 /// Provides a canvas size for the <see cref="Launcher.Launch"/> event.
 /// </summary>
 internal sealed class LauncherEventArgs : EventArgs {
-    internal LauncherEventArgs(int width, int height)
-        : this(new(width: width, height: height)) { }
-
-    internal LauncherEventArgs(Size size) => Size = size;
+    internal LauncherEventArgs(Size size, bool useOldWebBrowser)
+        => (Size, UseOldWebBrowser) = (size, useOldWebBrowser);
 
     internal Size Size { get; }
+
+    internal bool UseOldWebBrowser { get; }
 };
 
 /// <summary>
@@ -79,6 +92,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Custom Canvas Size", CreateSizeTable()),
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
+            new LC.FieldSet("Help Browser", _useOldWebBrowser),
             _launch);
 
         SubscribePrivateHandlers();
@@ -156,7 +170,10 @@ internal sealed class Launcher {
         }
 
         DisableInteractiveControls();
-        Launch?.Invoke(this, new(width: width, height: height));
+
+        var size = new Size(width: width, height: height);
+        var eLauncher = new LauncherEventArgs(size, _useOldWebBrowser.Checked);
+        Launch?.Invoke(this, eLauncher);
     }
 
     private void HandleNumberInput(LC.TextBox sender, ref int? sink)
@@ -177,7 +194,8 @@ internal sealed class Launcher {
                    _heightBox,
                    _delayBox,
                    _launch,
-                   _showPluginFormInTaskbar);
+                   _showPluginFormInTaskbar,
+                   _useOldWebBrowser);
 
     private readonly LC.TextBox _widthBox;
 
@@ -187,6 +205,9 @@ internal sealed class Launcher {
 
     private readonly LC.CheckBox _showPluginFormInTaskbar =
         new LC.CheckBox("Show PluginForm in Taskbar");
+
+    private readonly LC.CheckBox _useOldWebBrowser = new LC.CheckBox(
+            "Use old WebBrowser control even if WebView2 is available");
 
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
@@ -206,10 +227,11 @@ internal sealed class Launcher {
 internal sealed class MainPanel : TableLayoutPanel {
     internal const int DefaultDelayInMilliseconds = 10;
 
-    internal MainPanel(Size canvasSize)
+    internal MainPanel(Size canvasSize, HelpViewerSupplier supplier)
     {
         _nonessentialTimer = new(_components) { Interval = 110 };
         _toolTip = new(_components) { ShowAlways = true };
+        _helpViewerSupplier = supplier;
 
         _rect = new Rectangle(Point.Empty, canvasSize);
         _bmp = new Bitmap(width: _rect.Width, height: _rect.Height);
@@ -498,9 +520,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             return;
         }
 
-        var help = new WebBrowser { Url = Files.GetDocUrl("help.html") };
+        var help = _helpViewerSupplier();
+        help.Source = Files.GetDocUrl("help.html");
         help.Navigating += help_Navigating;
-        _helpPanel = PanelManager.DisplayControl(help, title);
+        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
 
         _helpPanel.PanelClosed += delegate {
             _helpPanel = null;
@@ -515,7 +538,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
 
     private static void help_Navigating(object sender,
-                                        WebBrowserNavigatingEventArgs e)
+                                        HelpViewerNavigatingEventArgs e)
     {
         // Make sure this link would actually be opened in a web browser, i.e.,
         // a program (or COM object) registered as an appropriate protocol
@@ -525,12 +548,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         // if a better way to ensure we're only specially handling navigation
         // to external sites is used, this protocol check is still essential
         // for security.
-        if (!e.Url.IsHttpsOrHttp()) return;
+        if (!e.Uri.IsHttpsOrHttp()) return;
 
         e.Cancel = true;
 
         Process.Start(new ProcessStartInfo() {
-            FileName = e.Url.AbsoluteUri,
+            FileName = e.Uri.AbsoluteUri,
             UseShellExecute = true,
         });
     }
@@ -630,6 +653,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly System.Windows.Forms.Timer _nonessentialTimer;
 
     private readonly ToolTip _toolTip;
+
+    private readonly HelpViewerSupplier _helpViewerSupplier;
 
     private readonly Rectangle _rect;
 
@@ -754,6 +779,75 @@ internal sealed class ApplicationButton : Button {
 
     private readonly string _path;
 }
+
+/// <summary>
+/// Provides data for the <see cref="HelpViewer.Navigating"/> event.
+/// </summary>
+internal sealed class HelpViewerNavigatingEventArgs : EventArgs {
+    internal HelpViewerNavigatingEventArgs(Uri uri) => Uri = uri;
+
+    internal Uri Uri { get; }
+
+    internal bool Cancel { get; set; } = false;
+}
+
+/// <summary>
+/// Represents a method that will handle the
+/// <see cref="HelpViewer.Navigating"/> event.
+/// </summary>
+internal delegate void
+HelpViewerNavigatingEventHandler(HelpViewer sender,
+                                 HelpViewerNavigatingEventArgs e);
+
+/// <summary>
+/// Wrapper allowing a choice of web-browsing controls as a help browser.
+/// </summary>
+internal abstract class HelpViewer {
+    /// <summary>The URL of the current top-level document.</summary>
+    internal abstract Uri Source { get; set; }
+
+    /// <summary>Occurs before navigation to a new document.</summary>
+    internal event HelpViewerNavigatingEventHandler? Navigating = null;
+
+    /// <summary>The wrapped control. The user interacts with this.</summary>
+    internal abstract Control WrappedControl { get; }
+
+    /// <summary>Invokes the <see cref="Navigating"/> event.</summary>
+    private protected void OnNavigating(HelpViewerNavigatingEventArgs e)
+        => Navigating?.Invoke(this, e);
+}
+
+/// <summary>
+/// <see cref="System.Windows.Forms.WebBrowser"/>-based help viewer.
+/// </summary>
+internal sealed class WebBrowserHelpViewer : HelpViewer {
+    internal WebBrowserHelpViewer()
+        => _webBrowser.Navigating += webBrowser_Navigating;
+
+    /// <inheritdoc/>
+    internal override Uri Source {
+        get => _webBrowser.Url;
+        set => _webBrowser.Url = value;
+    }
+
+    /// <inheritdoc/>
+    internal override Control WrappedControl => _webBrowser;
+
+    private void webBrowser_Navigating(object sender,
+                                       WebBrowserNavigatingEventArgs e)
+    {
+        var eHelpViewer = new HelpViewerNavigatingEventArgs(e.Url);
+        OnNavigating(eHelpViewer);
+        e.Cancel = eHelpViewer.Cancel;
+    }
+
+    private readonly WebBrowser _webBrowser = new();
+}
+
+/// <summary>
+/// Encapsulates a method that supplies a <see cref="HelpViewer"/>.
+/// </summary>
+internal delegate HelpViewer HelpViewerSupplier();
 
 /// <summary>
 /// Convenience methods for getting information about files and directories
