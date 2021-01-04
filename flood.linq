@@ -124,7 +124,7 @@ internal sealed class Launcher {
                                  cellPaddingStyle: ".3em .3em",
                                  cellVerticalAlign: "middle");
 
-        table.Rows.Add(new LC.Label("Delay(ms)"), _delayBox);
+        table.Rows.Add(new LC.Label("Delay (ms)"), _delayBox);
 
         var label = new LC.Label("This is the minimum delay between frames.");
 
