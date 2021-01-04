@@ -525,14 +525,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         // if a better way to ensure we're only specially handling navigation
         // to external sites is used, this protocol check is still essential
         // for security.
-        if (!e.Url.IsHttpsOrHttp()) return;
-
-        e.Cancel = true;
-
-        Process.Start(new ProcessStartInfo() {
-            FileName = e.Url.AbsoluteUri,
-            UseShellExecute = true,
-        });
+        if (e.Url.IsHttpsOrHttp()) {
+            e.Cancel = true;
+            Shell.Execute(e.Url.AbsoluteUri);
+        }
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -745,12 +741,7 @@ internal sealed class ApplicationButton : Button {
     private static extern bool DestroyIcon(IntPtr hIcon);
 
     private void ApplicationButton_Click(object? sender, EventArgs e)
-    {
-        var process = new Process();
-        process.StartInfo.UseShellExecute = true;
-        process.StartInfo.FileName = _path;
-        process.Start();
-    }
+        => Shell.Execute(_path);
 
     private readonly string _path;
 }
@@ -774,6 +765,17 @@ internal static class Files {
         => Environment.GetEnvironmentVariable("windir")
             ?? throw new InvalidOperationException(
                     "Can't find Windows directory.");
+}
+
+/// <summary>
+/// Convenience methods for interacting with the Windows shell.
+/// </summary>
+internal static class Shell {
+    internal static void Execute(string path)
+        => Process.Start(new ProcessStartInfo() {
+            FileName = path,
+            UseShellExecute = true,
+        });
 }
 
 /// <summary>
