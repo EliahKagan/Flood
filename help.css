@@ -102,7 +102,11 @@ code {
 }
 
 kbd, .command {
-  background-color: #eef;
+  background-color: #eeeeff;
+}
+
+kbd:hover {
+  background-color: #e2e2ff;
 }
 
 .box {

@@ -305,6 +305,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Visible = false,
         Size = new(width: _rect.Width, height: 200),
         AutoSize = true,
+        ScrollBarsEnabled = false,
         Url = Files.GetDocUrl("tips.html"),
     };
 
@@ -511,11 +512,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
-    {
-        var (width, height) = _tips.Document.Body.ScrollRectangle.Size;
-        var newSize = new SizeF(width: width * 1.05f, height: height * 1.18f);
-        _tips.Size = Size.Round(newSize);
-    }
+        => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
 
     private static void help_Navigating(object sender,
                                         WebBrowserNavigatingEventArgs e)

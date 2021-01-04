@@ -1,15 +1,19 @@
-table, td {
+body {
   font-family: 'Segoe UI', 'Nimbus Sans L', sans-serif;
   font-size: small;
-  padding: 1px;
+  margin: 0;
+}
+
+td {
+  padding: 0 1px;
 }
 
 td, th {
   white-space: nowrap;
 }
 
-tfoot {
-  text-align: center;
+th, thead, tfoot {
+  padding: 0;
 }
 
 thead {
@@ -17,9 +21,14 @@ thead {
   color: #eee;
 }
 
-.cheat-sheet {
-  margin-left: -10px;
-  margin-top: -15px;
+tfoot {
+  text-align: center;
+}
+
+kbd {
+  font-family: 'IBM Plex Mono', 'Consolas', 'Source Code Pro', monospace;
+  font-variant: normal;
+  text-transform: uppercase;
 }
 
 .color-box {
