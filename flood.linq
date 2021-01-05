@@ -185,10 +185,9 @@ internal sealed class Launcher {
 
     private void HandleNumberInput(LC.TextBox sender, ref int? sink)
     {
-        if (int.TryParse(sender.Text, out var value) && value > 0)
-            sink = value;
-        else
-            sink = null;
+        sink = int.TryParse(sender.Text, out var value) && value > 0
+                ? value
+                : null;
 
         UpdateLaunchButton();
     }
@@ -232,7 +231,7 @@ internal sealed class Launcher {
 /// expandable/collapsable tips.
 /// </summary>
 internal sealed class MainPanel : TableLayoutPanel {
-    internal const int DefaultDelayInMilliseconds = 10;
+    internal static int DefaultDelayInMilliseconds { get; } = 10;
 
     internal MainPanel(Size canvasSize, HelpViewerSupplier supplier)
     {
@@ -248,12 +247,15 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas = new PictureBox {
             Image = _bmp,
             SizeMode = PictureBoxSizeMode.AutoSize,
+            Margin = CanvasMargin,
         };
 
+        _alertBar = CreateAlertBar();
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _infoBar = CreateInfoBar();
         _tips = CreateTips();
+
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
 
         InitializeMainPanel();
@@ -263,6 +265,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateOpenCloseHelp();
 
         SubscribeEventHandlers();
+
+        ShowAlert("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog.");
     }
 
     internal int DelayInMilliseconds { get; init; } =
@@ -290,6 +294,25 @@ internal sealed class MainPanel : TableLayoutPanel {
             Keys.Shift | Keys.Control => 10,
             _                         =>  5
         };
+
+    private TableLayoutPanel CreateAlertBar()
+    {
+        var alertBar = new TableLayoutPanel {
+            RowCount = 1,
+            ColumnCount = 2,
+            GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+            Width = _rect.Width,
+            Margin = CanvasMargin,
+            BackColor = AlertBackgroundColor,
+            Visible = false,
+        };
+
+        alertBar.Controls.Add(_alert);
+        alertBar.Controls.Add(_dismiss);
+        alertBar.Height = _dismiss.Height; // Must be after adding _dismiss.
+
+        return alertBar;
+    }
 
     private TableLayoutPanel CreateToggles()
     {
@@ -324,7 +347,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         infoBar.Controls.Add(_status, column: 1, row: 0);
         infoBar.Controls.Add(_toggles, column: 2, row: 0);
-        infoBar.Height = _toggles.Height; // Must be after adding toggles.
+        infoBar.Height = _toggles.Height; // Must be after adding _toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
 
         return infoBar;
@@ -347,13 +370,14 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void InitializeMainPanel()
     {
-        RowCount = 3;
+        RowCount = 4;
         ColumnCount = 1;
         GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         AutoScroll = true;
 
+        Controls.Add(_alertBar);
         Controls.Add(_canvas);
         Controls.Add(_infoBar);
         Controls.Add(_tips);
@@ -403,6 +427,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         HandleCreated += MainPanel_HandleCreated;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
+
+        _dismiss.Click += delegate { _alertBar.Hide(); };
 
         _canvas.MouseMove += canvas_MouseMove;
         _canvas.MouseClick += canvas_MouseClick;
@@ -555,6 +581,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
+    private void ShowAlert(string message)
+    {
+        _alert.Text = message;
+        _alertBar.Show();
+    }
+
     private async Task OpenHelp()
     {
         const string title = "Flood Fill Visualization - Help";
@@ -660,6 +692,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.Invalidate();
     }
 
+    private static Padding CanvasMargin { get; } =
+        new(left: 2, top: 2, right: 0, bottom: 0);
+
+    private static Color AlertBackgroundColor { get; } = Color.NavajoWhite;
+
     private readonly IContainer _components = new Container();
 
     private readonly System.Windows.Forms.Timer _nonessentialTimer;
@@ -680,11 +717,31 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Point _oldLocation = Point.Empty;
 
+    private readonly TableLayoutPanel _alertBar;
+
+    private readonly TextBox _alert = new() {
+        AutoSize = true,
+        BorderStyle = BorderStyle.None,
+        Font = new(TextBox.DefaultFont.FontFamily, 12, FontStyle.Bold),
+        BackColor = AlertBackgroundColor,
+        ForeColor = Color.Black,
+        ReadOnly = true,
+        Margin = new(left: 3, top: 0, right: 0, bottom: 0),
+    };
+
+    private readonly Button _dismiss = new() {
+        Text = "Dismiss",
+        BackColor = Button.DefaultBackColor,
+        AutoSize = true,
+        Margin = Padding.Empty,
+        Anchor = AnchorStyles.Right,
+    };
+
     private readonly TableLayoutPanel _infoBar;
 
     private readonly Label _status = new() {
         AutoSize = true,
-        Font = new(TextBox.DefaultFont.FontFamily, 10),
+        Font = new(Label.DefaultFont.FontFamily, 10),
     };
 
     private readonly TableLayoutPanel _toggles;
