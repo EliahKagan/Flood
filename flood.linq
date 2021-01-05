@@ -1,8 +1,11 @@
 <Query Kind="Statements">
+  <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
   <Namespace>LC = LINQPad.Controls</Namespace>
+  <Namespace>Microsoft.Web.WebView2.Core</Namespace>
+  <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>System.ComponentModel</Namespace>
@@ -26,8 +29,7 @@ if (Control.ModifierKeys.HasFlag(Keys.Shift)) {
     launcher.Display();
 } else {
     // Proceed immediately with the automatically suggested size.
-    new MainPanel(SuggestCanvasSize(), GetBestHelpViewerSupplier())
-        .Display();
+    new MainPanel(SuggestCanvasSize(), GetBestHelpViewerAsync).Display();
 }
 
 static Size SuggestCanvasSize()
@@ -38,17 +40,22 @@ static Size SuggestCanvasSize()
     return new(width: sideLength, height: sideLength);
 }
 
-// FIXME: Try WebVew2/Edge-based HelpViewer, with WebBrowser/IE as a fallback.
-static HelpViewerSupplier GetBestHelpViewerSupplier()
-    => GetOldHelpViewerSupplier();
+static Task<HelpViewer> GetOldHelpViewerAsync()
+    => Task.FromResult<HelpViewer>(WebBrowserHelpViewer.Create());
 
-static HelpViewerSupplier GetOldHelpViewerSupplier()
-    => () => new WebBrowserHelpViewer();
+static async Task<HelpViewer> GetBestHelpViewerAsync()
+{
+    try {
+        return await WebView2HelpViewer.CreateAsync();
+    } catch (EdgeNotFoundException) {
+        return WebBrowserHelpViewer.Create();
+    }
+}
 
 static void launcher_Launch(Launcher sender, LauncherEventArgs e)
 {
-    var supplier = (e.UseOldWebBrowser ? GetOldHelpViewerSupplier()
-                                       : GetBestHelpViewerSupplier());
+    HelpViewerSupplier supplier =
+        (e.UseOldWebBrowser ? GetOldHelpViewerAsync : GetBestHelpViewerAsync);
 
     new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
@@ -388,6 +395,8 @@ internal sealed class MainPanel : TableLayoutPanel {
             _openCloseHelp.Text = "Close Help";
             _toolTip.SetToolTip(_openCloseHelp, "Close panel with full help");
         }
+
+        _openCloseHelp.Enabled = true;
     }
 
     private void SubscribeEventHandlers()
@@ -511,31 +520,23 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateShowHideTips();
     }
 
-    private void openCloseHelp_Click(object? sender, EventArgs e)
+    private async void openCloseHelp_Click(object? sender, EventArgs e)
     {
-        const string title = "Flood Fill Visualization - Help";
-
-        if (_helpPanel is not null) {
+        if (_helpPanel is null)
+            await OpenHelp();
+        else
             _helpPanel.Close();
-            return;
-        }
-
-        var help = _helpViewerSupplier();
-        help.Source = Files.GetDocUrl("help.html");
-        help.Navigating += help_Navigating;
-        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
-
-        _helpPanel.PanelClosed += delegate {
-            _helpPanel = null;
-            UpdateOpenCloseHelp();
-        };
-
-        UpdateOpenCloseHelp();
     }
 
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
+
+    private void helpPanel_PanelClosed(object? sender, EventArgs e)
+    {
+        _helpPanel = null;
+        UpdateOpenCloseHelp();
+    }
 
     private static void help_Navigating(object sender,
                                         HelpViewerNavigatingEventArgs e)
@@ -556,6 +557,21 @@ internal sealed class MainPanel : TableLayoutPanel {
             FileName = e.Uri.AbsoluteUri,
             UseShellExecute = true,
         });
+    }
+
+    private async Task OpenHelp()
+    {
+        const string title = "Flood Fill Visualization - Help";
+
+        _openCloseHelp.Enabled = false;
+
+        var help = await _helpViewerSupplier();
+        help.Source = Files.GetDocUrl("help.html");
+        help.Navigating += help_Navigating;
+        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
+        _helpPanel.PanelClosed += helpPanel_PanelClosed;
+
+        UpdateOpenCloseHelp();
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -821,8 +837,7 @@ internal abstract class HelpViewer {
 /// <see cref="System.Windows.Forms.WebBrowser"/>-based help viewer.
 /// </summary>
 internal sealed class WebBrowserHelpViewer : HelpViewer {
-    internal WebBrowserHelpViewer()
-        => _webBrowser.Navigating += webBrowser_Navigating;
+    internal static HelpViewer Create() => new WebBrowserHelpViewer();
 
     /// <inheritdoc/>
     internal override Uri Source {
@@ -832,6 +847,9 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 
     /// <inheritdoc/>
     internal override Control WrappedControl => _webBrowser;
+
+    private WebBrowserHelpViewer()
+        => _webBrowser.Navigating += webBrowser_Navigating;
 
     private void webBrowser_Navigating(object sender,
                                        WebBrowserNavigatingEventArgs e)
@@ -845,9 +863,54 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 }
 
 /// <summary>
+/// <see cref="Microsoft.Web.WebView2.WinForms.WebView2"/>-based help viewer.
+/// </summary>
+internal sealed class WebView2HelpViewer : HelpViewer {
+    internal async static Task<HelpViewer> CreateAsync()
+    {
+        var webView2 = new WebView2();
+        await webView2.EnsureCoreWebView2Async();
+
+        var settings = webView2.CoreWebView2.Settings;
+        settings.AreHostObjectsAllowed = false;
+        settings.IsWebMessageEnabled = false;
+        settings.IsScriptEnabled = false;
+        settings.AreDefaultScriptDialogsEnabled = false;
+
+        return new WebView2HelpViewer(webView2);
+    }
+
+    /// <inheritdoc/>
+    internal override Uri Source {
+        get => _webView2.Source;
+        set => _webView2.Source = value;
+    }
+
+    /// <inheritdoc/>
+    internal override Control WrappedControl => _webView2;
+
+    private WebView2HelpViewer(WebView2 webView2)
+    {
+        _webView2 = webView2;
+        _webView2.NavigationStarting += webView2_NavigationStarting;
+    }
+
+    private void
+    webView2_NavigationStarting(object? sender,
+                                CoreWebView2NavigationStartingEventArgs e)
+    {
+        var eHelpViewer = new HelpViewerNavigatingEventArgs(new Uri(e.Uri));
+        OnNavigating(eHelpViewer);
+        e.Cancel = eHelpViewer.Cancel;
+    }
+
+    private readonly WebView2 _webView2;
+}
+
+/// <summary>
 /// Encapsulates a method that supplies a <see cref="HelpViewer"/>.
 /// </summary>
-internal delegate HelpViewer HelpViewerSupplier();
+internal delegate Task<HelpViewer> HelpViewerSupplier();
 
 /// <summary>
 /// Convenience methods for getting information about files and directories

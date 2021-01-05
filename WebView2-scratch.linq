@@ -1,5 +1,6 @@
 <Query Kind="Statements">
   <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
+  <Namespace>Microsoft.Web.WebView2.Core</Namespace>
   <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
