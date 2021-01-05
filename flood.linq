@@ -954,10 +954,15 @@ internal static class Shell {
 /// </summary>
 /// <typeparam name="T">The vertex type.</typeparam>
 internal interface IFringe<T> {
+    /// <summary>The number of vertices currently stored.</summary>
     int Count { get; }
 
+    /// <summary>Puts a vertex into this fringe.</summary>
+    /// <param name="vertex">The vertex to be inserted.</param>
     void Insert(T vertex);
 
+    /// <summary>Takes a vertex out of this fringe.</summary>
+    /// <returns>The extracted vertex.</returns>
     T Extract();
 }
 
@@ -967,15 +972,13 @@ internal interface IFringe<T> {
 /// </summary>
 /// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class StackFringe<T> : IFringe<T> {
-    /// <summary>The number of vertices currently stored.</summary>
+    /// <inheritdoc/>
     public int Count => _stack.Count;
 
-    /// <summary>Puts a vertex into this fringe.</summary>
-    /// <param name="vertex">The vertex to be inserted.</param>
+    /// <inheritdoc/>
     public void Insert(T vertex) => _stack.Push(vertex);
 
-    /// <summary>Takes a vertex out of this fringe.</summary>
-    /// <returns>The extracted vertex.</returns>
+    /// <inheritdoc/>
     public T Extract() => _stack.Pop();
 
     private readonly Stack<T> _stack = new();
