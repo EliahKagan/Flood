@@ -14,7 +14,7 @@ static string GetDocUrl(string filename)
     => Path.Combine(GetQueryDirectory(), filename);
 
 foreach (var name in new[] { "Tips", "Help" }) {
-    var wv = new WebView2();
+    var wv = new MyWebView2();
     await wv.EnsureCoreWebView2Async();
     var s = wv.CoreWebView2.Settings;
     s.AreHostObjectsAllowed = false;
@@ -23,7 +23,29 @@ foreach (var name in new[] { "Tips", "Help" }) {
     s.AreDefaultScriptDialogsEnabled = false;
     //s.AreDevToolsEnabled = false;
     wv.Source = new Uri(GetDocUrl($"{name.ToLower()}.html"));
+
     wv.Dump(name);
+    var pluginForm = (Form)wv.Parent;
+
+    //var panel = PanelManager.DisplayControl(wv, name);
+    //panel.GetType().GetEvents().Dump();
+}
+
+internal sealed class MyWebView2 : WebView2 {
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        // $"{nameof(OnVisibleChanged)} called.".Dump();
+
+        if (CoreWebView2 is not null) base.OnVisibleChanged(e);
+
+        //try {
+        //    base.OnVisibleChanged(e);
+        //} catch (NullReferenceException ex) {
+        //    ex.Dump();
+        //    CoreWebView2.Dump();
+        //    //throw;
+        //}
+    }
 }
 
 //var wv = new WebView2 {
