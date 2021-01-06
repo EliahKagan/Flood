@@ -267,6 +267,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         SubscribeEventHandlers();
 
         ShowAlert("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog.");
+        //ShowAlert("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog -- and the rest of the forest applauded in gallant encore.");
     }
 
     internal int DelayInMilliseconds { get; init; } =
@@ -297,12 +298,16 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private TableLayoutPanel CreateAlertBar()
     {
+        const int padLeft = 3;
+        const int padRight = 0;
+
         var alertBar = new TableLayoutPanel {
             RowCount = 1,
             ColumnCount = 2,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
             Margin = CanvasMargin,
+            Padding = new(left: padLeft, top: 0, right: padRight, bottom: 0),
             BackColor = AlertBackgroundColor,
             Visible = false,
         };
@@ -310,6 +315,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         alertBar.Controls.Add(_alert);
         alertBar.Controls.Add(_dismiss);
         alertBar.Height = _dismiss.Height; // Must be after adding _dismiss.
+
+        // TODO: Someday, figure out why every attempt to do this in a
+        // reasonable way failed (and why some raised NullReferenceException).
+        _alert.Width = alertBar.Width - (_dismiss.Width + padLeft + padRight);
 
         return alertBar;
     }
@@ -721,20 +730,21 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly TextBox _alert = new() {
         AutoSize = true,
+        Anchor = AnchorStyles.Left,
+        Margin = Padding.Empty,
         BorderStyle = BorderStyle.None,
-        Font = new(TextBox.DefaultFont.FontFamily, 12, FontStyle.Bold),
+        Font = new("Segoe UI Semibold", 10),
         BackColor = AlertBackgroundColor,
         ForeColor = Color.Black,
         ReadOnly = true,
-        Margin = new(left: 3, top: 0, right: 0, bottom: 0),
     };
 
     private readonly Button _dismiss = new() {
         Text = "Dismiss",
         BackColor = Button.DefaultBackColor,
         AutoSize = true,
-        Margin = Padding.Empty,
         Anchor = AnchorStyles.Right,
+        Margin = Padding.Empty,
     };
 
     private readonly TableLayoutPanel _infoBar;
