@@ -265,9 +265,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateOpenCloseHelp();
 
         SubscribeEventHandlers();
-
-        ShowAlert("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog.");
-        //ShowAlert("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog -- and the rest of the forest applauded in gallant encore.");
     }
 
     internal int DelayInMilliseconds { get; init; } =
@@ -441,6 +438,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void SubscribeEventHandlers()
     {
         HandleCreated += MainPanel_HandleCreated;
+        VisibleChanged += MainPanel_VisibleChanged;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _alert.GotFocus += alert_GotFocus;
@@ -471,6 +469,18 @@ internal sealed class MainPanel : TableLayoutPanel {
         pluginForm.Activated += delegate { _nonessentialTimer.Stop(); };
         pluginForm.Deactivate += delegate { _nonessentialTimer.Start(); };
         _nonessentialTimer.Start();
+    }
+
+    private void MainPanel_VisibleChanged(object? sender, EventArgs e)
+    {
+        if (_shownBefore || !Visible) return;
+
+        _shownBefore = true;
+
+        if (VScroll) {
+            ShowAlert("Low vertical space."
+                    + " Rearranging panels (Ctrl+F8) may help.");
+        }
     }
 
     private void alert_GotFocus(object? sender, EventArgs e)
@@ -801,6 +811,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _oldJobs = -1;
 
     private int _jobs = 0;
+
+    private bool _shownBefore = false;
 };
 
 /// <summary>
