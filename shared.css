@@ -18,3 +18,35 @@ kbd {
 kbd:hover {
   background-color: #e2e2e2;
 }
+
+.box {
+  border: 1px solid black;
+  display: inline-block;
+  height: .9em;
+  vertical-align: -10%;
+  width: .9em;
+}
+
+.box-black {
+  background-color: black;
+}
+
+.box-red {
+  background-color: red;
+}
+
+.box-blue {
+  background-color: blue;
+}
+
+.box-yellow {
+  background-color: yellow;
+}
+
+.box-purple {
+  background-color: purple;
+}
+
+.box-orange {
+  background-color: orange;
+}

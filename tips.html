@@ -24,50 +24,32 @@ Different fills use different data structures for the fringe, which affects the 
               </thead>
               <tbody>
                 <tr title="Use a stack/LIFO (last-in first-out) for the fringe.">
-                  <td>
-                    <div title="red" class="color-box color-box-stack-fill">
-                    </div>
-                  </td>
+                  <td><div title="red" class="box box-red"></div></td>
                   <td>Stack</td>
                   <td>Right click</td>
                 </tr>
                 <tr title="Use a queue/FIFO (first-in first-out) for the fringe.">
-                  <td>
-                    <div title="blue" class="color-box color-box-queue-fill">
-                    </div>
-                  </td>
+                  <td><div title="blue" class="box box-blue"></div></td>
                   <td>Queue</td>
                   <td>Middle click</td>
                 </tr>
                 <tr title="Use a fringe where extraction is by random selection.">
-                  <td>
-                    <div title="yellow" class="color-box color-box-random-fill">
-                    </div>
-                  </td>
+                  <td><div title="yellow" class="box box-yellow"></div></td>
                   <td>Random</td>
                   <td><kbd>Alt</kbd>+Right-click</td>
                 </tr>
                 <tr title="Use a deque for the fringe, extracting from either end with equal probability.">
-                  <td>
-                    <div title="purple" class="color-box color-box-deque-fill">
-                    </div>
-                  </td>
+                  <td><div title="purple" class="box box-purple"></div></td>
                   <td>Deque</td>
                   <td><kbd>Alt</kbd>+Middle-click</td>
                 </tr>
                 <tr title="Recursive depth-first fill (similar to stack fill).">
-                  <td>
-                    <div title="orange" class="color-box color-box-recursive-fill">
-                    </div>
-                  </td>
+                  <td><div title="orange" class="box box-orange"></div></td>
                   <td>Recursive</td>
                   <td><kbd>&#8862;Win</kbd>+Right-click</td>
                 </tr>
                 <tr title="Non-animated fill, performed all at once.">
-                  <td>
-                    <div title="black" class="color-box color-box-instant-fill">
-                    </div>
-                  </td>
+                  <td><div title="black" class="box box-black"></div></td>
                   <td>Instant</td>
                   <td><kbd>&#8862;Win</kbd>+Left-click</td>
                 </tr>
@@ -79,7 +61,7 @@ Different fills use different data structures for the fringe, which affects the 
               <tr>
                 <td class="standalone">
                   Left click/drag to draw a
-                  <span title="black" class="color-box color-box-draw">
+                  <span title="black" class="box box-black">
                   </span>&#8239;Point/curve.
                 </td>
               </tr>
@@ -97,19 +79,19 @@ Different fills use different data structures for the fringe, which affects the 
                           <tbody>
                             <tr title="Update the canvas for each pixel.">
                               <td><kbd>Shift</kbd></td>
-                              <td class="number-cell">1x</td>
+                              <td class="number-cell">1&times;</td>
                             </tr>
                             <tr title="Update the canvas after every 5 pixels.">
                               <td>(default)</td>
-                              <td class="number-cell">5x</td>
+                              <td class="number-cell">5&times;</td>
                             </tr>
                             <tr title="Update the canvas after every 10 pixels.">
                               <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd></td>
-                              <td class="number-cell">10x</td>
+                              <td class="number-cell">10&times;</td>
                             </tr>
                             <tr title="Update the canvas after every 20 pixels.">
                               <td><kbd>Ctrl</kbd></td>
-                              <td class="number-cell">20x</td>
+                              <td class="number-cell">20&times;</td>
                             </tr>
                           </tbody>
                         </table>

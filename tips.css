@@ -1,6 +1,7 @@
 body {
   font-family: 'Segoe UI', 'Nimbus Sans L', sans-serif;
   font-size: small;
+  font-variant-numeric: tabular-nums;
   margin: 0;
 }
 
@@ -29,37 +30,6 @@ kbd {
   font-family: 'IBM Plex Mono', 'Consolas', 'Source Code Pro', monospace;
   font-variant: normal;
   text-transform: uppercase;
-}
-
-.color-box {
-  border: 1px solid black;
-  display: inline-block;
-  height: 1em;
-  width: 1em;
-}
-
-.color-box-draw, .color-box-instant-fill {
-  background-color: black;
-}
-
-.color-box-stack-fill {
-  background-color: red;
-}
-
-.color-box-queue-fill {
-  background-color: blue;
-}
-
-.color-box-random-fill {
-  background-color: yellow;
-}
-
-.color-box-deque-fill {
-  background-color: purple;
-}
-
-.color-box-recursive-fill {
-  background-color: orange;
 }
 
 .number-cell {
