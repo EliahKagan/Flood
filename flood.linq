@@ -296,6 +296,12 @@ internal sealed class MainPanel : TableLayoutPanel {
             _                         =>  5
         };
 
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MainPanel)})");
+
+    [DllImport("user32.dll")]
+    private static extern bool HideCaret(IntPtr hWnd);
+
     private TableLayoutPanel CreateAlertBar()
     {
         const int padLeft = 3;
@@ -437,6 +443,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         HandleCreated += MainPanel_HandleCreated;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
+        _alert.GotFocus += alert_GotFocus;
         _dismiss.Click += delegate { _alertBar.Hide(); };
 
         _canvas.MouseMove += canvas_MouseMove;
@@ -464,6 +471,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         pluginForm.Activated += delegate { _nonessentialTimer.Stop(); };
         pluginForm.Deactivate += delegate { _nonessentialTimer.Start(); };
         _nonessentialTimer.Start();
+    }
+
+    private void alert_GotFocus(object? sender, EventArgs e)
+    {
+        if (!HideCaret(_alert.Handle)) Warn("Failure hiding alert caret");
     }
 
     private void canvas_MouseMove(object? sender, MouseEventArgs e)
@@ -737,6 +749,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         BackColor = AlertBackgroundColor,
         ForeColor = Color.Black,
         ReadOnly = true,
+        Cursor = Cursors.Arrow,
+        TabStop = false,
     };
 
     private readonly Button _dismiss = new() {
