@@ -661,8 +661,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var jobId = ++_jobsEver;
         ++_jobs;
-        using var timer = new LapTimer(
-                $"Job #{jobId} (#{fringe.GetType().GetFillName()})");
+        using var timer = new LapTimer($"Job #{jobId} (#{fringe.Label} fill)");
         UpdateStatus();
         var area = 0;
 
@@ -1078,6 +1077,9 @@ internal static class Shell {
 /// </summary>
 /// <typeparam name="T">The vertex type.</typeparam>
 internal interface IFringe<T> {
+    /// <summary>Description of this fringe (at least of its type).</summary>
+    string Label { get; }
+
     /// <summary>The number of vertices currently stored.</summary>
     int Count { get; }
 
@@ -1097,6 +1099,9 @@ internal interface IFringe<T> {
 /// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class StackFringe<T> : IFringe<T> {
     /// <inheritdoc/>
+    public string Label => "stack";
+
+    /// <inheritdoc/>
     public int Count => _stack.Count;
 
     /// <inheritdoc/>
@@ -1114,6 +1119,9 @@ internal sealed class StackFringe<T> : IFringe<T> {
 /// </summary>
 /// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class QueueFringe<T> : IFringe<T> {
+    /// <inheritdoc/>
+    public string Label => "queue";
+
     /// <inheritdoc/>
     public int Count => _queue.Count;
 
@@ -1133,6 +1141,9 @@ internal sealed class QueueFringe<T> : IFringe<T> {
 /// <typeparam name="T">The vertex type.</typeparam>
 internal sealed class RandomFringe<T> : IFringe<T> {
     internal RandomFringe(Func<int, int> generator) => _generator = generator;
+
+    /// <inheritdoc/>
+    public string Label => "random";
 
     /// <inheritdoc/>
     public int Count => _items.Count;
@@ -1164,6 +1175,9 @@ internal sealed class DequeFringe<T> : IFringe<T> {
     internal DequeFringe(Func<int, int> generator) => _generator = generator;
 
     /// <inheritdoc/>
+    public string Label => "deque";
+
+    /// <inheritdoc/>
     public int Count => _deque.Count;
 
     /// <inheritdoc/>
@@ -1193,20 +1207,6 @@ internal enum Direction {
     Down,
 }
 
-/// <summary>LINQ operators not found in Enumerable or MoreLinq.</summary>
-internal static class EnumerableExtensions {
-    internal static IEnumerable<T> Replace<T>(this IEnumerable<T> source,
-                                              T pattern,
-                                              T replacement,
-                                              IEqualityComparer<T> comparer)
-        => source.Select(item => comparer.Equals(item, pattern) ? replacement
-                                                                : item);
-
-    internal static string Paste<T>(this IEnumerable<T> source,
-                                    string separator)
-        => string.Join(separator, source);
-}
-
 /// <summary>
 /// Provides an extension method for finding an adjacent point (in an image)
 /// in a specified direction.
@@ -1231,33 +1231,6 @@ internal static class SizeExtensions {
                                      out int width,
                                      out int height)
         => (width, height) = (size.Width, size.Height);
-}
-
-/// <summary>Provides some extension methods useful for parsing.</summary>
-internal static class StringExtensions {
-    internal static string Before(this string text, char delimiter)
-    {
-        var end = text.IndexOf(delimiter);
-        return end == -1 ? text : text[0..end];
-    }
-
-    internal static IEnumerable<string> LowerCamelWords(this string name)
-        => CamelParser.Matches(name).Select(match => match.Value.ToLower());
-
-    private static Regex CamelParser { get; } =
-        new Regex(@"(?:^.|\p{Lu})\P{Lu}*");
-}
-
-/// <summary>
-/// Provides specialized (not generally useful) type object extension methods.
-/// </summary>
-internal static class TypeExtensions {
-    internal static string GetFillName(this Type fringeType)
-        => fringeType.Name
-            .Before('`')
-            .LowerCamelWords()
-            .Replace("fringe", "fill", StringComparer.Ordinal)
-            .Paste(" ");
 }
 
 /// <summary>
