@@ -473,15 +473,30 @@ internal sealed class MainPanel : TableLayoutPanel {
         _nonessentialTimer.Start();
     }
 
-    private void MainPanel_VisibleChanged(object? sender, EventArgs e)
+    private async void MainPanel_VisibleChanged(object? sender, EventArgs e)
     {
+        const string message =
+            "Low vertical space. Rearranging panels (Ctrl+F8) may help.";
+
         if (_shownBefore || !Visible) return;
 
         _shownBefore = true;
 
+        // When the launcher is used, even without changing anything, VScroll
+        // is always true here, which caused "Low vertical space" to always
+        // appear. Processing enqueued window messages first works around it. I
+        // don't know why. I suspect this is too early and should be a handler
+        // for another event (maybe on the PluginForm). I haven't encountered
+        // cases without the launcher but I suspect there may be others, and
+        // since the user can't interact much with the panel in that time, this
+        // seems harmless.
+        //
+        // TODO: Figure out what's going on and if there's a better fix.
+        await Task.Yield();
+
         if (VScroll) {
-            ShowAlert("Low vertical space."
-                    + " Rearranging panels (Ctrl+F8) may help.");
+            ShowAlert(message);
+            VerticalScroll.Value = 0; // Also needed when the launcher is used.
         }
     }
 
