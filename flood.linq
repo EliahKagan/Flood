@@ -509,7 +509,16 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         if (e.Button == MouseButtons.Left) {
             _graphics.DrawLine(_pen, _oldLocation, e.Location);
-            _canvas.Invalidate();
+
+            var x1 = Math.Min(_oldLocation.X, e.Location.X);
+            var y1 = Math.Min(_oldLocation.Y, e.Location.Y);
+            var x2 = Math.Max(_oldLocation.X, e.Location.X);
+            var y2 = Math.Max(_oldLocation.Y, e.Location.Y);
+
+            var corner = new Point(x: x1, y: y1);
+            var size = new Size(width: x2 - x1 + 1, height: y2 - y1 + 1);
+
+            _canvas.Invalidate(new Rectangle(corner, size));
         }
 
         _oldLocation = e.Location;
@@ -526,7 +535,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         case MouseButtons.Left:
             _bmp.SetPixel(e.Location.X, e.Location.Y, Color.Black);
-            _canvas.Invalidate();
+            _canvas.Invalidate(e.Location);
             break;
 
         case MouseButtons.Right when SuperIsPressed:
@@ -727,28 +736,30 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void InstantFill(Point start, Color toColor)
     {
+        var bounds = new RectangleBuilder(start);
         var toArgb = toColor.ToArgb();
 
         using (var lb = new LockedBits(_bmp, _rect)) {
             var fromArgb = lb[start.X, start.Y];
             if (fromArgb == toArgb) return;
 
-            var fringe = new Stack<(int x, int y)>();
+            var fringe = new Stack<Point>();
 
-            for (fringe.Push((start.X, start.Y)); fringe.Count != 0; ) {
-                var (x, y) = fringe.Pop();
-                if (!lb.Has(x, y) || lb[x, y] != fromArgb) continue;
+            for (fringe.Push(start); fringe.Count != 0; ) {
+                var src = fringe.Pop();
 
-                lb[x, y] = toArgb;
+                if (!lb.Has(src.X, src.Y) || lb[src.X, src.Y] != fromArgb)
+                    continue;
 
-                fringe.Push((x - 1, y));
-                fringe.Push((x + 1, y));
-                fringe.Push((x, y - 1));
-                fringe.Push((x, y + 1));
+                lb[src.X, src.Y] = toArgb;
+                bounds.Add(src);
+
+                foreach (var direction in FastEnumInfo<Direction>.Values)
+                    fringe.Push(src.Go(direction));
             }
         }
 
-        _canvas.Invalidate();
+        _canvas.Invalidate(bounds);
     }
 
     private static Padding CanvasMargin { get; } =
@@ -1228,6 +1239,23 @@ internal static class EnumerableExtensions {
 }
 
 /// <summary>
+/// Provides extension methods for invalidating regions of a control.
+/// </summary>
+internal static class ControlExtensions {
+    internal static void Invalidate(this Control control, Point point)
+        => control.Invalidate(new Rectangle(point, new Size(1, 1)));
+
+    internal static void Invalidate(this Control control,
+                                    Point point1,
+                                    Point point2)
+        => control.Invalidate(RectangleBuilder.BuildFrom(point1, point2));
+
+    internal static void Invalidate(this Control control,
+                                    RectangleBuilder bounds)
+        => control.Invalidate(bounds.Build());
+}
+
+/// <summary>
 /// Provides an extension method for finding an adjacent point (in an image)
 /// in a specified direction.
 /// </summary>
@@ -1322,7 +1350,7 @@ internal abstract class ConfigurableNeighborEnumerationStrategy
 /// <remarks>The substrategy determines the specific order used.</remarks>
 internal sealed class UniformStrategy
         : ConfigurableNeighborEnumerationStrategy {
-    internal UniformStrategy() : this(FastEnumInfo<Direction>.GetValues()) { }
+    internal UniformStrategy() : this(FastEnumInfo<Direction>.CopyValues()) { }
 
     internal UniformStrategy(params Direction[] uniformOrder) : base("Uniform")
         => _uniformOrder = uniformOrder[..];
@@ -1364,7 +1392,7 @@ internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
     /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier()
     {
-        var order = FastEnumInfo<Direction>.GetValues();
+        var order = FastEnumInfo<Direction>.CopyValues();
         order.Shuffle(_generator);
         return src => Array.ConvertAll(order, direction => src.Go(direction));
     }
@@ -1382,8 +1410,8 @@ internal sealed class RandomEachTimeStrategy : NeighborEnumerationStrategy {
     internal RandomEachTimeStrategy(Func<int, int> generator)
             : base("Random always")
         => _supply = src => {
-            var neighbors = FastEnumInfo<Direction>.ConvertValues(
-                                direction => src.Go(direction));
+            var neighbors = FastEnumInfo<Direction>
+                            .ConvertValues(direction => src.Go(direction));
             neighbors.Shuffle(generator);
             return neighbors;
         };
@@ -1418,7 +1446,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 
         for (var x = 0; x < size.Width; ++x) {
             for (var y = 0; y < size.Height; ++y) {
-                var directions = FastEnumInfo<Direction>.GetValues();
+                var directions = FastEnumInfo<Direction>.CopyValues();
                 directions.Shuffle(generator);
                 perPixelOrders[x, y] = directions;
             }
@@ -1521,7 +1549,9 @@ internal sealed class ReverseComparer<T> : IComparer<T> {
 /// </summary>
 /// <typeparam name="T">The enum to provide information about.</typeparam>
 internal static class FastEnumInfo<T> where T : struct, Enum {
-    internal static T[] GetValues() => _values[..];
+    internal static ReadOnlySpan<T> Values => _values;
+
+    internal static T[] CopyValues() => _values[..];
 
     internal static TOutput[]
     ConvertValues<TOutput>(Converter<T, TOutput> converter)
@@ -1569,6 +1599,46 @@ internal sealed class LapTimer : IDisposable {
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
     private readonly List<TimeSpan> _times = new() { TimeSpan.Zero };
+}
+
+/// <summary>Builds minimal rectangles encompassing specified points.</summary>
+/// <remarks>The rectangles' height and width are strictly positive.</remarks>
+internal sealed class RectangleBuilder {
+    internal static Rectangle BuildFrom(Point point1, Point point2)
+        => BuildFromCorners(minX: Math.Min(point1.X, point2.X),
+                            minY: Math.Min(point1.Y, point2.Y),
+                            maxX: Math.Max(point1.X, point2.X),
+                            maxY: Math.Max(point1.Y, point2.Y));
+
+    internal RectangleBuilder(Point start)
+    {
+        _minX = _maxX = start.X;
+        _minY = _maxY = start.Y;
+    }
+
+    internal void Add(Point point)
+    {
+        _minX = Math.Min(_minX, point.X);
+        _minY = Math.Min(_minY, point.Y);
+        _maxX = Math.Max(_maxX, point.X);
+        _maxY = Math.Max(_maxY, point.Y);
+    }
+
+    internal Rectangle Build()
+        => BuildFromCorners(minX: _minX,
+                            minY: _minY,
+                            maxX: _maxX,
+                            maxY: _maxY);
+
+    private static Rectangle
+    BuildFromCorners(int minX, int minY, int maxX, int maxY)
+    {
+        var topLeft = new Point(x: minX, y: minY);
+        var size = new Size(width: maxX - minX + 1, height: maxY - minY + 1);
+        return new Rectangle(topLeft, size);
+    }
+
+    private int _minX, _minY, _maxX, _maxY;
 }
 
 /// <summary>
