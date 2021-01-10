@@ -1178,7 +1178,7 @@ internal static class PointExtensions {
 }
 
 /// <summary>
-/// Provies an extension method for deconstructing the size (of an image or
+/// Provides an extension method for deconstructing the size (of an image or
 /// control) into its constituent dimensions.
 /// </summary>
 internal static class SizeExtensions {
