@@ -1551,10 +1551,12 @@ internal sealed class LapTimer : IDisposable {
 
         const char nnbsp = '\u202F'; // Narrow no-break space.
 
-        var meta = string.Join(" - ",
+        var meta = string.Join("     ",
             _title,
-            $"{_times[^1].TotalSeconds:F3}{nnbsp}s (total)",
-            $"{deltas.Average().TotalMilliseconds:F1}{nnbsp}ms (mean)");
+            $"total {_times[^1].TotalSeconds:F3}{nnbsp}s",
+            $"mean {deltas.Average().TotalMilliseconds:F1}{nnbsp}ms",
+            $"min {deltas.Min().TotalMilliseconds:F1}{nnbsp}ms",
+            $"max {deltas.Max().TotalMilliseconds:F1}{nnbsp}ms");
 
         chart.Titles.Add(meta);
         chart.Dump(_title);
