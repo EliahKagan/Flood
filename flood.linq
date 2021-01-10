@@ -280,13 +280,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         base.Dispose(disposing);
     }
 
-    private static bool AltIsPressed => Control.ModifierKeys.HasFlag(Keys.Alt);
+    private static bool AltIsPressed => ModifierKeys.HasFlag(Keys.Alt);
 
     private static bool SuperIsPressed
         => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
 
     private static int DecideSpeed()
-        => (Control.ModifierKeys & (Keys.Shift | Keys.Control)) switch {
+        => (ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
             Keys.Control              => 20,
             Keys.Shift | Keys.Control => 10,
@@ -553,7 +553,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (e.Delta == 0) return; // I'm not sure if this is possible.
         ((HandledMouseEventArgs)e).Handled = true;
 
-        if (!Control.ModifierKeys.HasFlag(Keys.Shift)) {
+        if (!ModifierKeys.HasFlag(Keys.Shift)) {
             // Scrolling without Shift cycles neighbor enumeration strategies.
             if (scrollingDown)
                 _neighborEnumerationStrategies.CycleNext();
@@ -1384,7 +1384,6 @@ internal sealed class Carousel<T> {
 
     private int _pos = 0;
 }
-
 
 /// <summary>
 /// Methods for generating random and non-random permutations.
