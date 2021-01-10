@@ -1207,6 +1207,26 @@ internal enum Direction {
     Down,
 }
 
+/// <summary>LINQ operators not found in Enumerable or MoreLinq.</summary>
+internal static class EnumerableExtensions {
+    internal static IEnumerable<TimeSpan>
+    Deltas(this IEnumerable<TimeSpan> times)
+        => times.Pairwise((before, after) => after - before);
+
+    internal static TimeSpan Average(this IEnumerable<TimeSpan> durations)
+    {
+        var sum = TimeSpan.Zero;
+        var count = 0;
+
+        foreach (var duration in durations) {
+            sum += duration;
+            ++count;
+        }
+
+        return sum / count;
+    }
+}
+
 /// <summary>
 /// Provides an extension method for finding an adjacent point (in an image)
 /// in a specified direction.
@@ -1519,13 +1539,25 @@ internal sealed class LapTimer : IDisposable {
         _timer.Stop();
         Lap();
 
-        _times.Pairwise((before, after) => after - before)
-              .Select((duration, index) => new {
-                    Milliseconds = duration.TotalMilliseconds,
-                    Lap = index + 1
-                })
-              .Chart(datum => datum.Lap, datum => datum.Milliseconds)
-              .Dump(_title);
+        var deltas = _times.Deltas().ToList();
+
+        var chart = deltas.Select((duration, index) => new {
+                                Milliseconds = duration.TotalMilliseconds,
+                                Lap = index + 1
+                            })
+                          .Chart(datum => datum.Lap,
+                                 datum => datum.Milliseconds)
+                          .ToWindowsChart();
+
+        const char nnbsp = '\u202F'; // Narrow no-break space.
+
+        var meta = string.Join(" - ",
+            _title,
+            $"{_times[^1].TotalSeconds:F3}{nnbsp}s (total)",
+            $"{deltas.Average().TotalMilliseconds:F1}{nnbsp}ms (mean)");
+
+        chart.Titles.Add(meta);
+        chart.Dump(_title);
     }
 
     internal void Lap() => _times.Add(_timer.Elapsed);
