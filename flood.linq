@@ -661,7 +661,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var jobId = ++_jobsEver;
         ++_jobs;
-        using var timer = new LapTimer($"Job #{jobId} (#{fringe.Label} fill)");
+        using var timer = new LapTimer($"Job {jobId} ({fringe.Label} fill)");
         UpdateStatus();
         var area = 0;
 
@@ -698,7 +698,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var jobId = ++_jobsEver;
         ++_jobs;
-        using var timer = new LapTimer($"Job #{jobId} (recursive fill)");
+        using var timer = new LapTimer($"Job {jobId} (recursive fill)");
         UpdateStatus();
         var area = 0;
 
@@ -1519,7 +1519,13 @@ internal sealed class LapTimer : IDisposable {
         _timer.Stop();
         Lap();
 
-       _times.Pairwise((before, after) => after - before).Dump(_title);
+        _times.Pairwise((before, after) => after - before)
+              .Select((duration, index) => new {
+                    Milliseconds = duration.TotalMilliseconds,
+                    Lap = index + 1
+                })
+              .Chart(datum => datum.Lap, datum => datum.Milliseconds)
+              .Dump(_title);
     }
 
     internal void Lap() => _times.Add(_timer.Elapsed);
