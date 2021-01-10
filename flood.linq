@@ -1,5 +1,6 @@
 <Query Kind="Statements">
   <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
@@ -8,6 +9,7 @@
   <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
+  <Namespace>static MoreLinq.Extensions.PairwiseExtension</Namespace>
   <Namespace>System.ComponentModel</Namespace>
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Drawing.Imaging</Namespace>
@@ -642,7 +644,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         var speed = DecideSpeed();
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+        var jobId = ++_jobsEver;
         ++_jobs;
+        using var timer = new LapTimer(
+                $"Job #{jobId} (#{fringe.GetType().GetFillName()})");
         UpdateStatus();
         var area = 0;
 
@@ -653,7 +658,10 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 continue;
 
-            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
+            if (area++ % speed == 0) {
+                await Task.Delay(DelayInMilliseconds);
+                timer.Lap();
+            }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate();
@@ -674,6 +682,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         var speed = DecideSpeed();
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+        var jobId = ++_jobsEver;
+        ++_jobs;
+        using var timer = new LapTimer($"Job #{jobId} (recursive fill)");
+        UpdateStatus();
         var area = 0;
 
         async Task FillFromAsync(Point src)
@@ -682,7 +694,10 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 return;
 
-            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
+            if (area++ % speed == 0) {
+                await Task.Delay(DelayInMilliseconds);
+                timer.Lap();
+            }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate();
@@ -690,8 +705,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             foreach (var dest in supplier(src)) await FillFromAsync(dest);
         }
 
-        ++_jobs;
-        UpdateStatus();
+
         await FillFromAsync(start);
         --_jobs;
         UpdateStatus();
@@ -811,6 +825,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _oldJobs = -1;
 
     private int _jobs = 0;
+
+    private int _jobsEver = 0;
 
     private bool _shownBefore = false;
 };
@@ -1162,6 +1178,20 @@ internal enum Direction {
     Down,
 }
 
+/// <summary>LINQ operators not found in Enumerable or MoreLinq.</summary>
+internal static class EnumerableExtensions {
+    internal static IEnumerable<T> Replace<T>(this IEnumerable<T> source,
+                                              T pattern,
+                                              T replacement,
+                                              IEqualityComparer<T> comparer)
+        => source.Select(item => comparer.Equals(item, pattern) ? replacement
+                                                                : item);
+
+    internal static string Paste<T>(this IEnumerable<T> source,
+                                    string separator)
+        => string.Join(separator, source);
+}
+
 /// <summary>
 /// Provides an extension method for finding an adjacent point (in an image)
 /// in a specified direction.
@@ -1186,6 +1216,33 @@ internal static class SizeExtensions {
                                      out int width,
                                      out int height)
         => (width, height) = (size.Width, size.Height);
+}
+
+/// <summary>Provides some extension methods useful for parsing.</summary>
+internal static class StringExtensions {
+    internal static string Before(this string text, char delimiter)
+    {
+        var end = text.IndexOf(delimiter);
+        return end == -1 ? text : text[0..end];
+    }
+
+    internal static IEnumerable<string> LowerCamelWords(this string name)
+        => CamelParser.Matches(name).Select(match => match.Value.ToLower());
+
+    private static Regex CamelParser { get; } =
+        new Regex(@"(?:^.|\p{Lu})\P{Lu}*");
+}
+
+/// <summary>
+/// Provides specialized (not generally useful) type object extension methods.
+/// </summary>
+internal static class TypeExtensions {
+    internal static string GetFillName(this Type fringeType)
+        => fringeType.Name
+            .Before('`')
+            .LowerCamelWords()
+            .Replace("fringe", "fill", StringComparer.Ordinal)
+            .Paste(" ");
 }
 
 /// <summary>
@@ -1463,6 +1520,27 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
         => Array.ConvertAll(_values, converter);
 
     private static readonly T[] _values = Enum.GetValues<T>();
+}
+
+/// <summary>Times each step of a process and provides charting.</summary>
+internal sealed class LapTimer : IDisposable {
+    internal LapTimer(string title) => _title = title.ToString();
+
+    public void Dispose()
+    {
+        _timer.Stop();
+        Lap();
+
+       _times.Pairwise((before, after) => after - before).Dump(_title);
+    }
+
+    internal void Lap() => _times.Add(_timer.Elapsed);
+
+    private readonly string _title;
+
+    private readonly Stopwatch _timer = Stopwatch.StartNew();
+
+    private readonly List<TimeSpan> _times = new() { TimeSpan.Zero };
 }
 
 /// <summary>
