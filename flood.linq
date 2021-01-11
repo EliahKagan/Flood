@@ -1313,11 +1313,6 @@ internal sealed class UniformStrategy
         => _uniformOrder = uniformOrder[..];
 
     /// <inheritdoc/>
-    private protected override string Detail
-        => new string(Array.ConvertAll(_uniformOrder,
-                                       direction => direction.ToString()[0]));
-
-    /// <inheritdoc/>
     internal override Func<Point, Point[]> GetSupplier()
     {
         var uniformOrder = _uniformOrder[..];
@@ -1333,6 +1328,11 @@ internal sealed class UniformStrategy
     /// <inheritdoc/>
     internal override void CyclePrevSubStrategy()
         => _uniformOrder.CyclePrevPermutation();
+
+    /// <inheritdoc/>
+    private protected override string Detail
+        => new string(Array.ConvertAll(_uniformOrder,
+                                       direction => direction.ToString()[0]));
 
     private readonly Direction[] _uniformOrder;
 }
