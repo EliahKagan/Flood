@@ -1480,7 +1480,7 @@ internal static class Permutations {
         => Array.Reverse(items, startInclusive, endExclusive - startInclusive);
 }
 
-/// <summary>Adaptor for reversing the direction of a comparer.</summary>
+/// <summary>Adapter for reversing the direction of a comparer.</summary>
 /// <typeparam name="T">The element type the comparer accepts.</typeparam>
 internal sealed class ReverseComparer<T> : IComparer<T> {
     internal static IComparer<T> Default { get; } =
@@ -1493,11 +1493,9 @@ internal sealed class ReverseComparer<T> : IComparer<T> {
     private readonly IComparer<T> _comparer;
 }
 
-/// <summary>
-/// Methods to access information about enums quickly by caching the
-/// results of reflection.
-/// </summary>
+/// <summary>Methods to get information about enums quickly.</summary>
 /// <typeparam name="T">The enum to provide information about.</typeparam>
+/// <remarks>Works by caching results of slow reflective operations.</remarks>
 internal static class FastEnumInfo<T> where T : struct, Enum {
     internal static ReadOnlySpan<T> Values => _values;
 
@@ -1551,8 +1549,8 @@ internal sealed class RectangleBuilder {
 }
 
 /// <summary>
-/// A specialized 2-dimensional span managing lifetime and access to a
-/// region in a 32-bit ARGB bitmap image.
+/// A specialized 2-dimensional span managing lifetime and access to a region
+/// in a 32-bit ARGB bitmap image.
 /// </summary>
 internal readonly ref struct LockedBits {
     internal LockedBits(Bitmap bmp, Rectangle rect)
