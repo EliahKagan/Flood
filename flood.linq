@@ -590,7 +590,10 @@ internal sealed class MainPanel : TableLayoutPanel {
                 strategy.CycleNextSubStrategy();
             else
                 strategy.CyclePrevSubStrategy();
-        } // TODO: Maybe show a message on a nonconfigurable current strategy.
+        } else {
+            ShowAlert($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
+                    + " strategy has no sub-strategies to scroll.");
+        }
 
         UpdateStatus();
     }
