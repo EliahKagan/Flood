@@ -455,6 +455,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void MainPanel_HandleCreated(object? sender, EventArgs e)
     {
+        // Free any previous canvas and stop its fills from processing.
+        // TODO: Is there a better way? (Note: F5 doesn't dispose the panel.)
+        Util.NewProcess = true;
+
         var pluginForm = (Form)Parent;
 
         if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
