@@ -673,9 +673,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var jobId = ++_jobsEver;
         ++_jobs;
-        using var timer = new LapTimer($"Job {jobId} ({fringe.Label} fill)");
         UpdateStatus();
         var area = 0;
+        var timer = LapTimer.StartNew($"Job {jobId} ({fringe.Label} fill)");
 
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
@@ -695,6 +695,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             foreach (var dest in supplier(src)) fringe.Insert(dest);
         }
 
+        timer.Finish();
         --_jobs;
         UpdateStatus();
     }
@@ -710,9 +711,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var jobId = ++_jobsEver;
         ++_jobs;
-        using var timer = new LapTimer($"Job {jobId} (recursive fill)");
         UpdateStatus();
         var area = 0;
+        var timer = LapTimer.StartNew($"Job {jobId} (recursive fill)");
 
         async Task FillFromAsync(Point src)
         {
@@ -731,8 +732,8 @@ internal sealed class MainPanel : TableLayoutPanel {
             foreach (var dest in supplier(src)) await FillFromAsync(dest);
         }
 
-
         await FillFromAsync(start);
+        timer.Finish();
         --_jobs;
         UpdateStatus();
     }
@@ -1562,13 +1563,12 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 }
 
 /// <summary>Times each step of a process and provides charting.</summary>
-internal sealed class LapTimer : IDisposable {
-    internal LapTimer(string title) => _title = title.ToString();
+internal sealed class LapTimer {
+    internal static LapTimer StartNew(string title) => new LapTimer(title);
 
-    public void Dispose()
+    internal void Finish()
     {
         _timer.Stop();
-        Lap();
 
         var deltas = _times.Deltas().ToList();
 
@@ -1594,6 +1594,8 @@ internal sealed class LapTimer : IDisposable {
     }
 
     internal void Lap() => _times.Add(_timer.Elapsed);
+
+    private LapTimer(string title) => _title = title.ToString();
 
     private readonly string _title;
 
