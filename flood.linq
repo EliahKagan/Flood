@@ -714,28 +714,29 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var area = 0;
 
-        async Task FillFromAsync(Point src)
+        async Task<bool> FillFromAsync(Point src) // Returns true if cancelled.
         {
             if (!_rect.Contains(src)
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-                return;
+                return false;
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
-
-                // FIXME: After disposal, the whole call chain must return.
-                if (IsDisposed) return;
+                if (IsDisposed) return true;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src)) await FillFromAsync(dest);
+            foreach (var dest in supplier(src))
+                if (await FillFromAsync(dest)) return true;
+
+            return false;
         }
 
         ++_jobs;
         UpdateStatus();
-        await FillFromAsync(start);
+        if (await FillFromAsync(start)) return;
         --_jobs;
         UpdateStatus();
     }
