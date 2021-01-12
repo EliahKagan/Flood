@@ -278,7 +278,13 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _components.Dispose();
+        if (disposing) {
+            _components.Dispose();
+            _bmp.Dispose();
+            _graphics.Dispose();
+            _pen.Dispose();
+        }
+
         base.Dispose(disposing);
     }
 
@@ -439,6 +445,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void SubscribeEventHandlers()
     {
+        Util.Cleanup += delegate { Dispose(); };
+
         HandleCreated += MainPanel_HandleCreated;
         VisibleChanged += MainPanel_VisibleChanged;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
@@ -457,10 +465,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void MainPanel_HandleCreated(object? sender, EventArgs e)
     {
-        // Free any previous canvas and stop its fills from processing.
-        // TODO: Is there a better way? (Note: F5 doesn't dispose the panel.)
-        Util.NewProcess = true;
-
         var pluginForm = (Form)Parent;
 
         if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
@@ -690,6 +694,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
+                if (IsDisposed) return;
                 timer.Lap();
             }
 
@@ -727,6 +732,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
+                if (IsDisposed) return;
                 timer.Lap();
             }
 
