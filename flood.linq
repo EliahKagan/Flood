@@ -125,7 +125,8 @@ internal sealed class Launcher {
                            out uint MaximumResolution,
                            out uint CurrentResolution);
 
-    private static string FormatTicks(uint ticks) => $"{ticks / 10_000.0} ms";
+    private static string FormatClockResolution(uint ticks)
+        => $"{ticks / 10_000.0} ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -158,18 +159,12 @@ internal sealed class Launcher {
         var description = new LC.Label(
                 "This is the requested minimum delay between frames.");
 
-        if (NtQueryTimerResolution(out var minimumResolution,
-                                   out var maximumResolution,
-                                   out var currentResolution) < 0)
+        if (NtQueryTimerResolution(out var minimum, out _, out _) < 0)
             return new(horizontal: false, table, description);
 
-        var coarse = FormatTicks(minimumResolution);
-        var fine = FormatTicks(maximumResolution);
-        var actual = FormatTicks(currentResolution);
-
         var resolutionNote = new LC.Label(
-                "(Your system timer resolution:"
-                + $" default {coarse}, now {actual}, finest {fine}.)");
+                "(Your system clock's own resolution is"
+                + $" {FormatClockResolution(minimum)} at worst.)");
 
         return new(horizontal: false, table, description, resolutionNote);
     }
