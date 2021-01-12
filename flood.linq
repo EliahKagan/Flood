@@ -235,6 +235,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal MainPanel(Size canvasSize, HelpViewerSupplier supplier)
     {
+        _nonessentialTimer = new(_components) { Interval = 110 };
         _toolTip = new(_components) { ShowAlways = true };
         _helpViewerSupplier = supplier;
 
@@ -259,6 +260,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         InitializeMainPanel();
 
+        UpdateStatus();
         UpdateShowHideTips();
         UpdateOpenCloseHelp();
 
@@ -274,11 +276,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) {
-            _components.Dispose();
-            Application.Idle -= Application_Idle;
-        }
-
+        if (disposing) _components.Dispose();
         base.Dispose(disposing);
     }
 
@@ -439,9 +437,9 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void SubscribeEventHandlers()
     {
-        Application.Idle += Application_Idle;
         HandleCreated += MainPanel_HandleCreated;
         VisibleChanged += MainPanel_VisibleChanged;
+        _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _alert.GotFocus += alert_GotFocus;
         _dismiss.Click += delegate { _alertBar.Hide(); };
@@ -455,16 +453,26 @@ internal sealed class MainPanel : TableLayoutPanel {
         _tips.DocumentCompleted += tips_DocumentCompleted;
     }
 
-    private void Application_Idle(object? sender, EventArgs e)
-        => UpdateStatus();
-
     private void MainPanel_HandleCreated(object? sender, EventArgs e)
     {
         // Free any previous canvas and stop its fills from processing.
         // TODO: Is there a better way? (Note: F5 doesn't dispose the panel.)
         Util.NewProcess = true;
 
-        if (ShowParentInTaskbar) ((Form)Parent).ShowInTaskbar = true;
+        var pluginForm = (Form)Parent;
+
+        if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
+
+        // Update "Speed" in status from modifier keys, crisply when
+        // reasonable. Unlike with an ordinary form, users can't readily see if
+        // a PluginForm is active (and it starts inactive) so update it, albeit
+        // slower, even when not.
+        pluginForm.KeyPreview = true;
+        pluginForm.KeyDown += delegate { UpdateStatus(); };
+        pluginForm.KeyUp += delegate { UpdateStatus(); };
+        pluginForm.Activated += delegate { _nonessentialTimer.Stop(); };
+        pluginForm.Deactivate += delegate { _nonessentialTimer.Start(); };
+        _nonessentialTimer.Start();
     }
 
     private async void MainPanel_VisibleChanged(object? sender, EventArgs e)
@@ -590,6 +598,8 @@ internal sealed class MainPanel : TableLayoutPanel {
             ShowAlert($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
                     + " strategy has no sub-strategies to scroll.");
         }
+
+        UpdateStatus();
     }
 
     private void showHideTips_Click(object? sender, EventArgs e)
@@ -664,6 +674,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var speed = DecideSpeed();
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         ++_jobs;
+        UpdateStatus();
         var area = 0;
 
         for (fringe.Insert(start); fringe.Count != 0; ) {
@@ -682,6 +693,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         --_jobs;
+        UpdateStatus();
     }
 
     // TODO: Refactor to eliminate (or at least decrease) code duplication
@@ -710,8 +722,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         ++_jobs;
+        UpdateStatus();
         await FillFromAsync(start);
         --_jobs;
+        UpdateStatus();
     }
 
     private void InstantFill(Point start, Color toColor)
@@ -748,6 +762,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Color AlertBackgroundColor { get; } = Color.NavajoWhite;
 
     private readonly IContainer _components = new Container();
+
+    private readonly System.Windows.Forms.Timer _nonessentialTimer;
 
     private readonly ToolTip _toolTip;
 
