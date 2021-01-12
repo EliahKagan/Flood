@@ -688,8 +688,11 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 continue;
 
-            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
-            if (IsDisposed) return;
+            if (area++ % speed == 0) {
+                await Task.Delay(DelayInMilliseconds);
+                if (IsDisposed) return;
+            }
+
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
@@ -717,8 +720,11 @@ internal sealed class MainPanel : TableLayoutPanel {
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
                 return;
 
-            if (area++ % speed == 0) await Task.Delay(DelayInMilliseconds);
-            if (IsDisposed) return;
+            if (area++ % speed == 0) {
+                await Task.Delay(DelayInMilliseconds);
+                if (IsDisposed) return;
+            }
+
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
