@@ -119,6 +119,14 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
+    [DllImport("ntdll")]
+    private static extern int
+    NtQueryTimerResolution(out uint MinimumResolution,
+                           out uint MaximumResolution,
+                           out uint CurrentResolution);
+
+    private static string FormatTicks(uint ticks) => $"{ticks / 10_000.0} ms";
+
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
 
@@ -147,9 +155,23 @@ internal sealed class Launcher {
 
         table.Rows.Add(new LC.Label("Delay (ms)"), _delayBox);
 
-        var label = new LC.Label("This is the minimum delay between frames.");
+        var description = new LC.Label(
+                "This is the requested minimum delay between frames.");
 
-        return new(horizontal: false, table, label);
+        if (NtQueryTimerResolution(out var minimumResolution,
+                                   out var maximumResolution,
+                                   out var currentResolution) < 0)
+            return new(horizontal: false, table, description);
+
+        var coarse = FormatTicks(minimumResolution);
+        var fine = FormatTicks(maximumResolution);
+        var actual = FormatTicks(currentResolution);
+
+        var resolutionNote = new LC.Label(
+                "(Your system timer resolution:"
+                + $" default {coarse}, now {actual}, finest {fine}.)");
+
+        return new(horizontal: false, table, description, resolutionNote);
     }
 
     private void SubscribePrivateHandlers()
