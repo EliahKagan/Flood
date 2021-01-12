@@ -732,7 +732,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var area = 0;
         var timer = LapTimer.StartNew($"Job {jobId} (recursive fill)");
 
-        async Task<CancellationState> FillFromAsync(Point src)
+        async ValueTask<CancellationState> FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
