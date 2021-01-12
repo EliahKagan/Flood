@@ -837,6 +837,9 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
+    // Store and compare to the old strategy's string representation, because
+    // configurable strategies mutate to change sub-strategy, so comparing a
+    // strategy across a sub-strategy change would be a self-comparison.
     private string _oldStrategy = string.Empty;
 
     private int _oldSpeed = -1;
