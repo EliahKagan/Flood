@@ -722,6 +722,17 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var area = 0;
 
+        var allTasks = 0;
+        var synchronousTasks = 0;
+
+        async Task<CancellationState> RecurseAsync(Point src)
+        {
+            var task = FillFromAsync(src);
+            ++allTasks;
+            if (task.IsCompleted) ++synchronousTasks;
+            return await task;
+        }
+
         async Task<CancellationState> FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
@@ -737,7 +748,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             _canvas.Invalidate(src);
 
             foreach (var dest in supplier(src)) {
-                if (await FillFromAsync(dest) == CancellationState.Cancel)
+                if (await RecurseAsync(dest) == CancellationState.Cancel)
                     return CancellationState.Cancel;
             }
 
@@ -746,9 +757,12 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         ++_jobs;
         UpdateStatus();
-        if (await FillFromAsync(start) == CancellationState.Cancel) return;
+        if (await RecurseAsync(start) == CancellationState.Cancel) return;
         --_jobs;
         UpdateStatus();
+
+        var percent = synchronousTasks * 100.0 / allTasks;
+        $"{synchronousTasks}/{allTasks} ({percent:F2}%) synchronous.".Dump();
     }
 
     private void InstantFill(Point start, Color toColor)
