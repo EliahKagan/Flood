@@ -270,17 +270,14 @@ internal sealed class MainPanel : TableLayoutPanel {
         _alertBar = CreateAlertBar();
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
+        _stop = CreateStop();
         _infoBar = CreateInfoBar();
         _tips = CreateTips();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
 
         InitializeMainPanel();
-
-        UpdateStatus();
-        UpdateShowHideTips();
-        UpdateOpenCloseHelp();
-
+        PerformInitialUpdates();
         SubscribeEventHandlers();
     }
 
@@ -294,7 +291,10 @@ internal sealed class MainPanel : TableLayoutPanel {
     protected override void Dispose(bool disposing)
     {
         if (disposing) {
+            StopAllFills();
+
             _components.Dispose();
+
             _bmp.Dispose();
             _graphics.Dispose();
             _pen.Dispose();
@@ -321,6 +321,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     [DllImport("user32.dll")]
     private static extern bool HideCaret(IntPtr hWnd);
+
+    private int SmallButtonSize => _showHideTips.Height;
 
     private TableLayoutPanel CreateAlertBar()
     {
@@ -368,22 +370,28 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Button CreateMagnify()
         => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
-                                 _showHideTips.Height,
+                                 SmallButtonSize,
                                  _toolTip);
+
+    private Button CreateStop()
+        => new BitmapButton(enabledBitmapFilename: "stop.bmp",
+                            disabledBitmapFilename: "stop-faded.bmp",
+                            SmallButtonSize);
 
     private TableLayoutPanel CreateInfoBar()
     {
         var infoBar = new TableLayoutPanel {
             RowCount = 1,
-            ColumnCount = 3,
+            ColumnCount = 4,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
         };
 
-        infoBar.Controls.Add(_status, column: 1, row: 0);
-        infoBar.Controls.Add(_toggles, column: 2, row: 0);
+        infoBar.Controls.Add(_status, column: 2, row: 0);
+        infoBar.Controls.Add(_toggles, column: 3, row: 0);
         infoBar.Height = _toggles.Height; // Must be after adding _toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
+        infoBar.Controls.Add(_stop, column: 1, row: 0);
 
         return infoBar;
     }
@@ -418,20 +426,37 @@ internal sealed class MainPanel : TableLayoutPanel {
         Controls.Add(_tips);
     }
 
+    private void PerformInitialUpdates()
+    {
+        UpdateStopButton();
+        UpdateStatus();
+        UpdateShowHideTips();
+        UpdateOpenCloseHelp();
+    }
+
+    private void UpdateStopButton()
+    {
+        if (_jobs == 0) {
+            _stop.Enabled = false;
+            _toolTip.SetToolTip(_stop, "No running fills to stop");
+        } else {
+            _stop.Enabled = true;
+            _toolTip.SetToolTip(_stop, "Stop running fills");
+        }
+    }
+
     private void UpdateStatus()
     {
         var strategy = _neighborEnumerationStrategies.Current.ToString();
         var speed = DecideSpeed();
 
-        if ((strategy, speed, _jobs) == (_oldStrategy, _oldSpeed, _oldJobs))
-            return;
-
-        _oldStrategy = strategy;
-        _oldSpeed = speed;
-        _oldJobs = _jobs;
+        if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
+                && speed == _oldSpeed && _jobs == _oldJobs) return;
 
         _status.Text =
             $"Neighbors: {strategy}   Speed: {speed}   Jobs: {_jobs}";
+
+        (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
     }
 
     private void UpdateShowHideTips()
@@ -473,6 +498,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
+        _stop.Click += stop_Click;
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
@@ -623,6 +649,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
+    private void stop_Click(object? sender, EventArgs e)
+    {
+        _stop.Enabled = false;
+        _toolTip.SetToolTip(_stop, "Stopping fills...");
+        StopAllFills();
+    }
+
     private void showHideTips_Click(object? sender, EventArgs e)
     {
         _tips.Visible = !_tips.Visible;
@@ -685,18 +718,46 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateOpenCloseHelp();
     }
 
+    private void StopAllFills()
+    {
+        if (_jobs != 0) ++_generation; // Make running fills cancel themselves.
+    }
+
+    private (int fromArgb,
+             int speed,
+             Func<Point, Point[]> supplier,
+             int gen,
+             int area)?
+        BeginFill(Point start, Color toColor)
+    {
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return null;
+
+        ++_jobs;
+        UpdateStopButton();
+        UpdateStatus();
+
+        return (fromArgb: fromArgb,
+                speed: DecideSpeed(),
+                supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
+                gen: _generation,
+                area: 0);
+    }
+
+    private void EndFill()
+    {
+        if (IsDisposed) return;
+
+        if (--_jobs == 0) UpdateStopButton();
+        UpdateStatus();
+    }
+
     private async Task FloodFillAsync(IFringe<Point> fringe,
                                       Point start,
                                       Color toColor)
     {
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
-        if (fromArgb == toColor.ToArgb()) return;
-
-        var speed = DecideSpeed();
-        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
-        ++_jobs;
-        UpdateStatus();
-        var area = 0;
+        if (BeginFill(start, toColor) is not
+            (var fromArgb, var speed, var supplier, var gen, var area)) return;
 
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
@@ -707,65 +768,45 @@ internal sealed class MainPanel : TableLayoutPanel {
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
-                if (IsDisposed) return;
+                if (gen != _generation) break;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src)) fringe.Insert(dest);
+            foreach (var dest in supplier!(src)) fringe.Insert(dest);
         }
 
-        --_jobs;
-        UpdateStatus();
+        EndFill();
     }
 
-    /// <summary>
-    /// Propagates <see cref="RecursiveFloodFillAsync"/> cancellations.
-    /// </summary>
-    private enum CancellationState : byte {
-        Cancel,
-        Continue,
-    }
-
-    // TODO: Refactor to eliminate (or at least decrease) code duplication
-    // between FloodFillAsync and RecursiveFloodFillAsync.
     private async Task RecursiveFloodFillAsync(Point start, Color toColor)
     {
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
-        if (fromArgb == toColor.ToArgb()) return;
+        if (BeginFill(start, toColor) is not
+            (var fromArgb, var speed, var supplier, var gen, var area)) return;
 
-        var speed = DecideSpeed();
-        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
-        var area = 0;
-
-        async ValueTask<CancellationState> FillFromAsync(Point src)
+        async ValueTask FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-                return CancellationState.Continue;
+                return;
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
-                if (IsDisposed) return CancellationState.Cancel;
+                if (gen != _generation) return;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src)) {
-                if (await FillFromAsync(dest) == CancellationState.Cancel)
-                    return CancellationState.Cancel;
+            foreach (var dest in supplier!(src)) {
+                await FillFromAsync(dest);
+                if (gen != _generation) return;
             }
-
-            return CancellationState.Continue;
         }
 
-        ++_jobs;
-        UpdateStatus();
-        if (await FillFromAsync(start) == CancellationState.Cancel) return;
-        --_jobs;
-        UpdateStatus();
+        await FillFromAsync(start);
+        EndFill();
     }
 
     private void InstantFill(Point start, Color toColor)
@@ -855,6 +896,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Button _magnify;
 
+    private readonly Button _stop;
+
     private readonly Button _showHideTips = new() {
         Text = "??? Tips", // Placeholder text for height computation.
         AutoSize = true,
@@ -888,23 +931,75 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private int _jobs = 0;
 
+    private int _generation = 0;
+
     private bool _shownBefore = false;
 };
+
+/// <summary>
+/// A square button showing a bitmap that changes when enabled/disabled.
+/// </summary>
+internal sealed class BitmapButton : Button {
+    internal BitmapButton(string enabledBitmapFilename,
+                          string disabledBitmapFilename,
+                          int sideLength)
+    {
+        _enabledBitmap = OpenBitmap(enabledBitmapFilename);
+        _disabledBitmap = OpenBitmap(disabledBitmapFilename);
+
+        Width = Height = sideLength;
+        BackgroundImageLayout = ImageLayout.Stretch;
+        Margin = Padding.Empty;
+
+        UpdateImage();
+    }
+
+    protected override void OnEnabledChanged(EventArgs e)
+    {
+        UpdateImage();
+        base.OnEnabledChanged(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) {
+            _enabledBitmap.Dispose();
+            _disabledBitmap.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private static Bitmap OpenBitmap(string filename)
+    {
+        var bitmap = new Bitmap(Files.GetAppFilePath(filename));
+        bitmap.MakeTransparent();
+        return bitmap;
+    }
+
+    private void UpdateImage()
+        => BackgroundImage = (Enabled ? _enabledBitmap : _disabledBitmap);
+
+    private readonly Bitmap _enabledBitmap;
+
+    private readonly Bitmap _disabledBitmap;
+}
 
 /// <summary>
 /// A button to launch an application, showing an icon and (optionally) toolip
 /// obtained from the executable's metadata.
 /// </summary>
 internal sealed class ApplicationButton : Button {
-    internal ApplicationButton(string path,
+    internal ApplicationButton(string executablePath,
                                int sideLength,
                                ToolTip? toolTip = null)
     {
-        _path = path;
+        _path = executablePath;
+        _bitmap = CreateBitmap(_path);
 
-        BackgroundImage = CreateBitmap(_path);
+        BackgroundImage = _bitmap;
         BackgroundImageLayout = ImageLayout.Stretch;
-        Size = new(width: sideLength, height: sideLength);
+        Width = Height = sideLength;
         Margin = Padding.Empty;
 
         toolTip?.SetToolTip(
@@ -912,6 +1007,12 @@ internal sealed class ApplicationButton : Button {
             FileVersionInfo.GetVersionInfo(_path).FileDescription);
 
         Click += ApplicationButton_Click;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _bitmap.Dispose();
+        base.Dispose(disposing);
     }
 
     private static Bitmap CreateBitmap(string path)
@@ -954,6 +1055,8 @@ internal sealed class ApplicationButton : Button {
         => Shell.Execute(_path);
 
     private readonly string _path;
+
+    private readonly Bitmap _bitmap;
 }
 
 /// <summary>
@@ -1090,8 +1193,11 @@ internal sealed class MyWebView2 : WebView2 {
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
+    internal static string GetAppFilePath(string filename)
+        => Path.Combine(QueryDirectory, filename);
+
     internal static Uri GetDocUrl(string filename)
-        => new(Path.Combine(QueryDirectory, filename));
+        => new(GetAppFilePath(filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
