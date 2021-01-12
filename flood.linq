@@ -722,6 +722,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
+
+                // FIXME: After disposal, the whole call chain must return.
                 if (IsDisposed) return;
             }
 
