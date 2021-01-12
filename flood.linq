@@ -722,7 +722,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var area = 0;
 
-        async Task<CancellationState> FillFromAsync(Point src)
+        async ValueTask<CancellationState> FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
