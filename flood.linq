@@ -703,6 +703,14 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
+    /// <summary>
+    /// Propagates <see cref="RecursiveFloodFillAsync"/> cancellations.
+    /// </summary>
+    private enum CancellationState : byte {
+        Cancel,
+        Continue,
+    }
+
     // TODO: Refactor to eliminate (or at least decrease) code duplication
     // between FloodFillAsync and RecursiveFloodFillAsync.
     private async Task RecursiveFloodFillAsync(Point start, Color toColor)
@@ -714,29 +722,31 @@ internal sealed class MainPanel : TableLayoutPanel {
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
         var area = 0;
 
-        async Task<bool> FillFromAsync(Point src) // Returns true if cancelled.
+        async Task<CancellationState> FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
                     || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-                return false;
+                return CancellationState.Continue;
 
             if (area++ % speed == 0) {
                 await Task.Delay(DelayInMilliseconds);
-                if (IsDisposed) return true;
+                if (IsDisposed) return CancellationState.Cancel;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src))
-                if (await FillFromAsync(dest)) return true;
+            foreach (var dest in supplier(src)) {
+                if (await FillFromAsync(dest) == CancellationState.Cancel)
+                    return CancellationState.Cancel;
+            }
 
-            return false;
+            return CancellationState.Continue;
         }
 
         ++_jobs;
         UpdateStatus();
-        if (await FillFromAsync(start)) return;
+        if (await FillFromAsync(start) == CancellationState.Cancel) return;
         --_jobs;
         UpdateStatus();
     }
