@@ -397,10 +397,13 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void UpdateStatus()
     {
-        var strategy = _neighborEnumerationStrategies.Current.ToString();
+        var strategy = _neighborEnumerationStrategies.Current;
         var speed = DecideSpeed();
 
-        if ((strategy, speed, _jobs) == (_oldStrategy, _oldSpeed, _oldJobs))
+        // Doesn't work because it it often comparing references to
+        // the same object, which was mutated!
+        if (strategy.Equals(_oldStrategy) && speed == _oldSpeed
+                                          && _jobs == _oldJobs)
             return;
 
         _oldStrategy = strategy;
@@ -837,7 +840,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
-    private string _oldStrategy = string.Empty;
+    private NeighborEnumerationStrategy? _oldStrategy = null;
 
     private int _oldSpeed = -1;
 
@@ -1255,13 +1258,31 @@ internal static class UriExtensions {
 /// neighbors while traversing the implicit graph of a bitmap image with
 /// four-way adjacency, or an algorithm for determining such an order.
 /// </summary>
-internal abstract class NeighborEnumerationStrategy {
+internal abstract class NeighborEnumerationStrategy
+        : IEquatable<NeighborEnumerationStrategy> {
     private protected NeighborEnumerationStrategy(string name) => Name = name;
+
+    /// <summary>
+    /// Strategies are equal iff their descriptive text is exactly the same.
+    /// </summary>
+    /// <remarks>This behavior should be preserved when inheriting.</remarks>
+    public virtual bool Equals(NeighborEnumerationStrategy? rhs)
+        => rhs is not null
+            && GetType() == rhs.GetType()
+            && Name.Equals(rhs.Name, StringComparison.Ordinal);
+
+    /// <inheritdoc/>
+    public sealed override bool Equals(object? rhs)
+        => Equals(rhs as NeighborEnumerationStrategy);
+
+    /// <inheritdoc/>
+    /// <remarks>Be careful. Some subclasses are mutable.</remarks>
+    public override int GetHashCode() => HashCode.Combine(Name);
 
     /// <inheritdoc/>
     public override string ToString() => Name;
 
-    /// <summary>The name of this strategy, to appear in the UI.</summary>
+    /// <summary>Human-readable name of this strategy.</summary>
     /// <remarks>Not affected by substrategy, if any.</remarks>
     private protected string Name { get; }
 
@@ -1278,9 +1299,26 @@ internal abstract class NeighborEnumerationStrategy {
 /// four-way adjacency, which is configurable by selecting a substrategy.
 /// </summary>
 internal abstract class ConfigurableNeighborEnumerationStrategy
-        : NeighborEnumerationStrategy {
+        : NeighborEnumerationStrategy,
+          IEquatable<ConfigurableNeighborEnumerationStrategy> {
     private protected ConfigurableNeighborEnumerationStrategy(string name)
         : base(name) { }
+
+    /// <summary>
+    /// Configurable strategies are equal iff their display text, including
+    /// the detail text describing the substrategy, is exactly the same.
+    /// </summary>
+    public bool Equals(ConfigurableNeighborEnumerationStrategy? rhs)
+        => base.Equals(rhs)
+            && Detail.Equals(rhs.Detail, StringComparison.Ordinal);
+
+    /// <inheritdoc/>
+    public sealed override bool Equals(NeighborEnumerationStrategy? rhs)
+        => Equals(rhs as ConfigurableNeighborEnumerationStrategy);
+
+    /// <inheritdoc/>
+    /// <remarks>Be careful! Configurable strategies are mutable.</remarks>
+    public sealed override int GetHashCode() => HashCode.Combine(Name, Detail);
 
     /// <inheritdoc/>
     public override string ToString() => $"{Name} - {Detail}";
@@ -1288,17 +1326,35 @@ internal abstract class ConfigurableNeighborEnumerationStrategy
     /// <summary>
     /// Switches to the next substrategy, or from the last to the first.
     /// </summary>
-    internal abstract void CycleNextSubStrategy();
+    internal void CycleNextSubStrategy()
+    {
+        DoCycleNextSubStrategy();
+        _detail = null;
+    }
 
     /// <summary>
     /// Switches to the previous substrategy, or from the first to the last.
     /// </summary>
-    internal abstract void CyclePrevSubStrategy();
+    internal void CyclePrevSubStrategy()
+    {
+        DoCyclePrevSubStrategy();
+        _detail = null;
+    }
+
+    /// <summary>Custom <see cref="CycleNextSubStrategy"/> behavior.</summary>
+    private protected abstract void DoCycleNextSubStrategy();
+
+    /// <summary>Custom <see cref="CyclePrevSubStrategy"/> behavior.</summary>
+    private protected abstract void DoCyclePrevSubStrategy();
 
     /// <summary>
-    /// Inforamtion about the current substrategy, to appear in the UI.
+    /// Produces human-readable information about the current sub-strategy.
     /// </summary>
-    private protected abstract string Detail { get; }
+    private protected abstract string GetDetail();
+
+    private string Detail => _detail ??= GetDetail();
+
+    private string? _detail = null;
 }
 
 /// <summary>
@@ -1322,15 +1378,15 @@ internal sealed class UniformStrategy
     }
 
     /// <inheritdoc/>
-    internal override void CycleNextSubStrategy()
+    private protected override void DoCycleNextSubStrategy()
         => _uniformOrder.CycleNextPermutation();
 
     /// <inheritdoc/>
-    internal override void CyclePrevSubStrategy()
+    private protected override void DoCyclePrevSubStrategy()
         => _uniformOrder.CyclePrevPermutation();
 
     /// <inheritdoc/>
-    private protected override string Detail
+    private protected override string GetDetail()
         => new string(Array.ConvertAll(_uniformOrder,
                                        direction => direction.ToString()[0]));
 
