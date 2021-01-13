@@ -737,13 +737,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (_jobs != 0) ++_generation; // Make running fills cancel themselves.
     }
 
-    private sealed record FillData(int FromArgb,
-                                   int Speed,
-                                   Func<Point, Point[]> Supplier,
-                                   int Generation,
-                                   int InitialArea = 0);
+    private sealed record Job(int FromArgb,
+                              int Speed,
+                              Func<Point, Point[]> Supplier,
+                              Func<Task> Delayer,
+                              int Generation);
 
-    private FillData? BeginFill(Point start, Color toColor)
+    private Job? BeginFill(Point start, Color toColor)
     {
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
         if (fromArgb == toColor.ToArgb()) return null;
@@ -752,10 +752,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStopButton();
         UpdateStatus();
 
-        return new FillData(
+        return new Job(
             FromArgb: fromArgb,
             Speed: DecideSpeed(),
             Supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
+            Delayer: () => Task.Delay(DelayInMilliseconds),
             Generation: _generation);
     }
 
@@ -771,25 +772,26 @@ internal sealed class MainPanel : TableLayoutPanel {
                                       Point start,
                                       Color toColor)
     {
-        if (BeginFill(start, toColor) is not
-            (var fromArgb, var speed, var supplier, var gen, var area)) return;
+        if (BeginFill(start, toColor) is not Job job) return;
+
+        var area = 0;
 
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
 
             if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
                 continue;
 
-            if (area++ % speed == 0) {
-                await Task.Delay(DelayInMilliseconds);
-                if (gen != _generation) break;
+            if (area++ % job.Speed == 0) {
+                await job.Delayer();
+                if (job.Generation != _generation) break;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier!(src)) fringe.Insert(dest);
+            foreach (var dest in job.Supplier(src)) fringe.Insert(dest);
         }
 
         EndFill();
@@ -797,26 +799,27 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private async Task RecursiveFloodFillAsync(Point start, Color toColor)
     {
-        if (BeginFill(start, toColor) is not
-            (var fromArgb, var speed, var supplier, var gen, var area)) return;
+        if (BeginFill(start, toColor) is not Job job) return;
+
+        var area = 0;
 
         async ValueTask FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
                 return;
 
-            if (area++ % speed == 0) {
-                await Task.Delay(DelayInMilliseconds);
-                if (gen != _generation) return;
+            if (area++ % job.Speed == 0) {
+                await job.Delayer();
+                if (job.Generation != _generation) return;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier!(src)) {
+            foreach (var dest in job.Supplier(src)) {
                 await FillFromAsync(dest);
-                if (gen != _generation) return;
+                if (job.Generation != _generation) return;
             }
         }
 
