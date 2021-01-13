@@ -3,14 +3,11 @@
 using System.Threading.Tasks;
 using LINQPad.Controls;
 
-var rendered = false;
 var count = 0;
 var label = new Label();
 
 label.Rendering += async delegate {
-    if (rendered) return;
-    
-    rendered = true;
+    "Label rendering.".Dump();
     
     for (; ; ) {
         label.Text = count++.ToString();
