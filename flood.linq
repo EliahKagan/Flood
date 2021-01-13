@@ -60,6 +60,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
+        StopButtonVisible = sender.EnableFillCancellation,
     }.Display();
 }
 
@@ -100,6 +101,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
+            new LC.FieldSet("Experimental Features", _fillCancellation),
             _launch);
 
         SubscribePrivateHandlers();
@@ -114,6 +116,8 @@ internal sealed class Launcher {
                 "Bug: Launch button enabled without delay set.");
 
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
+
+    internal bool EnableFillCancellation => _fillCancellation.Checked;
 
     internal void Display() => _panel.Dump("Developer Mode Launcher");
 
@@ -218,7 +222,8 @@ internal sealed class Launcher {
                    _delayBox,
                    _launch,
                    _showPluginFormInTaskbar,
-                   _useOldWebBrowser);
+                   _useOldWebBrowser,
+                   _fillCancellation);
 
     private readonly LC.TextBox _widthBox;
 
@@ -231,6 +236,9 @@ internal sealed class Launcher {
 
     private readonly LC.CheckBox _useOldWebBrowser = new LC.CheckBox(
             "Use old WebBrowser control even if WebView2 is available");
+
+    private readonly LC.CheckBox _fillCancellation =
+        new LC.CheckBox("Fill cancellation (Stop button)");
 
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
@@ -285,6 +293,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         DefaultDelayInMilliseconds;
 
     internal bool ShowParentInTaskbar { get; init; } = false;
+
+    internal bool StopButtonVisible
+    {
+        get => _stop.Visible;
+        set => _stop.Visible = value;
+    }
 
     internal void Display() => this.Dump("Flood Fill Visualization");
 
@@ -376,7 +390,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private Button CreateStop()
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
                             disabledBitmapFilename: "stop-faded.bmp",
-                            SmallButtonSize);
+                            SmallButtonSize) { Visible = false };
 
     private TableLayoutPanel CreateInfoBar()
     {
