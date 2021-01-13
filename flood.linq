@@ -745,6 +745,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Job? BeginFill(Point start, Color toColor)
     {
+        var speed = DecideSpeed(); // Don't miss hastily released key combos.
+
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
         if (fromArgb == toColor.ToArgb()) return null;
 
@@ -754,7 +756,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         return new Job(
             FromArgb: fromArgb,
-            Speed: DecideSpeed(),
+            Speed: speed,
             Supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
             Delayer: () => Task.Delay(DelayInMilliseconds),
             Generation: _generation);
