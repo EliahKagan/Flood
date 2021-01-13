@@ -723,12 +723,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (_jobs != 0) ++_generation; // Make running fills cancel themselves.
     }
 
-    private (int fromArgb,
-             int speed,
-             Func<Point, Point[]> supplier,
-             int gen,
-             int area)?
-        BeginFill(Point start, Color toColor)
+    private sealed record FillData(int FromArgb,
+                                   int Speed,
+                                   Func<Point, Point[]> Supplier,
+                                   int Generation,
+                                   int InitialArea = 0);
+
+    private FillData? BeginFill(Point start, Color toColor)
     {
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
         if (fromArgb == toColor.ToArgb()) return null;
@@ -737,11 +738,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStopButton();
         UpdateStatus();
 
-        return (fromArgb: fromArgb,
-                speed: DecideSpeed(),
-                supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
-                gen: _generation,
-                area: 0);
+        return new FillData(
+            FromArgb: fromArgb,
+            Speed: DecideSpeed(),
+            Supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
+            Generation: _generation);
     }
 
     private void EndFill()
