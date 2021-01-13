@@ -63,6 +63,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
         StopButtonVisible = sender.ShowStopButton,
+        ChartingEnabled = sender.EnableCharting,
     }.Display();
 }
 
@@ -103,7 +104,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
-            new LC.FieldSet("Experimental Features", _stopButton),
+            new LC.FieldSet("Experimental Features", CreateFeaturesPanel()),
             _launch);
 
         SubscribePrivateHandlers();
@@ -120,6 +121,8 @@ internal sealed class Launcher {
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
     internal bool ShowStopButton => _stopButton.Checked;
+
+    internal bool EnableCharting => _charting.Checked;
 
     internal void Display() => _panel.Dump("Developer Mode Launcher");
 
@@ -175,6 +178,9 @@ internal sealed class Launcher {
         return new(horizontal: false, table, description, resolutionNote);
     }
 
+    private LC.StackPanel CreateFeaturesPanel()
+        => new(horizontal: false, _stopButton, _charting);
+
     private void SubscribePrivateHandlers()
     {
         _widthBox.TextInput += widthBox_TextInput;
@@ -225,7 +231,8 @@ internal sealed class Launcher {
                    _launch,
                    _showPluginFormInTaskbar,
                    _useOldWebBrowser,
-                   _stopButton);
+                   _stopButton,
+                   _charting);
 
     private readonly LC.TextBox _widthBox;
 
@@ -240,6 +247,8 @@ internal sealed class Launcher {
             "Use old WebBrowser control even if WebView2 is available");
 
     private readonly LC.CheckBox _stopButton = new LC.CheckBox("Stop button");
+
+    private readonly LC.CheckBox _charting = new LC.CheckBox("Charting");
 
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
@@ -960,7 +969,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
-    private bool _charting = true; // FIXME: Make this false by default.
+    private bool _charting = false;
 
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
