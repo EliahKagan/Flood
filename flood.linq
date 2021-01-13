@@ -62,7 +62,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
-        StopButtonVisible = sender.EnableFillCancellation,
+        StopButtonVisible = sender.ShowStopButton,
     }.Display();
 }
 
@@ -103,7 +103,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
-            new LC.FieldSet("Experimental Features", _fillCancellation),
+            new LC.FieldSet("Experimental Features", _stopButton),
             _launch);
 
         SubscribePrivateHandlers();
@@ -119,7 +119,7 @@ internal sealed class Launcher {
 
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
-    internal bool EnableFillCancellation => _fillCancellation.Checked;
+    internal bool ShowStopButton => _stopButton.Checked;
 
     internal void Display() => _panel.Dump("Developer Mode Launcher");
 
@@ -225,7 +225,7 @@ internal sealed class Launcher {
                    _launch,
                    _showPluginFormInTaskbar,
                    _useOldWebBrowser,
-                   _fillCancellation);
+                   _stopButton);
 
     private readonly LC.TextBox _widthBox;
 
@@ -239,8 +239,7 @@ internal sealed class Launcher {
     private readonly LC.CheckBox _useOldWebBrowser = new LC.CheckBox(
             "Use old WebBrowser control even if WebView2 is available");
 
-    private readonly LC.CheckBox _fillCancellation =
-        new LC.CheckBox("Fill cancellation (Stop button)");
+    private readonly LC.CheckBox _stopButton = new LC.CheckBox("Stop button");
 
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
