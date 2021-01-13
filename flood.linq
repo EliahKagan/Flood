@@ -62,6 +62,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
+        StopButtonVisible = sender.EnableFillCancellation,
     }.Display();
 }
 
@@ -102,6 +103,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
+            new LC.FieldSet("Experimental Features", _fillCancellation),
             _launch);
 
         SubscribePrivateHandlers();
@@ -117,9 +119,20 @@ internal sealed class Launcher {
 
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
+    internal bool EnableFillCancellation => _fillCancellation.Checked;
+
     internal void Display() => _panel.Dump("Developer Mode Launcher");
 
     private const string NumberBoxWidth = "5em";
+
+    [DllImport("ntdll")]
+    private static extern int
+    NtQueryTimerResolution(out uint MinimumResolution,
+                           out uint MaximumResolution,
+                           out uint CurrentResolution);
+
+    private static string FormatClockResolution(uint ticks)
+        => $"{ticks / 10_000.0} ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -149,9 +162,17 @@ internal sealed class Launcher {
 
         table.Rows.Add(new LC.Label("Delay (ms)"), _delayBox);
 
-        var label = new LC.Label("This is the minimum delay between frames.");
+        var description = new LC.Label(
+                "This is the requested minimum delay between frames.");
 
-        return new(horizontal: false, table, label);
+        if (NtQueryTimerResolution(out var minimum, out _, out _) < 0)
+            return new(horizontal: false, table, description);
+
+        var resolutionNote = new LC.Label(
+                "(Your system clock's own resolution is"
+                + $" {FormatClockResolution(minimum)} at worst.)");
+
+        return new(horizontal: false, table, description, resolutionNote);
     }
 
     private void SubscribePrivateHandlers()
@@ -203,7 +224,8 @@ internal sealed class Launcher {
                    _delayBox,
                    _launch,
                    _showPluginFormInTaskbar,
-                   _useOldWebBrowser);
+                   _useOldWebBrowser,
+                   _fillCancellation);
 
     private readonly LC.TextBox _widthBox;
 
@@ -216,6 +238,9 @@ internal sealed class Launcher {
 
     private readonly LC.CheckBox _useOldWebBrowser = new LC.CheckBox(
             "Use old WebBrowser control even if WebView2 is available");
+
+    private readonly LC.CheckBox _fillCancellation =
+        new LC.CheckBox("Fill cancellation (Stop button)");
 
     private readonly LC.Button _launch = new LC.Button("Launch!");
 
@@ -255,18 +280,21 @@ internal sealed class MainPanel : TableLayoutPanel {
         _alertBar = CreateAlertBar();
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
+        _stop = CreateStop();
         _infoBar = CreateInfoBar();
         _tips = CreateTips();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
 
         InitializeMainPanel();
-
-        UpdateStatus();
-        UpdateShowHideTips();
-        UpdateOpenCloseHelp();
-
+        PerformInitialUpdates();
         SubscribeEventHandlers();
+    }
+
+    internal bool ChartingEnabled
+    {
+        get => _charting;
+        init => _charting = value;
     }
 
     internal int DelayInMilliseconds { get; init; } =
@@ -274,12 +302,21 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal bool ShowParentInTaskbar { get; init; } = false;
 
+    internal bool StopButtonVisible
+    {
+        get => _stop.Visible;
+        set => _stop.Visible = value;
+    }
+
     internal void Display() => this.Dump("Flood Fill Visualization");
 
     protected override void Dispose(bool disposing)
     {
         if (disposing) {
+            StopAllFills();
+
             _components.Dispose();
+
             _bmp.Dispose();
             _graphics.Dispose();
             _pen.Dispose();
@@ -306,6 +343,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     [DllImport("user32.dll")]
     private static extern bool HideCaret(IntPtr hWnd);
+
+    private int SmallButtonSize => _showHideTips.Height;
 
     private TableLayoutPanel CreateAlertBar()
     {
@@ -353,22 +392,28 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Button CreateMagnify()
         => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
-                                 _showHideTips.Height,
+                                 SmallButtonSize,
                                  _toolTip);
+
+    private Button CreateStop()
+        => new BitmapButton(enabledBitmapFilename: "stop.bmp",
+                            disabledBitmapFilename: "stop-faded.bmp",
+                            SmallButtonSize) { Visible = false };
 
     private TableLayoutPanel CreateInfoBar()
     {
         var infoBar = new TableLayoutPanel {
             RowCount = 1,
-            ColumnCount = 3,
+            ColumnCount = 4,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
         };
 
-        infoBar.Controls.Add(_status, column: 1, row: 0);
-        infoBar.Controls.Add(_toggles, column: 2, row: 0);
+        infoBar.Controls.Add(_status, column: 2, row: 0);
+        infoBar.Controls.Add(_toggles, column: 3, row: 0);
         infoBar.Height = _toggles.Height; // Must be after adding _toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
+        infoBar.Controls.Add(_stop, column: 1, row: 0);
 
         return infoBar;
     }
@@ -403,20 +448,37 @@ internal sealed class MainPanel : TableLayoutPanel {
         Controls.Add(_tips);
     }
 
+    private void PerformInitialUpdates()
+    {
+        UpdateStopButton();
+        UpdateStatus();
+        UpdateShowHideTips();
+        UpdateOpenCloseHelp();
+    }
+
+    private void UpdateStopButton()
+    {
+        if (_jobs == 0) {
+            _stop.Enabled = false;
+            _toolTip.SetToolTip(_stop, "No running fills to stop");
+        } else {
+            _stop.Enabled = true;
+            _toolTip.SetToolTip(_stop, "Stop running fills");
+        }
+    }
+
     private void UpdateStatus()
     {
         var strategy = _neighborEnumerationStrategies.Current.ToString();
         var speed = DecideSpeed();
 
-        if ((strategy, speed, _jobs) == (_oldStrategy, _oldSpeed, _oldJobs))
-            return;
-
-        _oldStrategy = strategy;
-        _oldSpeed = speed;
-        _oldJobs = _jobs;
+        if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
+                && speed == _oldSpeed && _jobs == _oldJobs) return;
 
         _status.Text =
             $"Neighbors: {strategy}   Speed: {speed}   Jobs: {_jobs}";
+
+        (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
     }
 
     private void UpdateShowHideTips()
@@ -458,6 +520,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
+        _stop.Click += stop_Click;
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
@@ -608,6 +671,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
+    private void stop_Click(object? sender, EventArgs e)
+    {
+        _stop.Enabled = false;
+        _toolTip.SetToolTip(_stop, "Stopping fills...");
+        StopAllFills();
+    }
+
     private void showHideTips_Click(object? sender, EventArgs e)
     {
         _tips.Visible = !_tips.Visible;
@@ -670,95 +740,114 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateOpenCloseHelp();
     }
 
+    private void StopAllFills()
+    {
+        if (_jobs != 0) ++_generation; // Make running fills cancel themselves.
+    }
+
+    private sealed record Job(int FromArgb,
+                              int Speed,
+                              Func<Point, Point[]> Supplier,
+                              Func<Task> Delayer,
+                              int Generation,
+                              Action? PostAction);
+
+    private Charter? GetCharter(int id, string label)
+        => _charting ? Charter.StartNew($"Job {id} ({label} fill)") : null;
+
+    private Func<Task> GetDelayer(Charter? charter)
+        => async () => {
+            await Task.Delay(DelayInMilliseconds);
+            charter?.Update();
+        };
+
+    private Job? BeginFill(Point start, Color toColor, string label)
+    {
+        var speed = DecideSpeed(); // Don't miss hastily released key combos.
+
+        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        if (fromArgb == toColor.ToArgb()) return null;
+
+        ++_jobs;
+        var charter = GetCharter(++_jobsEver, label);
+        UpdateStopButton();
+        UpdateStatus();
+
+        return new Job(
+            FromArgb: fromArgb,
+            Speed: speed,
+            Supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
+            Delayer: GetDelayer(charter),
+            Generation: _generation,
+            PostAction: () => charter?.Finish());
+    }
+
+    private void EndFill(Job job)
+    {
+        if (IsDisposed) return;
+
+        job.PostAction?.Invoke();
+        if (--_jobs == 0) UpdateStopButton();
+        UpdateStatus();
+    }
+
     private async Task FloodFillAsync(IFringe<Point> fringe,
                                       Point start,
                                       Color toColor)
     {
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
-        if (fromArgb == toColor.ToArgb()) return;
+        if (BeginFill(start, toColor, fringe.Label) is not Job job) return;
 
-        var speed = DecideSpeed();
-        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
-        var jobId = ++_jobsEver;
-        ++_jobs;
-        UpdateStatus();
         var area = 0;
-        var timer = LapTimer.StartNew($"Job {jobId} ({fringe.Label} fill)");
 
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
 
             if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
                 continue;
 
-            if (area++ % speed == 0) {
-                await Task.Delay(DelayInMilliseconds);
-                if (IsDisposed) return;
-                timer.Lap();
+            if (area++ % job.Speed == 0) {
+                await job.Delayer();
+                if (job.Generation != _generation) break;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src)) fringe.Insert(dest);
+            foreach (var dest in job.Supplier(src)) fringe.Insert(dest);
         }
 
-        timer.Finish();
-        --_jobs;
-        UpdateStatus();
+        EndFill(job);
     }
 
-    /// <summary>
-    /// Propagates <see cref="RecursiveFloodFillAsync"/> cancellations.
-    /// </summary>
-    private enum CancellationState : byte {
-        Cancel,
-        Continue,
-    }
-
-    // TODO: Refactor to eliminate (or at least decrease) code duplication
-    // between FloodFillAsync and RecursiveFloodFillAsync.
     private async Task RecursiveFloodFillAsync(Point start, Color toColor)
     {
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
-        if (fromArgb == toColor.ToArgb()) return;
+        if (BeginFill(start, toColor, "recursive") is not Job job) return;
 
-        var speed = DecideSpeed();
-        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
-        var jobId = ++_jobsEver;
-        ++_jobs;
-        UpdateStatus();
         var area = 0;
-        var timer = LapTimer.StartNew($"Job {jobId} (recursive fill)");
 
-        async ValueTask<CancellationState> FillFromAsync(Point src)
+        async ValueTask FillFromAsync(Point src)
         {
             if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != fromArgb)
-                return CancellationState.Continue;
+                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
+                return;
 
-            if (area++ % speed == 0) {
-                await Task.Delay(DelayInMilliseconds);
-                if (IsDisposed) return CancellationState.Cancel;
-                timer.Lap();
+            if (area++ % job.Speed == 0) {
+                await job.Delayer();
+                if (job.Generation != _generation) return;
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
             _canvas.Invalidate(src);
 
-            foreach (var dest in supplier(src)) {
-                if (await FillFromAsync(dest) == CancellationState.Cancel)
-                    return CancellationState.Cancel;
+            foreach (var dest in job.Supplier(src)) {
+                await FillFromAsync(dest);
+                if (job.Generation != _generation) return;
             }
-
-            return CancellationState.Continue;
         }
 
-        if (await FillFromAsync(start) == CancellationState.Cancel) return;
-        timer.Finish();
-        --_jobs;
-        UpdateStatus();
+        await FillFromAsync(start);
+        EndFill(job);
     }
 
     private void InstantFill(Point start, Color toColor)
@@ -848,6 +937,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Button _magnify;
 
+    private readonly Button _stop;
+
     private readonly Button _showHideTips = new() {
         Text = "??? Tips", // Placeholder text for height computation.
         AutoSize = true,
@@ -870,6 +961,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
+    private bool _charting = true; // FIXME: Make this false by default.
+
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
     // strategy across a sub-strategy change would be a self-comparison.
@@ -883,23 +976,75 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private int _jobsEver = 0;
 
+    private int _generation = 0;
+
     private bool _shownBefore = false;
 };
+
+/// <summary>
+/// A square button showing a bitmap that changes when enabled/disabled.
+/// </summary>
+internal sealed class BitmapButton : Button {
+    internal BitmapButton(string enabledBitmapFilename,
+                          string disabledBitmapFilename,
+                          int sideLength)
+    {
+        _enabledBitmap = OpenBitmap(enabledBitmapFilename);
+        _disabledBitmap = OpenBitmap(disabledBitmapFilename);
+
+        Width = Height = sideLength;
+        BackgroundImageLayout = ImageLayout.Stretch;
+        Margin = Padding.Empty;
+
+        UpdateImage();
+    }
+
+    protected override void OnEnabledChanged(EventArgs e)
+    {
+        UpdateImage();
+        base.OnEnabledChanged(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) {
+            _enabledBitmap.Dispose();
+            _disabledBitmap.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private static Bitmap OpenBitmap(string filename)
+    {
+        var bitmap = new Bitmap(Files.GetAppFilePath(filename));
+        bitmap.MakeTransparent();
+        return bitmap;
+    }
+
+    private void UpdateImage()
+        => BackgroundImage = (Enabled ? _enabledBitmap : _disabledBitmap);
+
+    private readonly Bitmap _enabledBitmap;
+
+    private readonly Bitmap _disabledBitmap;
+}
 
 /// <summary>
 /// A button to launch an application, showing an icon and (optionally) toolip
 /// obtained from the executable's metadata.
 /// </summary>
 internal sealed class ApplicationButton : Button {
-    internal ApplicationButton(string path,
+    internal ApplicationButton(string executablePath,
                                int sideLength,
                                ToolTip? toolTip = null)
     {
-        _path = path;
+        _path = executablePath;
+        _bitmap = CreateBitmap(_path);
 
-        BackgroundImage = CreateBitmap(_path);
+        BackgroundImage = _bitmap;
         BackgroundImageLayout = ImageLayout.Stretch;
-        Size = new(width: sideLength, height: sideLength);
+        Width = Height = sideLength;
         Margin = Padding.Empty;
 
         toolTip?.SetToolTip(
@@ -907,6 +1052,12 @@ internal sealed class ApplicationButton : Button {
             FileVersionInfo.GetVersionInfo(_path).FileDescription);
 
         Click += ApplicationButton_Click;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _bitmap.Dispose();
+        base.Dispose(disposing);
     }
 
     private static Bitmap CreateBitmap(string path)
@@ -949,6 +1100,8 @@ internal sealed class ApplicationButton : Button {
         => Shell.Execute(_path);
 
     private readonly string _path;
+
+    private readonly Bitmap _bitmap;
 }
 
 /// <summary>
@@ -1085,8 +1238,11 @@ internal sealed class MyWebView2 : WebView2 {
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
+    internal static string GetAppFilePath(string filename)
+        => Path.Combine(QueryDirectory, filename);
+
     internal static Uri GetDocUrl(string filename)
-        => new(Path.Combine(QueryDirectory, filename));
+        => new(GetAppFilePath(filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
@@ -1589,8 +1745,8 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 }
 
 /// <summary>Times each step of a process and provides charting.</summary>
-internal sealed class LapTimer {
-    internal static LapTimer StartNew(string title) => new LapTimer(title);
+internal sealed class Charter {
+    internal static Charter StartNew(string title) => new Charter(title);
 
     internal void Finish()
     {
@@ -1600,9 +1756,9 @@ internal sealed class LapTimer {
 
         var chart = deltas.Select((duration, index) => new {
                                 Milliseconds = duration.TotalMilliseconds,
-                                Lap = index + 1
+                                Count = index + 1
                             })
-                          .Chart(datum => datum.Lap,
+                          .Chart(datum => datum.Count,
                                  datum => datum.Milliseconds)
                           .ToWindowsChart();
 
@@ -1619,9 +1775,9 @@ internal sealed class LapTimer {
         chart.Dump(_title);
     }
 
-    internal void Lap() => _times.Add(_timer.Elapsed);
+    internal void Update() => _times.Add(_timer.Elapsed);
 
-    private LapTimer(string title) => _title = title.ToString();
+    private Charter(string title) => _title = title.ToString();
 
     private readonly string _title;
 
