@@ -1,18 +1,19 @@
-<Query Kind="Statements" />
-
-using System.Threading.Tasks;
-using LINQPad.Controls;
+<Query Kind="Statements">
+  <Namespace>System.Threading.Tasks</Namespace>
+  <Namespace>LINQPad.Controls</Namespace>
+</Query>
 
 var count = 0;
 var label = new Label();
 
 label.Rendering += async delegate {
-    "Label rendering.".Dump();
-    
     for (; ; ) {
         label.Text = count++.ToString();
         await Task.Delay(1000);
     }
 };
 
+var button = new Button("Reset", delegate { count = 0; });
+
 label.Dump();
+button.Dump();
