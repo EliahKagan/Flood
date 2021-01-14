@@ -132,7 +132,6 @@ internal sealed class Launcher {
 
     internal void Display()
     {
-        //Util.CreateSynchronizationContext(true); // Not needed.
         _panel.Dump("Developer Mode Launcher");
         _metatimer.Enabled = true;
     }
@@ -181,7 +180,9 @@ internal sealed class Launcher {
         table.Rows.Add(new LC.Label("Delay (ms)"), _delayBox);
 
         var description = new LC.Label(
-                "This is the requested minimum delay between frames.");
+            "This is the requested minimum delay between frames.");
+
+        UpdateTimingNote();
 
         return new(horizontal: false, table, description, _timingNote);
     }
@@ -192,20 +193,11 @@ internal sealed class Launcher {
     private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { _metatimer.Dispose(); };
-        _metatimer.Tick += metatimer_Tick;
+        _metatimer.Tick += delegate { UpdateTimingNote(); };
         _widthBox.TextInput += widthBox_TextInput;
         _heightBox.TextInput += heightBox_TextInput;
         _delayBox.TextInput += delayBox_TextInput;
         _launch.Click += launch_Click;
-    }
-
-    private void metatimer_Tick(object? sender, EventArgs e)
-    {
-        _timingNote.Text =
-            $"Note that the system timer{Rsquo}s resolution affects"
-            + $" accuracy. {Environment.NewLine}({GetTimingNoteDetail()})";
-
-        Thread.CurrentThread.ManagedThreadId.Dump(); // FIXME: remove
     }
 
     private void widthBox_TextInput(object? sender, EventArgs e)
@@ -242,6 +234,11 @@ internal sealed class Launcher {
 
     private void UpdateLaunchButton()
         => _launch.Enabled = _width is int && _height is int && _delay is int;
+
+    private void UpdateTimingNote()
+        => _timingNote.Text =
+            $"Note that the system timer{Rsquo}s resolution affects"
+            + $" accuracy. {Environment.NewLine}({GetTimingNoteDetail()})";
 
     private string GetTimingNoteDetail()
     {
