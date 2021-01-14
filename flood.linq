@@ -275,7 +275,7 @@ internal sealed class Launcher {
                    _stopButton,
                    _charting);
 
-    // Not the system timer this is a timer for timing timing info for. :)
+    // Timer for polling the system timer's timings. Not the system timer.
     private readonly Timer _metatimer = new() { Interval = 150 };
 
     private readonly LC.TextBox _widthBox;
