@@ -17,6 +17,7 @@
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
+  <Namespace>Timer = System.Windows.Forms.Timer</Namespace>
   <RuntimeVersion>5.0</RuntimeVersion>
 </Query>
 
@@ -129,7 +130,12 @@ internal sealed class Launcher {
 
     internal bool EnableCharting => _charting.Checked;
 
-    internal void Display() => _panel.Dump("Developer Mode Launcher");
+    internal void Display()
+    {
+        //Util.CreateSynchronizationContext(true); // Not needed.
+        _panel.Dump("Developer Mode Launcher");
+        _metatimer.Enabled = true;
+    }
 
     private const string NumberBoxWidth = "5em";
 
@@ -185,11 +191,21 @@ internal sealed class Launcher {
 
     private void SubscribePrivateHandlers()
     {
+        Util.Cleanup += delegate { _metatimer.Dispose(); };
+        _metatimer.Tick += metatimer_Tick;
         _widthBox.TextInput += widthBox_TextInput;
         _heightBox.TextInput += heightBox_TextInput;
         _delayBox.TextInput += delayBox_TextInput;
-        _timingNote.Rendering += timingNote_Rendering;
         _launch.Click += launch_Click;
+    }
+
+    private void metatimer_Tick(object? sender, EventArgs e)
+    {
+        _timingNote.Text =
+            $"Note that the system timer{Rsquo}s resolution affects"
+            + $" accuracy. {Environment.NewLine}({GetTimingNoteDetail()})";
+
+        Thread.CurrentThread.ManagedThreadId.Dump(); // FIXME: remove
     }
 
     private void widthBox_TextInput(object? sender, EventArgs e)
@@ -200,17 +216,6 @@ internal sealed class Launcher {
 
     private void delayBox_TextInput(object? sender, EventArgs e)
         => HandleNumberInput(_delayBox, ref _delay);
-
-    private async void timingNote_Rendering(object? sender, EventArgs e)
-    {
-        for (; ; ) {
-            _timingNote.Text =
-                $"Note that the system timer{Rsquo}s resolution affects"
-                + $" accuracy. {Environment.NewLine}({GetTimingNote()})";
-
-            await Task.Delay(250);
-        }
-    }
 
     private void launch_Click(object? sender, EventArgs e)
     {
@@ -238,7 +243,7 @@ internal sealed class Launcher {
     private void UpdateLaunchButton()
         => _launch.Enabled = _width is int && _height is int && _delay is int;
 
-    private string GetTimingNote()
+    private string GetTimingNoteDetail()
     {
         var success =
             NtQueryTimerResolution(out var worst, out _, out var actual) >= 0;
@@ -272,6 +277,9 @@ internal sealed class Launcher {
                    _useOldWebBrowser,
                    _stopButton,
                    _charting);
+
+    // Not the system timer this is a timer for timing timing info for. :)
+    private readonly Timer _metatimer = new() { Interval = 250 };
 
     private readonly LC.TextBox _widthBox;
 
@@ -936,7 +944,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly IContainer _components = new Container();
 
-    private readonly System.Windows.Forms.Timer _nonessentialTimer;
+    private readonly Timer _nonessentialTimer;
 
     private readonly ToolTip _toolTip;
 
