@@ -1036,7 +1036,7 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
-    [DllImport("user32.dll")]
+    [DllImport("user32")]
     private static extern bool HideCaret(IntPtr hWnd);
 
     private static void Warn(string message)
@@ -1198,12 +1198,12 @@ internal sealed class ApplicationButton : Button {
     private static void Throw()
         => throw new Win32Exception(Marshal.GetLastWin32Error());
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr ExtractIcon(IntPtr hInst,
                                              string pszExeFileName,
                                              uint nIconIndex);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [DllImport("user32", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
 
     private void ApplicationButton_Click(object? sender, EventArgs e)
