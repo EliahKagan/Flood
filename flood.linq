@@ -72,9 +72,8 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
         ChartingEnabled = sender.EnableCharting,
     };
 
-    // FIXME: Remove the debug printing.
-    ui.Activated += delegate { sender.PauseUpdates(); "Activated".Dump(); };
-    ui.Deactivate += delegate { sender.ResumeUpdates(); "Deactivate".Dump(); };
+    ui.Activated += delegate { sender.PauseUpdates(); };
+    ui.Deactivate += delegate { sender.ResumeUpdates(); };
 
     ui.Display();
 }
