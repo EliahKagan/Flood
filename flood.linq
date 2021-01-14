@@ -65,12 +65,18 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     HelpViewerSupplier supplier =
         (e.UseOldWebBrowser ? GetOldHelpViewerAsync : GetBestHelpViewerAsync);
 
-    new MainPanel(e.Size, supplier) {
+    var ui = new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
         StopButtonVisible = sender.ShowStopButton,
         ChartingEnabled = sender.EnableCharting,
-    }.Display();
+    };
+
+    // FIXME: Remove the debug printing.
+    ui.Activated += delegate { sender.PauseUpdates(); "Activated".Dump(); };
+    ui.Deactivate += delegate { sender.ResumeUpdates(); "Deactivate".Dump(); };
+
+    ui.Display();
 }
 
 /// <summary>
@@ -133,8 +139,12 @@ internal sealed class Launcher {
     internal void Display()
     {
         _panel.Dump("Developer Mode Launcher");
-        _metatimer.Enabled = true;
+        ResumeUpdates();
     }
+
+    internal void PauseUpdates() => _metatimer.Stop();
+
+    internal void ResumeUpdates() => _metatimer.Start();
 
     private const string NumberBoxWidth = "5em";
 
@@ -363,6 +373,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         get => _stop.Visible;
         set => _stop.Visible = value;
     }
+
+    internal event EventHandler? Activated;
+
+    internal event EventHandler? Deactivate;
 
     internal void Display() => this.Dump("Flood Fill Visualization");
 
@@ -595,8 +609,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         pluginForm.KeyPreview = true;
         pluginForm.KeyDown += delegate { UpdateStatus(); };
         pluginForm.KeyUp += delegate { UpdateStatus(); };
-        pluginForm.Activated += delegate { _nonessentialTimer.Stop(); };
-        pluginForm.Deactivate += delegate { _nonessentialTimer.Start(); };
+        pluginForm.Activated += Parent_Activated;
+        pluginForm.Deactivate += Parent_Deactivate;
         _nonessentialTimer.Start();
     }
 
@@ -625,6 +639,21 @@ internal sealed class MainPanel : TableLayoutPanel {
             ShowAlert(message);
             VerticalScroll.Value = 0; // Also needed when the launcher is used.
         }
+    }
+
+    private void Parent_Activated(object? sender, EventArgs e)
+    {
+        // If the parent is detached, don't respond to its activation.
+        if (Parent is null) return;
+
+        _nonessentialTimer.Stop();
+        Activated?.Invoke(sender, e);
+    }
+
+    private void Parent_Deactivate(object? sender, EventArgs e)
+    {
+        _nonessentialTimer.Start();
+        Deactivate?.Invoke(sender, e);
     }
 
     private void alert_GotFocus(object? sender, EventArgs e)
