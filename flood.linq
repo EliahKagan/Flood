@@ -354,9 +354,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         InitializeMainPanel();
         PerformInitialUpdates();
         SubscribePrivateHandlers();
-
-        _alert.Show("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog.");
-        //_alert.Show("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog -- and the rest of the forest applauded in gallant encore.");
     }
 
     internal bool ChartingEnabled
