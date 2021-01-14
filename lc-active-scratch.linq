@@ -6,14 +6,38 @@
 var count = 0;
 var label = new Label();
 
+void Update()
+{
+    var elapsed = (count == 1 ? $"{count} second" : $"{count} seconds");
+
+    var thread = $"thread {Thread.CurrentThread.ManagedThreadId}"
+                    + $" ({Thread.CurrentThread.GetApartmentState()})";
+
+    var updates = $"{State.Count} updates";
+
+    label.Text = string.Join(Environment.NewLine, elapsed, thread, updates);
+}
+
 label.Rendering += async delegate {
     for (; ; ) {
-        label.Text = count++.ToString();
+        Update();
+        ++count;
+        ++State.Count;
         await Task.Delay(1000);
     }
 };
 
-var button = new Button("Reset", delegate { count = 0; });
+var reset = new Button("Reset", delegate {
+    count = 0;
+    Update();
+});
 
-label.Dump();
-button.Dump();
+var collect = new Button("Collect", delegate { GC.Collect(); });
+
+new StackPanel(horizontal: false,
+               label,
+               new WrapPanel(reset, collect)).Dump();
+
+internal static class State {
+    internal static int Count { get; set; } = 0;
+}
