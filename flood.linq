@@ -24,7 +24,12 @@
 
 #nullable enable
 
-if (Control.ModifierKeys.HasFlag(Keys.Shift)) {
+var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
+
+// Make the dump text 12.5% bigger than with LINQPad's default CSS.
+Util.RawHtml("<style>body { font-size: .9em }</style>").Dump();
+
+if (devmode) {
     // Use the launcher ("developer mode").
     var launcher = new Launcher(SuggestCanvasSize());
     launcher.Launch += launcher_Launch;
@@ -128,6 +133,10 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
+    private const char Nbsp = '\u00A0';
+
+    private const char Rsquo = '\u2019';
+
     [DllImport("ntdll")]
     private static extern int
     NtQueryTimerResolution(out uint MinimumResolution,
@@ -135,7 +144,7 @@ internal sealed class Launcher {
                            out uint CurrentResolution);
 
     private static string FormatTimerResolution(uint ticks)
-        => $"{ticks / 10_000.0} ms";
+        => $"{ticks / 10_000.0}{Nbsp}ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -196,8 +205,8 @@ internal sealed class Launcher {
     {
         for (; ; ) {
             _timingNote.Text =
-                "Note that the system timer's resolution affects accuracy."
-                + $"{Environment.NewLine}({GetTimingNote()})";
+                $"Note that the system timer{Rsquo}s resolution affects"
+                + $" accuracy. {Environment.NewLine}({GetTimingNote()})";
 
             await Task.Delay(250);
         }
@@ -243,14 +252,15 @@ internal sealed class Launcher {
         }
 
         var worstStr = FormatTimerResolution(worst);
-        var clause = $"Your system timer's resolution is {worstStr} at worst";
 
         if (success) {
             var actualStr = FormatTimerResolution(actual);
-            return $"{clause}, {actualStr} now.";
+
+            return $"Your system timer resolution is {worstStr} at worst,"
+                    + $" {actualStr} now.";
         }
 
-        return $"{clause}.";
+        return $"Your system timer resolution is {worstStr} at worst.";
     }
 
     private void DisableInteractiveControls()
