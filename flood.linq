@@ -342,7 +342,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             Margin = CanvasMargin,
         };
 
-        _alertBar = CreateAlertBar();
+        _alert = CreateAlertBar();
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _stop = CreateStop();
@@ -353,7 +353,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         InitializeMainPanel();
         PerformInitialUpdates();
-        SubscribeEventHandlers();
+        SubscribePrivateHandlers();
+
+        _alert.Show("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog.");
+        //_alert.Show("Oddities abound: \u201CHello, world!\u201D said Wednesday, the vertiginous frog -- and the rest of the forest applauded in gallant encore.");
     }
 
     internal bool ChartingEnabled
@@ -407,40 +410,12 @@ internal sealed class MainPanel : TableLayoutPanel {
             _                         =>  5
         };
 
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(MainPanel)})");
-
-    [DllImport("user32.dll")]
-    private static extern bool HideCaret(IntPtr hWnd);
-
     private int SmallButtonSize => _showHideTips.Height;
 
-    private TableLayoutPanel CreateAlertBar()
-    {
-        const int padLeft = 3;
-        const int padRight = 0;
-
-        var alertBar = new TableLayoutPanel {
-            RowCount = 1,
-            ColumnCount = 2,
-            GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
-            Width = _rect.Width,
-            Margin = CanvasMargin,
-            Padding = new(left: padLeft, top: 0, right: padRight, bottom: 0),
-            BackColor = AlertBackgroundColor,
-            Visible = false,
-        };
-
-        alertBar.Controls.Add(_alert);
-        alertBar.Controls.Add(_dismiss);
-        alertBar.Height = _dismiss.Height; // Must be after adding _dismiss.
-
-        // TODO: Someday, figure out why every attempt to do this in a
-        // reasonable way failed (and why some raised NullReferenceException).
-        _alert.Width = alertBar.Width - (_dismiss.Width + padLeft + padRight);
-
-        return alertBar;
-    }
+    private AlertBar CreateAlertBar() => new() {
+        Width = _rect.Width,
+        Margin = CanvasMargin,
+    };
 
     private TableLayoutPanel CreateToggles()
     {
@@ -511,7 +486,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         AutoScroll = true;
 
-        Controls.Add(_alertBar);
+        Controls.Add(_alert);
         Controls.Add(_canvas);
         Controls.Add(_infoBar);
         Controls.Add(_tips);
@@ -574,16 +549,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         _openCloseHelp.Enabled = true;
     }
 
-    private void SubscribeEventHandlers()
+    private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { Dispose(); };
 
         HandleCreated += MainPanel_HandleCreated;
         VisibleChanged += MainPanel_VisibleChanged;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
-
-        _alert.GotFocus += alert_GotFocus;
-        _dismiss.Click += delegate { _alertBar.Hide(); };
 
         _canvas.MouseMove += canvas_MouseMove;
         _canvas.MouseClick += canvas_MouseClick;
@@ -635,7 +607,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         await Task.Yield();
 
         if (VScroll) {
-            ShowAlert(message);
+            _alert.Show(message);
             VerticalScroll.Value = 0; // Also needed when the launcher is used.
         }
     }
@@ -653,11 +625,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         _nonessentialTimer.Start();
         Deactivate?.Invoke(sender, e);
-    }
-
-    private void alert_GotFocus(object? sender, EventArgs e)
-    {
-        if (!HideCaret(_alert.Handle)) Warn("Failure hiding alert caret");
     }
 
     private void canvas_MouseMove(object? sender, MouseEventArgs e)
@@ -743,8 +710,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         } else if (_neighborEnumerationStrategies.Current
                     is not ConfigurableNeighborEnumerationStrategy strategy) {
             // Scrolling with Shift cycles substrategies, but there are none.
-            ShowAlert($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
-                    + " strategy has no sub-strategies to scroll.");
+            _alert.Show($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
+                        + " strategy has no sub-strategies to scroll.");
         } else if (ModifierKeys.HasFlag(Keys.Control)) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
@@ -808,12 +775,6 @@ internal sealed class MainPanel : TableLayoutPanel {
             e.Cancel = true;
             Shell.Execute(e.Uri.AbsoluteUri);
         }
-    }
-
-    private void ShowAlert(string message)
-    {
-        _alert.Text = message;
-        _alertBar.Show();
     }
 
     private async Task OpenHelp()
@@ -972,8 +933,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Padding CanvasMargin { get; } =
         new(left: 2, top: 2, right: 0, bottom: 0);
 
-    private static Color AlertBackgroundColor { get; } = Color.NavajoWhite;
-
     private readonly IContainer _components = new Container();
 
     private readonly Timer _nonessentialTimer;
@@ -994,28 +953,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Point _oldLocation = Point.Empty;
 
-    private readonly TableLayoutPanel _alertBar;
-
-    private readonly TextBox _alert = new() {
-        AutoSize = true,
-        Anchor = AnchorStyles.Left,
-        Margin = Padding.Empty,
-        BorderStyle = BorderStyle.None,
-        Font = new("Segoe UI Semibold", 10),
-        BackColor = AlertBackgroundColor,
-        ForeColor = Color.Black,
-        ReadOnly = true,
-        Cursor = Cursors.Arrow,
-        TabStop = false,
-    };
-
-    private readonly Button _dismiss = new() {
-        Text = "Dismiss",
-        BackColor = Button.DefaultBackColor,
-        AutoSize = true,
-        Anchor = AnchorStyles.Right,
-        Margin = Padding.Empty,
-    };
+    private readonly AlertBar _alert = new();
 
     private readonly TableLayoutPanel _infoBar;
 
@@ -1071,6 +1009,89 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private bool _shownBefore = false;
 };
+
+/// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
+internal sealed class AlertBar : TableLayoutPanel {
+    internal AlertBar()
+    {
+        InitializeAlertBar();
+        SubscribePrivateHandlers();
+    }
+
+    internal void Show(string message)
+    {
+        _content.Text = message;
+        Show();
+    }
+
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        _content.Width =
+            Width - (_dismiss.Width + Padding.Left + Padding.Right);
+
+        base.OnSizeChanged(e);
+    }
+
+    protected override void OnBackColorChanged(EventArgs e)
+    {
+        _content.BackColor = BackColor;
+        base.OnBackColorChanged(e);
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool HideCaret(IntPtr hWnd);
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(AlertBar)})");
+
+    private void InitializeAlertBar()
+    {
+        const int padLeft = 3;
+        const int padRight = 0;
+
+        RowCount = 1;
+        ColumnCount = 2;
+        GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
+        Padding = new(left: padLeft, top: 0, right: padRight, bottom: 0);
+        BackColor = Color.NavajoWhite;
+        Visible = false;
+
+        Controls.Add(_content);
+        Controls.Add(_dismiss);
+        Height = _dismiss.Height; // Must be after adding _dismiss.
+    }
+
+    private void SubscribePrivateHandlers()
+    {
+        _content.GotFocus += content_GotFocus;
+        _dismiss.Click += delegate { Hide(); };
+    }
+
+    private void content_GotFocus(object? sender, EventArgs e)
+    {
+        if (!HideCaret(_content.Handle)) Warn("Failure hiding alert caret");
+    }
+
+    private readonly TextBox _content = new() {
+        AutoSize = true,
+        Anchor = AnchorStyles.Left,
+        Margin = Padding.Empty,
+        BorderStyle = BorderStyle.None,
+        Font = new("Segoe UI Semibold", 10),
+        ForeColor = Color.Black,
+        ReadOnly = true,
+        Cursor = Cursors.Arrow,
+        TabStop = false,
+    };
+
+    private readonly Button _dismiss = new() {
+        Text = "Dismiss",
+        BackColor = Button.DefaultBackColor,
+        AutoSize = true,
+        Anchor = AnchorStyles.Right,
+        Margin = Padding.Empty,
+    };
+}
 
 /// <summary>
 /// A square button showing a bitmap that changes when enabled/disabled.
