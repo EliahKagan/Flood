@@ -318,7 +318,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal MainPanel(Size canvasSize, HelpViewerSupplier supplier)
     {
-        _nonessentialTimer = new(_components) { Interval = 110 };
+        _nonessentialTimer = new(_components) { Interval = 60 };
         _toolTip = new(_components) { ShowAlways = true };
         _helpViewerSupplier = supplier;
 
