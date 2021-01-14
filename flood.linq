@@ -134,7 +134,7 @@ internal sealed class Launcher {
                            out uint MaximumResolution,
                            out uint CurrentResolution);
 
-    private static string FormatClockResolution(uint ticks)
+    private static string FormatTimerResolution(uint ticks)
         => $"{ticks / 10_000.0} ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
@@ -168,14 +168,7 @@ internal sealed class Launcher {
         var description = new LC.Label(
                 "This is the requested minimum delay between frames.");
 
-        if (NtQueryTimerResolution(out var minimum, out _, out _) < 0)
-            return new(horizontal: false, table, description);
-
-        var resolutionNote = new LC.Label(
-                "(Your system clock's own resolution is"
-                + $" {FormatClockResolution(minimum)} at worst.)");
-
-        return new(horizontal: false, table, description, resolutionNote);
+        return new(horizontal: false, table, description, _timingNote);
     }
 
     private LC.StackPanel CreateFeaturesPanel()
@@ -186,6 +179,7 @@ internal sealed class Launcher {
         _widthBox.TextInput += widthBox_TextInput;
         _heightBox.TextInput += heightBox_TextInput;
         _delayBox.TextInput += delayBox_TextInput;
+        _timingNote.Rendering += timingNote_Rendering;
         _launch.Click += launch_Click;
     }
 
@@ -197,6 +191,17 @@ internal sealed class Launcher {
 
     private void delayBox_TextInput(object? sender, EventArgs e)
         => HandleNumberInput(_delayBox, ref _delay);
+
+    private async void timingNote_Rendering(object? sender, EventArgs e)
+    {
+        for (; ; ) {
+            _timingNote.Text =
+                "Note that the system timer's resolution affects accuracy."
+                + $"{Environment.NewLine}({GetTimingNote()})";
+
+            await Task.Delay(250);
+        }
+    }
 
     private void launch_Click(object? sender, EventArgs e)
     {
@@ -224,6 +229,30 @@ internal sealed class Launcher {
     private void UpdateLaunchButton()
         => _launch.Enabled = _width is int && _height is int && _delay is int;
 
+    private string GetTimingNote()
+    {
+        var success =
+            NtQueryTimerResolution(out var worst, out _, out var actual) >= 0;
+
+        if (success) {
+            _oldWorstTimerResolution = worst;
+        } else if (_oldWorstTimerResolution is uint oldWorst) {
+            worst = oldWorst;
+        } else {
+            return "I couldn't determine your system timer resolution.";
+        }
+
+        var worstStr = FormatTimerResolution(worst);
+        var clause = $"Your system timer's resolution is {worstStr} at worst";
+
+        if (success) {
+            var actualStr = FormatTimerResolution(actual);
+            return $"{clause}, {actualStr} now.";
+        }
+
+        return $"{clause}.";
+    }
+
     private void DisableInteractiveControls()
         => Disable(_widthBox,
                    _heightBox,
@@ -239,6 +268,8 @@ internal sealed class Launcher {
     private readonly LC.TextBox _heightBox;
 
     private readonly LC.TextBox _delayBox;
+
+    private readonly LC.Label _timingNote = new();
 
     private readonly LC.CheckBox _showPluginFormInTaskbar =
         new("Show PluginForm in Taskbar");
@@ -259,6 +290,8 @@ internal sealed class Launcher {
     private int? _height;
 
     private int? _delay = MainPanel.DefaultDelayInMilliseconds;
+
+    private uint? _oldWorstTimerResolution = null;
 }
 
 /// <summary>
