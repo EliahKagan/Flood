@@ -741,15 +741,22 @@ internal sealed class MainPanel : TableLayoutPanel {
             else
                 _neighborEnumerationStrategies.CyclePrev();
         } else if (_neighborEnumerationStrategies.Current
-                    is ConfigurableNeighborEnumerationStrategy strategy) {
-            // Scrolling with Shift cycles substrategies instead.
+                    is not ConfigurableNeighborEnumerationStrategy strategy) {
+            // Scrolling with Shift cycles substrategies, but there are none.
+            ShowAlert($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
+                    + " strategy has no sub-strategies to scroll.");
+        } else if (ModifierKeys.HasFlag(Keys.Control)) {
+            // Scrolling with Ctrl+Shift cycles substrategies many at a time.
+            if (scrollingDown)
+                strategy.CycleFastAheadSubStrategy();
+            else
+                strategy.CycleFastBehindSubStrategy();
+        } else {
+            // Scrolling with just Shift cycles substrategies one by one.
             if (scrollingDown)
                 strategy.CycleNextSubStrategy();
             else
                 strategy.CyclePrevSubStrategy();
-        } else {
-            ShowAlert($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
-                    + " strategy has no sub-strategies to scroll.");
         }
 
         UpdateStatus();
@@ -1599,17 +1606,34 @@ internal abstract class ConfigurableNeighborEnumerationStrategy
     public override string ToString() => $"{Name} - {Detail}";
 
     /// <summary>
-    /// Switches to the next substrategy, or from the last to the first.
+    /// Switches to the next sub-strategy, or from the last to the first.
     /// </summary>
     internal abstract void CycleNextSubStrategy();
 
     /// <summary>
-    /// Switches to the previous substrategy, or from the first to the last.
+    /// Switches to the previous sub-strategy, or from the first to the last.
     /// </summary>
     internal abstract void CyclePrevSubStrategy();
 
     /// <summary>
-    /// Inforamtion about the current substrategy, to appear in the UI.
+    /// Switches to a (conceptually) much later substrategy. May wrap.
+    /// </summary>
+    /// <remarks>
+
+    /// </remarks>
+    internal abstract void CycleFastAheadSubStrategy();
+
+    /// <summary>
+    /// Switches to a (conceptually) much earlier substrategy. May wrap.
+    /// </summary>
+    /// <remarks>
+    /// Implementation-defined semantics. Not necessarily equivalent to calling
+    /// <see cref="CyclePrevSubStrategy"/> a fixed number of times.
+    /// </remarks>
+    internal abstract void CycleFastBehindSubStrategy();
+
+    /// <summary>
+    /// Information about the current sub-strategy, to appear in the UI.
     /// </summary>
     private protected abstract string Detail { get; }
 }
@@ -1642,10 +1666,20 @@ internal sealed class UniformStrategy
     internal override void CyclePrevSubStrategy()
         => _uniformOrder.CyclePrevPermutation();
 
+    /// <summary>Reverses the uniform order.</summary>
+    /// <remarks>Same as <see cref="CycleFastBehindSubStrategy"/>.</remarks>
+    internal override void CycleFastAheadSubStrategy() => Reverse();
+
+    /// <summary>Reverses the uniform order.</summary>
+    /// <remarks>Same as <see cref="CycleFastAheadSubStrategy"/>.</remarks>
+    internal override void CycleFastBehindSubStrategy() => Reverse();
+
     /// <inheritdoc/>
     private protected override string Detail
         => new(Array.ConvertAll(_uniformOrder,
                                 direction => direction.ToString()[0]));
+
+    private void Reverse() => Array.Reverse(_uniformOrder);
 
     private readonly Direction[] _uniformOrder;
 }

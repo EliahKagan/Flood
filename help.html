@@ -508,16 +508,19 @@
     </h2>
     <p>
       There are several major strategies for the order in which neighbors are
-      enumerated, and some (currently, just one) are configurable by the
-      selection of sub-strategies.
+      enumerated, and some (<em>currently</em>, just one) are configurable by
+      the selection of sub-strategies.
     </p>
     <p>
       Use the scroll-wheel (with no modifier keys) to cycle between major
       neighbor-enumeration strategies.
     </p>
     <p>
-      Hold down <kbd>Shift</kbd> while using the scroll-wheel to cycle between
-      sub-strategies for the currently selected major strategy.
+      Hold down <span class="command"><kbd>Shift</kbd></span> while using the scroll-wheel to cycle between
+      sub-strategies for the currently selected major strategy. To scroll
+      &ldquo;fast&rdquo; through them&mdash;the meaning of which is determined
+      per strategy&mdash;use
+      <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>.
     </p>
     <p>
       <strong>The mouse pointer must be over the canvas when
@@ -538,6 +541,7 @@
         direction, in the order in which neighbors are enumerated. The default
         sub-strategy is
         <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
+        Fast cycling (in either direction) reverses the order.
       </dd>
       <dt id="random-per-fill">Random per fill</dt>
       <dd>
