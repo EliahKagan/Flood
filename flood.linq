@@ -379,6 +379,55 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal void Display() => this.Dump("Flood Fill Visualization");
 
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+
+        var pluginForm = (Form)Parent;
+
+        if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
+
+        // Update "Speed" in status from modifier keys, crisply when
+        // reasonable. Unlike with an ordinary form, users can't readily see if
+        // a PluginForm is active (and it starts inactive) so update it, albeit
+        // slower, even when not.
+        pluginForm.KeyPreview = true;
+        pluginForm.KeyDown += delegate { UpdateStatus(); };
+        pluginForm.KeyUp += delegate { UpdateStatus(); };
+        pluginForm.Activated += Parent_Activated;
+        pluginForm.Deactivate += Parent_Deactivate;
+        _nonessentialTimer.Start();
+    }
+
+    protected override async void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+
+        const string message =
+            "Low vertical space. Rearranging panels (Ctrl+F8) may help.";
+
+        if (_shownBefore || !Visible) return;
+
+        _shownBefore = true;
+
+        // When the launcher is used, even without changing anything, VScroll
+        // is always true here, which caused "Low vertical space" to always
+        // appear. Processing enqueued window messages first works around it. I
+        // don't know why. I suspect this is too early and should be a handler
+        // for another event (maybe on the PluginForm). I haven't encountered
+        // cases without the launcher but I suspect there may be others, and
+        // since the user can't interact much with the panel in that time, this
+        // seems harmless.
+        //
+        // TODO: Figure out what's going on and if there's a better fix.
+        await Task.Yield();
+
+        if (VScroll) {
+            _alert.Show(message);
+            VerticalScroll.Value = 0; // Also needed when the launcher is used.
+        }
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) {
@@ -549,9 +598,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { Dispose(); };
-
-        HandleCreated += MainPanel_HandleCreated;
-        VisibleChanged += MainPanel_VisibleChanged;
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _canvas.MouseMove += canvas_MouseMove;
@@ -562,51 +608,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
-    }
-
-    private void MainPanel_HandleCreated(object? sender, EventArgs e)
-    {
-        var pluginForm = (Form)Parent;
-
-        if (ShowParentInTaskbar) pluginForm.ShowInTaskbar = true;
-
-        // Update "Speed" in status from modifier keys, crisply when
-        // reasonable. Unlike with an ordinary form, users can't readily see if
-        // a PluginForm is active (and it starts inactive) so update it, albeit
-        // slower, even when not.
-        pluginForm.KeyPreview = true;
-        pluginForm.KeyDown += delegate { UpdateStatus(); };
-        pluginForm.KeyUp += delegate { UpdateStatus(); };
-        pluginForm.Activated += Parent_Activated;
-        pluginForm.Deactivate += Parent_Deactivate;
-        _nonessentialTimer.Start();
-    }
-
-    private async void MainPanel_VisibleChanged(object? sender, EventArgs e)
-    {
-        const string message =
-            "Low vertical space. Rearranging panels (Ctrl+F8) may help.";
-
-        if (_shownBefore || !Visible) return;
-
-        _shownBefore = true;
-
-        // When the launcher is used, even without changing anything, VScroll
-        // is always true here, which caused "Low vertical space" to always
-        // appear. Processing enqueued window messages first works around it. I
-        // don't know why. I suspect this is too early and should be a handler
-        // for another event (maybe on the PluginForm). I haven't encountered
-        // cases without the launcher but I suspect there may be others, and
-        // since the user can't interact much with the panel in that time, this
-        // seems harmless.
-        //
-        // TODO: Figure out what's going on and if there's a better fix.
-        await Task.Yield();
-
-        if (VScroll) {
-            _alert.Show(message);
-            VerticalScroll.Value = 0; // Also needed when the launcher is used.
-        }
     }
 
     private void Parent_Activated(object? sender, EventArgs e)
@@ -1023,16 +1024,16 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     protected override void OnSizeChanged(EventArgs e)
     {
+        base.OnSizeChanged(e);
+
         _content.Width =
             Width - (_dismiss.Width + Padding.Left + Padding.Right);
-
-        base.OnSizeChanged(e);
     }
 
     protected override void OnBackColorChanged(EventArgs e)
     {
-        _content.BackColor = BackColor;
         base.OnBackColorChanged(e);
+        _content.BackColor = BackColor;
     }
 
     [DllImport("user32.dll")]
@@ -1110,8 +1111,8 @@ internal sealed class BitmapButton : Button {
 
     protected override void OnEnabledChanged(EventArgs e)
     {
-        UpdateImage();
         base.OnEnabledChanged(e);
+        UpdateImage();
     }
 
     protected override void Dispose(bool disposing)
