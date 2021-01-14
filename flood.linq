@@ -241,16 +241,16 @@ internal sealed class Launcher {
     private readonly LC.TextBox _delayBox;
 
     private readonly LC.CheckBox _showPluginFormInTaskbar =
-        new LC.CheckBox("Show PluginForm in Taskbar");
+        new("Show PluginForm in Taskbar");
 
-    private readonly LC.CheckBox _useOldWebBrowser = new LC.CheckBox(
-            "Use old WebBrowser control even if WebView2 is available");
+    private readonly LC.CheckBox _useOldWebBrowser =
+        new("Use old WebBrowser control even if WebView2 is available");
 
-    private readonly LC.CheckBox _stopButton = new LC.CheckBox("Stop button");
+    private readonly LC.CheckBox _stopButton = new("Stop button");
 
-    private readonly LC.CheckBox _charting = new LC.CheckBox("Charting");
+    private readonly LC.CheckBox _charting = new("Charting");
 
-    private readonly LC.Button _launch = new LC.Button("Launch!");
+    private readonly LC.Button _launch = new("Launch!");
 
     private readonly LC.StackPanel _panel;
 
@@ -274,12 +274,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         _toolTip = new(_components) { ShowAlways = true };
         _helpViewerSupplier = supplier;
 
-        _rect = new Rectangle(Point.Empty, canvasSize);
-        _bmp = new Bitmap(width: _rect.Width, height: _rect.Height);
+        _rect = new(Point.Empty, canvasSize);
+        _bmp = new(width: _rect.Width, height: _rect.Height);
         _graphics = Graphics.FromImage(_bmp);
         _graphics.FillRectangle(Brushes.White, _rect);
 
-        _canvas = new PictureBox {
+        _canvas = new() {
             Image = _bmp,
             SizeMode = PictureBoxSizeMode.AutoSize,
             Margin = CanvasMargin,
@@ -781,13 +781,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStopButton();
         UpdateStatus();
 
-        return new Job(
-            FromArgb: fromArgb,
-            Speed: speed,
-            Supplier: _neighborEnumerationStrategies.Current.GetSupplier(),
-            Delayer: GetDelayer(charter),
-            Generation: _generation,
-            PostAction: () => charter?.Finish());
+        return new(FromArgb: fromArgb,
+                   Speed: speed,
+                   Supplier:
+                        _neighborEnumerationStrategies.Current.GetSupplier(),
+                   Delayer: GetDelayer(charter),
+                   Generation: _generation,
+                   PostAction: () => charter?.Finish());
     }
 
     private void EndFill(Job job)
@@ -1568,8 +1568,8 @@ internal sealed class UniformStrategy
 
     /// <inheritdoc/>
     private protected override string Detail
-        => new string(Array.ConvertAll(_uniformOrder,
-                                       direction => direction.ToString()[0]));
+        => new(Array.ConvertAll(_uniformOrder,
+                                direction => direction.ToString()[0]));
 
     private readonly Direction[] _uniformOrder;
 }
@@ -1754,7 +1754,7 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
-    internal static Charter StartNew(string title) => new Charter(title);
+    internal static Charter StartNew(string title) => new(title);
 
     internal void Finish()
     {
@@ -1828,7 +1828,7 @@ internal sealed class RectangleBuilder {
     {
         var topLeft = new Point(x: minX, y: minY);
         var size = new Size(width: maxX - minX + 1, height: maxY - minY + 1);
-        return new Rectangle(topLeft, size);
+        return new(topLeft, size);
     }
 
     private int _minX, _minY, _maxX, _maxY;
