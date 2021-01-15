@@ -390,7 +390,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         // Update "Speed" in status from modifier keys, crisply when
         // reasonable. Unlike with an ordinary form, users can't readily see if
         // a PluginForm is active (and it starts inactive) so update it, albeit
-        // slower, even when not.
+        // slower, even when not. [These are two of the three cases. The other
+        // is when _tips is focused. See MainPanel.SubscribePrivateHandlers.]
         pluginForm.KeyPreview = true;
         pluginForm.KeyDown += delegate { UpdateStatus(); };
         pluginForm.KeyUp += delegate { UpdateStatus(); };
@@ -607,14 +608,15 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop.Click += stop_Click;
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
-
         _tips.DocumentCompleted += tips_DocumentCompleted;
-        // FIXME: Call UpdateStatus() when keys (at least modifier keys) are
-        // pressed or released while _tips is focused. Relating--it seems--to
-        // the way WebBrowser is implemented as an ActiveX control, the
-        // PluginForm doesn't receive these events. WebBrowser also doesn't
-        // support the KeyUp and KeyDown events. It supports PreviewKeyDown,
-        // but there is no PreviewKeyUp event.
+
+        // Update the status bar from modifier keys pressed or released while
+        // _tips has focus. This must be covered separately because keypresses
+        // sent to a WebBrowser control are not previewed by the containing
+        // form, notwithstanding KeyPreview. [This is one of three cases; see
+        // MainPanel.OnHandleCreated for the other two.]
+        _tips.PreviewKeyDown += delegate { UpdateStatus(); };
+        _tips.PreviewKeyUp += delegate { UpdateStatus(); };
     }
 
     private void Parent_Activated(object? sender, EventArgs e)
@@ -1221,30 +1223,32 @@ internal sealed class ApplicationButton : Button {
     private readonly Bitmap _bitmap;
 }
 
-/// <summary>Attempt to customize KeyDown and KeyUp in a WebBrowser.</summary>
+/// <summary>
+/// Adds a <c>PreviewKeyUp</c> event to <see cref="Windows.Forms.WebBrowser"/>.
+/// </summary>
+/// <remarks>
+/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyUp</c> and
+/// <c>KeyDown</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyUp/> and
+/// <see cref="Windows.Forms.WebBrowserBase.KeyDown/>). It does support
+/// <c>PreviewKeyDown</c>; this gives a roughly analogous <c>PreviewKeyUp</c>.
+/// </remarks>
 internal sealed class MyWebBrowser : WebBrowser {
-    // Does work. Includes WM_KEYUP and WM_KEYDOWN (unlike WndProc):
     public override bool PreProcessMessage(ref Message msg)
     {
-        msg.ToString().Dump(_timer.Elapsed.TotalSeconds.ToString());
+        // Give PreviewKeyUp the same information as PreviewKeyDown. Compare:
+        // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
+        if ((WM)msg.Msg is WM.KEYUP or WM.SYSKEYUP)
+            PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
+
         return base.PreProcessMessage(ref msg);
     }
 
-    // Does not work (and the corresponding event adders throw exceptions):
-    //
-    //protected override void OnKeyDown(KeyEventArgs e)
-    //{
-    //    base.OnKeyDown(e);
-    //    $"{_timer.Elapsed.TotalSeconds}: KeyDown".Dump();
-    //}
-    //
-    //protected override void OnKeyUp(KeyEventArgs e)
-    //{
-    //    base.OnKeyUp(e);
-    //    $"{_timer.Elapsed.TotalSeconds}: KeyUp".Dump();
-    //}
+    internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
 
-    private readonly Stopwatch _timer = Stopwatch.StartNew();
+    private enum WM : uint {
+        KEYUP    = 0x0101,
+        SYSKEYUP = 0x0105,
+    }
 }
 
 /// <summary>
