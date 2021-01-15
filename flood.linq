@@ -98,7 +98,8 @@ internal delegate void LauncherEventHandler(Launcher sender,
                                             LauncherEventArgs e);
 
 /// <summary>
-/// "Developer mode" launcher allowing the user to specify a canvas size.
+/// "Developer mode" launcher allowing the user to specify a canvas size and
+/// other advanced configuration.
 /// </summary>
 internal sealed class Launcher {
     internal Launcher(Size defaultSize)
@@ -1227,15 +1228,15 @@ internal sealed class ApplicationButton : Button {
 /// Adds a <c>PreviewKeyUp</c> event to <see cref="Windows.Forms.WebBrowser"/>.
 /// </summary>
 /// <remarks>
-/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyUp</c> and
-/// <c>KeyDown</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyUp/> and
-/// <see cref="Windows.Forms.WebBrowserBase.KeyDown/>). It does support
+/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
+/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown/> and
+/// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
 /// <c>PreviewKeyDown</c>; this gives a roughly analogous <c>PreviewKeyUp</c>.
 /// </remarks>
 internal sealed class MyWebBrowser : WebBrowser {
     public override bool PreProcessMessage(ref Message msg)
     {
-        // Give PreviewKeyUp the same information as PreviewKeyDown. Compare:
+        // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
         // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
         if ((WM)msg.Msg is WM.KEYUP or WM.SYSKEYUP)
             PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
@@ -1821,6 +1822,7 @@ internal sealed class RandomPerPixelStrategy : NeighborEnumerationStrategy {
 // TODO: Add WhirlpoolStrategy (which will be (counter)clockwise configurable).
 
 /// <summary>A cyclic sequence of items and a current position in it.</summary>
+/// <typeparam name="T">The item type offered by the carousel.</typeparam>
 internal sealed class Carousel<T> {
     internal Carousel(params T[] items) => _items = items[..];
 
