@@ -508,7 +508,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         return infoBar;
     }
 
-    private WebBrowser CreateTips() => new() {
+    private MyWebBrowser CreateTips() => new() {
         Visible = false,
         Size = new(width: _rect.Width, height: 200),
         AutoSize = true,
@@ -607,7 +607,14 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop.Click += stop_Click;
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
+
         _tips.DocumentCompleted += tips_DocumentCompleted;
+        // FIXME: Call UpdateStatus() when keys (at least modifier keys) are
+        // pressed or released while _tips is focused. Relating--it seems--to
+        // the way WebBrowser is implemented as an ActiveX control, the
+        // PluginForm doesn't receive these events. WebBrowser also doesn't
+        // support the KeyUp and KeyDown events. It supports PreviewKeyDown,
+        // but there is no PreviewKeyUp event.
     }
 
     private void Parent_Activated(object? sender, EventArgs e)
@@ -978,7 +985,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = new(left: 2, top: 0, right: 0, bottom: 0),
     };
 
-    private readonly WebBrowser _tips;
+    private readonly MyWebBrowser _tips;
 
     private OutputPanel? _helpPanel = null;
 
@@ -1212,6 +1219,32 @@ internal sealed class ApplicationButton : Button {
     private readonly string _path;
 
     private readonly Bitmap _bitmap;
+}
+
+/// <summary>Attempt to customize KeyDown and KeyUp in a WebBrowser.</summary>
+internal sealed class MyWebBrowser : WebBrowser {
+    // Does work. Includes WM_KEYUP and WM_KEYDOWN (unlike WndProc):
+    public override bool PreProcessMessage(ref Message msg)
+    {
+        msg.ToString().Dump(_timer.Elapsed.TotalSeconds.ToString());
+        return base.PreProcessMessage(ref msg);
+    }
+
+    // Does not work (and the corresponding event adders throw exceptions):
+    //
+    //protected override void OnKeyDown(KeyEventArgs e)
+    //{
+    //    base.OnKeyDown(e);
+    //    $"{_timer.Elapsed.TotalSeconds}: KeyDown".Dump();
+    //}
+    //
+    //protected override void OnKeyUp(KeyEventArgs e)
+    //{
+    //    base.OnKeyUp(e);
+    //    $"{_timer.Elapsed.TotalSeconds}: KeyUp".Dump();
+    //}
+
+    private readonly Stopwatch _timer = Stopwatch.StartNew();
 }
 
 /// <summary>
