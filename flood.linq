@@ -1077,7 +1077,7 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void content_GotFocus(object? sender, EventArgs e)
     {
-        if (!HideCaret(_content.Handle)) Warn("Failure hiding alert caret");
+        if (!HideCaret(_content.Handle)) Warn("Couldn't hide alert caret.");
     }
 
     private readonly TextBox _content = new() {
@@ -1928,6 +1928,31 @@ internal sealed class Charter {
     {
         _timer.Stop();
 
+        var chart = MakeChart();
+        CustomizeSeries(chart);
+        CustomizeArea(chart);
+        TryCustomizeToolTip(chart);
+        chart.Dump(_name);
+    }
+
+    internal void Update() => _times.Add(_timer.Elapsed);
+
+    private const float LabelFontSize = 10;
+
+    private const int ScrollBarSize = 17;
+
+    private const int ToolTipDelay = 5;
+
+    private Charter(string name) => _name = name;
+
+    private static Font ChartTitleFont { get; } =
+        new Font("Segoe UI Semibold", LabelFontSize);
+
+    private static Font AxisTitleFont { get; } =
+        new Font("Segoe UI", LabelFontSize);
+
+    private Chart MakeChart()
+    {
         var deltas = _times.Deltas().ToList();
 
         var chart = deltas.Select((duration, index) => new {
@@ -1939,18 +1964,6 @@ internal sealed class Charter {
                                  Util.SeriesType.Column)
                           .ToWindowsChart();
 
-        var series = chart.Series[0];
-        series.ToolTip =
-            $"frame #VALX{Environment.NewLine}#VAL{{F1}}{Ch.Nbsp}ms";
-        series["PointWidth"] = "1"; // No padding between the bars.
-
-        var areas = chart.ChartAreas[0];
-        areas.CursorX.IsUserSelectionEnabled = true;
-        areas.AxisX.ScrollBar.Size = 17;
-        areas.AxisX.Title = "frame number";
-        areas.AxisY.Title = "delay (milliseconds)";
-        areas.AxisX.TitleFont = areas.AxisY.TitleFont = AxisTitleFont;
-
         var topText = string.Join("     ",
             _name,
             $"total {_times[^1].TotalSeconds:F2}{Ch.Nnbsp}s",
@@ -1960,20 +1973,49 @@ internal sealed class Charter {
 
         chart.Titles.Add(MakeChartTitle(topText));
 
-        chart.Dump(_name);
+        return chart;
     }
-
-    internal void Update() => _times.Add(_timer.Elapsed);
 
     private static Title MakeChartTitle(string topText)
         => new(topText, Docking.Top, ChartTitleFont, Color.Black);
 
-    private Charter(string name) => _name = name;
+    private static void CustomizeSeries(Chart chart)
+    {
+        var series = chart.Series[0];
+        series.ToolTip =
+            $"frame #VALX{Environment.NewLine}#VAL{{F1}}{Ch.Nbsp}ms";
+        series["PointWidth"] = "1"; // No padding between the bars.
+    }
 
-    private static Font ChartTitleFont { get; } =
-        new Font("Segoe UI Semibold", 10);
+    private static void CustomizeArea(Chart chart)
+    {
+        var area = chart.ChartAreas[0];
+        area.CursorX.IsUserSelectionEnabled = true;
+        area.AxisX.ScrollBar.Size = ScrollBarSize;
+        area.AxisX.Title = "frame number";
+        area.AxisY.Title = "delay (milliseconds)";
+        area.AxisX.TitleFont = area.AxisY.TitleFont = AxisTitleFont;
+    }
 
-    private static Font AxisTitleFont { get; } = new Font("Segoe UI", 10);
+    private static void TryCustomizeToolTip(Chart chart)
+    {
+        // TODO: Encapsulation exists for a reason. Consider (1) not doing
+        // this at all, or maybe (2) using the Windows API to find and modify
+        // the tooltip (which might, arguably, be more resilient to changes).
+        ToolTip toolTip;
+        try {
+            toolTip = chart.Uncapsulate().selection._toolTip;
+        } catch (SystemException ex) when (ex is MissingMemberException
+                                              or InvalidCastException) {
+            Warn("Couldn't customize chart tooltip.");
+            return;
+        }
+
+        toolTip.InitialDelay = toolTip.ReshowDelay = ToolTipDelay;
+    }
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(Charter)})");
 
     private readonly string _name;
 
