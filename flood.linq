@@ -17,6 +17,7 @@
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
+  <Namespace>System.Windows.Forms.DataVisualization.Charting</Namespace>
   <Namespace>Timer = System.Windows.Forms.Timer</Namespace>
   <RuntimeVersion>5.0</RuntimeVersion>
 </Query>
@@ -148,10 +149,6 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
-    private const char Nbsp = '\u00A0'; // No-break space.
-
-    private const char Rsquo = '\u2019'; // Right single quotation mark.
-
     [DllImport("ntdll")]
     private static extern int
     NtQueryTimerResolution(out uint MinimumResolution,
@@ -159,7 +156,7 @@ internal sealed class Launcher {
                            out uint CurrentResolution);
 
     private static string FormatTimerResolution(uint ticks)
-        => $"{ticks / 10_000.0}{Nbsp}ms";
+        => $"{ticks / 10_000.0}{Ch.Nbsp}ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -247,7 +244,7 @@ internal sealed class Launcher {
 
     private void UpdateTimingNote()
         => _timingNote.Text =
-            $"Note that the system timer{Rsquo}s resolution affects"
+            $"Note that the system timer{Ch.Rsquo}s resolution affects"
             + $" accuracy. {Environment.NewLine}({GetTimingNoteDetail()})";
 
     private string GetTimingNoteDetail()
@@ -718,8 +715,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         } else if (_neighborEnumerationStrategies.Current
                     is not ConfigurableNeighborEnumerationStrategy strategy) {
             // Scrolling with Shift cycles substrategies, but there are none.
-            _alert.Show($"\u201C{_neighborEnumerationStrategies.Current}\u201D"
-                        + " strategy has no sub-strategies to scroll.");
+            _alert.Show(
+                $"{Ch.Ldquo}{_neighborEnumerationStrategies.Current}{Ch.Rdquo}"
+                + " strategy has no sub-strategies to scroll.");
         } else if (ModifierKeys.HasFlag(Keys.Control)) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
@@ -1924,7 +1922,7 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
-    internal static Charter StartNew(string title) => new(title);
+    internal static Charter StartNew(string name) => new(name);
 
     internal void Finish()
     {
@@ -1934,30 +1932,50 @@ internal sealed class Charter {
 
         var chart = deltas.Select((duration, index) => new {
                                 Milliseconds = duration.TotalMilliseconds,
-                                Count = index + 1
+                                Count = index + 1,
                             })
                           .Chart(datum => datum.Count,
-                                 datum => datum.Milliseconds)
+                                 datum => datum.Milliseconds,
+                                 Util.SeriesType.Column)
                           .ToWindowsChart();
 
-        const char nnbsp = '\u202F'; // Narrow no-break space.
+        var series = chart.Series[0];
+        series.ToolTip =
+            $"frame #VALX{Environment.NewLine}#VAL{{F1}}{Ch.Nbsp}ms";
+        series["PointWidth"] = "1"; // No padding between the bars.
 
-        var meta = string.Join("     ",
-            _title,
-            $"total {_times[^1].TotalSeconds:F3}{nnbsp}s",
-            $"mean {deltas.Average().TotalMilliseconds:F1}{nnbsp}ms",
-            $"min {deltas.Min().TotalMilliseconds:F1}{nnbsp}ms",
-            $"max {deltas.Max().TotalMilliseconds:F1}{nnbsp}ms");
+        var areas = chart.ChartAreas[0];
+        areas.CursorX.IsUserSelectionEnabled = true;
+        areas.AxisX.ScrollBar.Size = 17;
+        areas.AxisX.Title = "frame number";
+        areas.AxisY.Title = "delay (milliseconds)";
+        areas.AxisX.TitleFont = areas.AxisY.TitleFont = AxisTitleFont;
 
-        chart.Titles.Add(meta);
-        chart.Dump(_title);
+        var topText = string.Join("     ",
+            _name,
+            $"total {_times[^1].TotalSeconds:F2}{Ch.Nnbsp}s",
+            $"mean {deltas.Average().TotalMilliseconds:F1}{Ch.Nnbsp}ms",
+            $"min {deltas.Min().TotalMilliseconds:F1}{Ch.Nnbsp}ms",
+            $"max {deltas.Max().TotalMilliseconds:F1}{Ch.Nnbsp}ms");
+
+        chart.Titles.Add(MakeChartTitle(topText));
+
+        chart.Dump(_name);
     }
 
     internal void Update() => _times.Add(_timer.Elapsed);
 
-    private Charter(string title) => _title = title;
+    private static Title MakeChartTitle(string topText)
+        => new(topText, Docking.Top, ChartTitleFont, Color.Black);
 
-    private readonly string _title;
+    private Charter(string name) => _name = name;
+
+    private static Font ChartTitleFont { get; } =
+        new Font("Segoe UI Semibold", 10);
+
+    private static Font AxisTitleFont { get; } = new Font("Segoe UI", 10);
+
+    private readonly string _name;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
@@ -2050,4 +2068,22 @@ internal readonly ref struct LockedBits {
     private readonly BitmapData _metadata;
 
     private readonly Span<int> _argbs;
+}
+
+/// <summary>Named aliases for some Unicode characters.</summary>
+internal static class Ch {
+    /// <summary>No-break space.</summary>
+    internal const char Nbsp = '\u00A0';
+
+    /// <summary>Narrow no-break space.</summary>
+    internal const char Nnbsp = '\u202F';
+
+    /// <summary>Right single quotation mark.</summary>
+    internal const char Rsquo = '\u2019';
+
+    /// <summary>Left double quotation mark.</summary>
+    internal const char Ldquo = '\u201C';
+
+    /// <summary>Right double quotation mark.</summary>
+    internal const char Rdquo = '\u201D';
 }
