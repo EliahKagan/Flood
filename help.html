@@ -537,11 +537,22 @@
         Neighbors are always enumerated in the same order. The sub-strategy
         determines which order that is. There are 24 sub-strategies, since
         that&rsquo;s how many permutations of Left, Right, Up, and Down there
-        are. Sub-strategies are abbreviated by the first letters of each
+        are.
+        <ul>
+        <li>
+          Scrolling with <span class="command"><kbd>Shift</kbd></span> goes to
+          the next or previous permutation.
+        </li>
+        <li>
+          Scrolling with
+          <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
+          either direction) goes to the reverse of the current permutation.
+        </li>
+        </ul>
+        Sub-strategies are abbreviated by the first letters of each
         direction, in the order in which neighbors are enumerated. The default
         sub-strategy is
         <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
-        Fast cycling (in either direction) reverses the order.
       </dd>
       <dt id="random-per-fill">Random per fill</dt>
       <dd>

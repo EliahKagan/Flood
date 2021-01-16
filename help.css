@@ -33,6 +33,10 @@ p, li, dd {
   -ms-hyphens: auto;
 }
 
+dd>ul, dd>ol, dd>ul>li, dd>ol>li {
+  margin: 3px;
+}
+
 a, abbr, kbd, .command {
   hyphens: none;
   -ms-hyphens: none;
