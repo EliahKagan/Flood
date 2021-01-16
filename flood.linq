@@ -148,9 +148,9 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
-    private const char Nbsp = '\u00A0';
+    private const char Nbsp = '\u00A0'; // No-break space.
 
-    private const char Rsquo = '\u2019';
+    private const char Rsquo = '\u2019'; // Right single quotation mark.
 
     [DllImport("ntdll")]
     private static extern int
@@ -1233,7 +1233,7 @@ internal sealed class ApplicationButton : Button {
 /// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
 /// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown/> and
 /// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
-/// <c>PreviewKeyDown</c>; this gives a roughly analogous <c>PreviewKeyUp</c>.
+/// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
 /// </remarks>
 internal sealed class MyWebBrowser : WebBrowser {
     public override bool PreProcessMessage(ref Message msg)
@@ -1955,7 +1955,7 @@ internal sealed class Charter {
 
     internal void Update() => _times.Add(_timer.Elapsed);
 
-    private Charter(string title) => _title = title.ToString();
+    private Charter(string title) => _title = title;
 
     private readonly string _title;
 
