@@ -771,18 +771,20 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static void help_Navigating(object sender,
                                         HelpViewerNavigatingEventArgs e)
     {
-        // Make sure this link would actually be opened in a web browser, i.e.,
-        // a program (or COM object) registered as an appropriate protocol
-        // handler. We can't guarantee the user won't manage to navigate
-        // somewhere that offers up a hyperlink that starts with something
-        // that ShellExecute will take to be a Windows executable. Thus even
-        // if a better way to ensure we're only specially handling navigation
-        // to external sites is used, this protocol check is still essential
-        // for security.
-        if (e.Uri.IsHttpsOrHttp()) {
-            e.Cancel = true;
+        // Open file:// URLs normally, inside the help browser.
+        if  (e.Uri.SchemeIs(Uri.UriSchemeFile)) return;
+
+        // No other URLs shall be opened in the help browser panel.
+        e.Cancel = true;
+
+        // Open web links externally, in the default browser. [This check is
+        // also important for security, to make sure we are actually opening
+        // them in a web browser, i.e., a program (or COM object) registered as
+        // an appropriate protocol handler. We can't guarantee the ser won't
+        // manage to navigate somewhere that offers up a hyperlink starting
+        // with something ShellExecuteExW would take as a Windows executable.]
+        if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
             Shell.Execute(e.Uri.AbsoluteUri);
-        }
     }
 
     private async Task OpenHelp()
@@ -1620,11 +1622,11 @@ internal static class SizeExtensions {
 /// against one or more other schemes.
 /// </summary>
 internal static class UriExtensions {
-    internal static bool IsHttpsOrHttp(this Uri uri)
-        => uri.IsScheme(Uri.UriSchemeHttp) || uri.IsScheme(Uri.UriSchemeHttps);
-
-    private static bool IsScheme(this Uri uri, string scheme)
+    public static bool SchemeIs(this Uri uri, string scheme)
         => uri.Scheme.Equals(scheme, StringComparison.Ordinal);
+
+    internal static bool SchemeIsAny(this Uri uri, params string[] schemes)
+        => schemes.Any(uri.SchemeIs);
 }
 
 /// <summary>
