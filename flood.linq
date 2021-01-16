@@ -26,6 +26,8 @@
 
 #nullable enable
 
+const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
+
 var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
 
 // Make the dump text 12.5% bigger than with LINQPad's default CSS.
@@ -44,8 +46,11 @@ if (devmode) {
 static Size SuggestCanvasSize()
 {
     // TODO: Maybe try to check which screen the LINQPad window is on.
-    var (width, height) = Screen.PrimaryScreen.Bounds.Size;
-    var sideLength = Math.Min(width, height) * 5 / 9;
+    var (screenWidth, screenHeight) = Screen.PrimaryScreen.Bounds.Size;
+
+    var sideLength = (int)(Math.Min(screenWidth, screenHeight)
+                            * defaultScreenFractionForCanvas);
+
     return new(width: sideLength, height: sideLength);
 }
 
@@ -149,6 +154,11 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
+    // NtQueryTimerResolution returns times in units of 100 ns.
+    private const double HundredNanosecondsPerMillisecond = 10_000.0;
+
+    private const int MetaTimerInterval = 150; // See _metatimer.
+
     [DllImport("ntdll")]
     private static extern int
     NtQueryTimerResolution(out uint MinimumResolution,
@@ -156,7 +166,7 @@ internal sealed class Launcher {
                            out uint CurrentResolution);
 
     private static string FormatTimerResolution(uint ticks)
-        => $"{ticks / 10_000.0}{Ch.Nbsp}ms";
+        => $"{ticks / HundredNanosecondsPerMillisecond}{Ch.Nbsp}ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -168,21 +178,15 @@ internal sealed class Launcher {
 
     private LC.Table CreateSizeTable()
     {
-        var table = new LC.Table(noBorders: true,
-                                 cellPaddingStyle: ".3em .3em",
-                                 cellVerticalAlign: "middle");
-
+        var table = MakeEmptyTable();
         table.Rows.Add(new LC.Label("Width"), _widthBox);
         table.Rows.Add(new LC.Label("Height"), _heightBox);
-
         return table;
     }
 
     private LC.StackPanel CreateDelayPanel()
     {
-        var table = new LC.Table(noBorders: true,
-                                 cellPaddingStyle: ".3em .3em",
-                                 cellVerticalAlign: "middle");
+        var table = MakeEmptyTable();
 
         table.Rows.Add(new LC.Label("Delay (ms)"), _delayBox);
 
@@ -196,6 +200,11 @@ internal sealed class Launcher {
 
     private LC.StackPanel CreateFeaturesPanel()
         => new(horizontal: false, _stopButton, _charting);
+
+    private LC.Table MakeEmptyTable()
+        => new LC.Table(noBorders: true,
+                        cellPaddingStyle: ".3em .3em",
+                        cellVerticalAlign: "middle");
 
     private void SubscribePrivateHandlers()
     {
@@ -283,7 +292,7 @@ internal sealed class Launcher {
                    _charting);
 
     // Timer for polling the system timer's timings. Not the system timer.
-    private readonly Timer _metatimer = new() { Interval = 150 };
+    private readonly Timer _metatimer = new() { Interval = MetaTimerInterval };
 
     private readonly LC.TextBox _widthBox;
 
@@ -325,7 +334,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal MainPanel(Size canvasSize, HelpViewerSupplier supplier)
     {
-        _nonessentialTimer = new(_components) { Interval = 90 };
+        _nonessentialTimer = new(_components) { Interval = NonessentialDelay };
         _toolTip = new(_components) { ShowAlways = true };
         _helpViewerSupplier = supplier;
 
@@ -345,7 +354,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _magnify = CreateMagnify();
         _stop = CreateStop();
         _infoBar = CreateInfoBar();
-        _tips = CreateTips();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
 
@@ -442,6 +450,17 @@ internal sealed class MainPanel : TableLayoutPanel {
         base.Dispose(disposing);
     }
 
+    private const int UnknownCount = -1;
+
+    private const int NonessentialDelay = 90; // See _nonessentialTimer.
+
+    private const int StatusFontSize = 10;
+
+    private const int Pad = 2;
+
+    private static Padding CanvasMargin { get; } =
+        new(left: Pad, top: Pad, right: 0, bottom: 0);
+
     private static bool AltIsPressed => ModifierKeys.HasFlag(Keys.Alt);
 
     private static bool SuperIsPressed
@@ -506,14 +525,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         return infoBar;
     }
-
-    private MyWebBrowser CreateTips() => new() {
-        Visible = false,
-        Size = new(width: _rect.Width, height: 200),
-        AutoSize = true,
-        ScrollBarsEnabled = false,
-        Url = Files.GetDocUrl("tips.html"),
-    };
 
     private Carousel<NeighborEnumerationStrategy>
     CreateNeighborEnumerationStrategies()
@@ -938,9 +949,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.Invalidate(bounds);
     }
 
-    private static Padding CanvasMargin { get; } =
-        new(left: 2, top: 2, right: 0, bottom: 0);
-
     private readonly IContainer _components = new Container();
 
     private readonly Timer _nonessentialTimer;
@@ -967,7 +975,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Label _status = new() {
         AutoSize = true,
-        Font = new(Label.DefaultFont.FontFamily, 10),
+        Font = new(Label.DefaultFont.FontFamily, StatusFontSize),
     };
 
     private readonly TableLayoutPanel _toggles;
@@ -979,16 +987,21 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Button _showHideTips = new() {
         Text = "??? Tips", // Placeholder text for height computation.
         AutoSize = true,
-        Margin = new(left: 0, top: 0, right: 2, bottom: 0),
+        Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
 
     private readonly Button _openCloseHelp = new() {
         Text = "??? Help", // Placeholder text for height computation.
         AutoSize = true,
-        Margin = new(left: 2, top: 0, right: 0, bottom: 0),
+        Margin = new(left: Pad, top: 0, right: 0, bottom: 0),
     };
 
-    private readonly MyWebBrowser _tips;
+    private readonly MyWebBrowser _tips = new() {
+        Visible = false,
+        AutoSize = true,
+        ScrollBarsEnabled = false,
+        Url = Files.GetDocUrl("tips.html"),
+    };
 
     private OutputPanel? _helpPanel = null;
 
@@ -1005,9 +1018,9 @@ internal sealed class MainPanel : TableLayoutPanel {
     // strategy across a sub-strategy change would be a self-comparison.
     private string _oldStrategy = string.Empty;
 
-    private int _oldSpeed = -1;
+    private int _oldSpeed = UnknownCount;
 
-    private int _oldJobs = -1;
+    private int _oldJobs = UnknownCount;
 
     private int _jobs = 0;
 
@@ -1046,6 +1059,8 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
+    private const int ContentFontSize = 10;
+
     [DllImport("user32")]
     private static extern bool HideCaret(IntPtr hWnd);
 
@@ -1054,6 +1069,7 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void InitializeAlertBar()
     {
+        // FIXME: Override DefaultPadding instead?
         const int padLeft = 3;
         const int padRight = 0;
 
@@ -1085,7 +1101,7 @@ internal sealed class AlertBar : TableLayoutPanel {
         Anchor = AnchorStyles.Left,
         Margin = Padding.Empty,
         BorderStyle = BorderStyle.None,
-        Font = new("Segoe UI Semibold", 10),
+        Font = new("Segoe UI Semibold", ContentFontSize),
         ForeColor = Color.Black,
         ReadOnly = true,
         Cursor = Cursors.Arrow,
