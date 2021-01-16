@@ -780,7 +780,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         // Open web links externally, in the default browser. [This check is
         // also important for security, to make sure we are actually opening
         // them in a web browser, i.e., a program (or COM object) registered as
-        // an appropriate protocol handler. We can't guarantee the ser won't
+        // an appropriate protocol handler. We can't guarantee the user won't
         // manage to navigate somewhere that offers up a hyperlink starting
         // with something ShellExecuteExW would take as a Windows executable.]
         if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
