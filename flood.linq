@@ -812,7 +812,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                               Func<Point, Point[]> Supplier,
                               Func<Task> Delayer,
                               int Generation,
-                              Action? PostAction);
+                              Action PostAction);
 
     private Charter? GetCharter(int id, string label)
         => _charting ? Charter.StartNew($"Job {id} ({label} fill)") : null;
@@ -848,7 +848,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         if (IsDisposed) return;
 
-        job.PostAction?.Invoke();
+        job.PostAction();
         if (--_jobs == 0) UpdateStopButton();
         UpdateStatus();
     }
