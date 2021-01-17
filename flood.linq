@@ -353,6 +353,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _stop = CreateStop();
+        _chart = CreateChart();
         _infoBar = CreateInfoBar();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
@@ -508,11 +509,19 @@ internal sealed class MainPanel : TableLayoutPanel {
                             disabledBitmapFilename: "stop-faded.bmp",
                             SmallButtonSize) { Visible = false };
 
+    private CheckBox CreateChart()
+        => new AnimatedBitmapCheckBox(
+            new List<CheckBoxBitmapFilenamePair> {
+                new("chart1.bmp", "chart1-gray.bmp")
+            },
+            SmallButtonSize,
+            FrameSequence.Oscillating);
+
     private TableLayoutPanel CreateInfoBar()
     {
         var infoBar = new TableLayoutPanel {
             RowCount = 1,
-            ColumnCount = 4,
+            ColumnCount = 5,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
         };
@@ -522,6 +531,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         infoBar.Height = _toggles.Height; // Must be after adding _toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
         infoBar.Controls.Add(_stop, column: 1, row: 0);
+        infoBar.Controls.Add(_chart, column: 2, row: 0);
 
         return infoBar;
     }
@@ -984,6 +994,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Button _stop;
 
+    private readonly CheckBox _chart;
+
     private readonly Button _showHideTips = new() {
         Text = "??? Tips", // Placeholder text for height computation.
         AutoSize = true,
@@ -1118,77 +1130,34 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
-/// A square button showing a bitmap that changes when enabled/disabled.
-/// </summary>
-internal sealed class BitmapButton : Button {
-    internal BitmapButton(string enabledBitmapFilename,
-                          string disabledBitmapFilename,
-                          int sideLength)
-    {
-        _enabledBitmap = OpenBitmap(enabledBitmapFilename);
-        _disabledBitmap = OpenBitmap(disabledBitmapFilename);
-
-        Width = Height = sideLength;
-        BackgroundImageLayout = ImageLayout.Stretch;
-        Margin = Padding.Empty;
-
-        UpdateImage();
-    }
-
-    protected override void OnEnabledChanged(EventArgs e)
-    {
-        base.OnEnabledChanged(e);
-        UpdateImage();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) {
-            _enabledBitmap.Dispose();
-            _disabledBitmap.Dispose();
-        }
-
-        base.Dispose(disposing);
-    }
-
-    private static Bitmap OpenBitmap(string filename)
-    {
-        var bitmap = new Bitmap(Files.GetAppFilePath(filename));
-        bitmap.MakeTransparent();
-        return bitmap;
-    }
-
-    private void UpdateImage()
-        => BackgroundImage = (Enabled ? _enabledBitmap : _disabledBitmap);
-
-    private readonly Bitmap _enabledBitmap;
-
-    private readonly Bitmap _disabledBitmap;
-}
-
-/// <summary>
-/// A button to launch an application, showing an icon and (optionally) toolip
-/// obtained from the executable's metadata.
+/// A square button to launch an application, showing an icon and (optionally)
+/// toolip obtained from the executable's metadata.
 /// </summary>
 internal sealed class ApplicationButton : Button {
     internal ApplicationButton(string executablePath,
                                int sideLength,
                                ToolTip? toolTip = null)
     {
+        Width = Height = sideLength;
+        Margin = Padding.Empty;
+        BackgroundImageLayout = ImageLayout.Stretch;
+
         _path = executablePath;
         _bitmap = CreateBitmap(_path);
 
-        BackgroundImage = _bitmap;
-        BackgroundImageLayout = ImageLayout.Stretch;
-        Width = Height = sideLength;
-        Margin = Padding.Empty;
+        try {
+            BackgroundImage = _bitmap;
 
-        toolTip?.SetToolTip(
-            this,
-            FileVersionInfo.GetVersionInfo(_path).FileDescription);
-
-        Click += ApplicationButton_Click;
+            toolTip?.SetToolTip(
+                this,
+                FileVersionInfo.GetVersionInfo(_path).FileDescription);
+        } catch {
+            _bitmap.Dispose();
+            throw;
+        }
     }
+
+    protected override void OnClick(EventArgs e) => Shell.Execute(_path);
 
     protected override void Dispose(bool disposing)
     {
@@ -1224,6 +1193,7 @@ internal sealed class ApplicationButton : Button {
     private static void Throw()
         => throw new Win32Exception(Marshal.GetLastWin32Error());
 
+    // TODO: Use a SafeHandle-based approach instead.
     [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr ExtractIcon(IntPtr hInst,
                                              string pszExeFileName,
@@ -1232,12 +1202,237 @@ internal sealed class ApplicationButton : Button {
     [DllImport("user32", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
 
-    private void ApplicationButton_Click(object? sender, EventArgs e)
-        => Shell.Execute(_path);
-
     private readonly string _path;
 
     private readonly Bitmap _bitmap;
+}
+
+/// <summary>
+/// A square button showing a bitmap that changes when enabled/disabled.
+/// </summary>
+internal sealed class BitmapButton : Button {
+    internal BitmapButton(string enabledBitmapFilename,
+                          string disabledBitmapFilename,
+                          int sideLength)
+    {
+        Width = Height = sideLength;
+        Margin = Padding.Empty;
+        BackgroundImageLayout = ImageLayout.Stretch;
+
+        (_enabledImage, _disabledImage) =
+            Files.OpenBitmapPair(enabledBitmapFilename,
+                                 disabledBitmapFilename);
+
+        try {
+            UpdateImage();
+        } catch {
+            DisposeImages();
+            throw;
+        }
+    }
+
+    protected override void OnEnabledChanged(EventArgs e)
+    {
+        base.OnEnabledChanged(e);
+        UpdateImage();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) DisposeImages();
+        base.Dispose(disposing);
+    }
+
+    private void DisposeImages()
+    {
+        _enabledImage.Dispose();
+        _disabledImage.Dispose();
+    }
+
+    private void UpdateImage()
+        => BackgroundImage = (Enabled ? _enabledImage : _disabledImage);
+
+    private readonly Image _enabledImage;
+
+    private readonly Image _disabledImage;
+}
+
+/// <summary>
+/// A square button-style checkbox showing an animation of several bitmaps,
+/// which can be paused and resumed, and of which each frame has checked and
+/// unchecked versions.
+/// </summary>
+/// <remarks>
+/// Animates only when <see cref="AnimatedCheckBox.Animated"/> is set to
+/// <c>true</c>. It is <c>false</c> by default. (Animation represents that an
+/// ongoing task, separate from whether the box is checked, is being done.)
+/// </remarks>
+internal sealed class AnimatedBitmapCheckBox : CheckBox {
+    internal AnimatedBitmapCheckBox(
+            IList<CheckBoxBitmapFilenamePair> filenamePairs,
+            int sideLength,
+            Func<int, IEnumerable<int>> frameSequenceSupplier)
+    {
+        Width = Height = sideLength;
+        Margin = Padding.Empty;
+        Appearance = Appearance.Button;
+        BackgroundImageLayout = ImageLayout.Stretch;
+
+        _timer = new(_components) { Interval = DefaultInterval };
+        _timer.Tick += timer_Tick;
+
+        _frame = frameSequenceSupplier(filenamePairs.Count)
+                    .GetStartedEnumerator();
+
+        _imagePairs = OpenAllBitmapPairs(filenamePairs);
+
+        try {
+            UpdateImage();
+        } catch {
+            DisposeState();
+            throw;
+        }
+    }
+
+    internal bool Animated
+    {
+        get => _timer.Enabled;
+        set => _timer.Enabled = value;
+    }
+
+    internal int Interval
+    {
+        get => _timer.Interval;
+        set => _timer.Interval = value;
+    }
+
+    protected override void OnCheckedChanged(EventArgs e)
+    {
+        base.OnCheckedChanged(e);
+        UpdateImage();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) DisposeState();
+        base.Dispose(disposing);
+    }
+
+    private const int DefaultInterval = 200;
+
+    private static IList<CheckBoxImagePair>
+    OpenAllBitmapPairs(IEnumerable<CheckBoxBitmapFilenamePair> filenamePairs)
+    {
+        var imagePairs = new List<CheckBoxImagePair>();
+
+        try {
+            foreach (var filenames in filenamePairs)
+                imagePairs.Add(new(filenames));
+        } catch {
+            DisposeImagePairs(imagePairs);
+            throw;
+        }
+
+        return imagePairs;
+    }
+
+    private static void DisposeImagePairs(IList<CheckBoxImagePair> imagePairs)
+    {
+        foreach (var pair in imagePairs) pair.Dispose();
+        imagePairs.Clear();
+    }
+
+    private void timer_Tick(object? sender, EventArgs e)
+    {
+        _frame.MoveNextOrThrow();
+        UpdateImage();
+    }
+
+    private void UpdateImage()
+    {
+        var pair = _imagePairs[_frame.Current];
+        BackgroundImage = (Checked ? pair.CheckedImage : pair.UncheckedImage);
+    }
+
+    private void DisposeState()
+    {
+        DisposeImagePairs(_imagePairs);
+        _frame.Dispose();
+        _components.Dispose();
+    }
+
+    private readonly IContainer _components = new Container();
+
+    private readonly Timer _timer;
+
+    private readonly IList<CheckBoxImagePair> _imagePairs;
+
+    private readonly IEnumerator<int> _frame;
+}
+
+/// <summary>
+/// Filenames for background bitmaps for the checked and unchecked states of
+/// a button-style checkbox.
+/// </summary>
+/// <remarks>See <see cref="CheckBoxBitmapPair"/>.</remarks>
+internal sealed record
+CheckBoxBitmapFilenamePair(string CheckedFilename, string UncheckedFilename);
+
+/// <summary>
+/// Background images for the checked and uchecked states of a button-style
+/// checkbox.
+/// </summary>
+/// <remarks>See <see cref="CheckBoxBitmapFilenamePair"/>.</remarks>
+internal sealed class CheckBoxImagePair : IDisposable {
+    internal CheckBoxImagePair(CheckBoxBitmapFilenamePair filenames)
+        => (CheckedImage, UncheckedImage) =
+            Files.OpenBitmapPair(filenames.CheckedFilename,
+                                 filenames.UncheckedFilename);
+
+    public void Dispose()
+    {
+        CheckedImage.Dispose();
+        UncheckedImage.Dispose();
+    }
+
+    internal Image CheckedImage { get; }
+
+    internal Image UncheckedImage { get; }
+}
+
+/// <summary>
+/// Generators of infinite sequences of indices representing frames in an
+/// endless animation.
+/// </summary>
+internal static class FrameSequence {
+    internal static IEnumerable<int> Oscillating(int frameCount)
+    {
+        if (frameCount <= 0) {
+            throw new ArgumentException(
+                    paramName: nameof(frameCount),
+                    message: "Animation Must have at least one frame.");
+        }
+
+        return OscillatingImpl(0, frameCount - 1);
+    }
+
+    private static IEnumerable<int> OscillatingImpl(int min, int max)
+    {
+        var next = min;
+        var delta = +1;
+
+        for (; ; ) {
+            var current = next;
+            next = current + delta;
+
+            if (!(min <= next && next <= max)) {
+                delta *= -1;
+                next = current + delta;
+            }
+
+            yield return current;
+        }
+    }
 }
 
 /// <summary>
@@ -1402,14 +1597,40 @@ internal sealed class MyWebView2 : WebView2 {
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
-    internal static string GetAppFilePath(string filename)
-        => Path.Combine(QueryDirectory, filename);
-
     internal static Uri GetDocUrl(string filename)
         => new(GetAppFilePath(filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
+
+    internal static (Bitmap, Bitmap)
+    OpenBitmapPair(string firstFilename, string secondFilename)
+    {
+        Bitmap? firstBitmap = null;
+        Bitmap? secondBitmap = null;
+
+        try {
+            firstBitmap = Files.OpenBitmap(firstFilename);
+            secondBitmap = Files.OpenBitmap(secondFilename);
+            // Further processing that can throw could go here.
+        } catch {
+            firstBitmap?.Dispose();
+            secondBitmap?.Dispose();
+            throw;
+        }
+
+        return (firstBitmap, secondBitmap);
+    }
+
+    private static Bitmap OpenBitmap(string filename)
+    {
+        var bitmap = new Bitmap(Files.GetAppFilePath(filename));
+        bitmap.MakeTransparent();
+        return bitmap;
+    }
+
+    private static string GetAppFilePath(string filename)
+        => Path.Combine(QueryDirectory, filename);
 
     private static string QueryDirectory
         => Path.GetDirectoryName(Util.CurrentQueryPath)
@@ -1585,6 +1806,32 @@ internal static class EnumerableExtensions {
         }
 
         return sum / count;
+    }
+}
+
+/// <summary>
+/// Provides an extension method for enumrating sequenes known to be infinte.
+/// </summary>
+internal static class EnumeratorExtensions {
+    internal static IEnumerator<T>
+    GetStartedEnumerator<T>(this IEnumerable<T> source)
+    {
+        var enumerator = source.GetEnumerator();
+        try {
+            enumerator.MoveNextOrThrow();
+            return enumerator;
+        } catch {
+            enumerator.Dispose();
+            throw;
+        }
+    }
+
+    internal static void MoveNextOrThrow(this IEnumerator enumerator)
+    {
+        if (!enumerator.MoveNext()) {
+            throw new InvalidOperationException(
+                    "A sequence that needed to be infinite was finite.");
+        }
     }
 }
 
@@ -1993,7 +2240,7 @@ internal sealed class Charter {
     }
 
     private static Title MakeChartTitle(string topText)
-        => new(topText, Docking.Top, ChartTitleFont, Color.Black);
+        => new(topText, Docking.Top, ChartTitleFont, Chart.DefaultForeColor);
 
     private static void CustomizeSeries(Chart chart)
     {
