@@ -633,10 +633,45 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
                 && speed == _oldSpeed && _jobs == _oldJobs) return;
 
-        _status.Text =
-            $"Neighbors: {strategy}   Speed: {speed}   Jobs: {_jobs}";
+        UpdateStatusText(strategy, speed, _jobs);
+        UpdateStatusToolTip(strategy, speed, _jobs);
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
+    }
+
+    private void UpdateStatusText(string strategy, int speed, int jobs)
+    {
+        const string spacer = "      ";
+
+        var speedSummary = $"{speed}{Ch.Times}";
+
+        var jobsSummary = (jobs == 1 ? $"{jobs} job" : $"{jobs} jobs");
+
+        _status.Text =
+            string.Join(spacer, strategy, speedSummary, jobsSummary);
+    }
+
+    private void UpdateStatusToolTip(string strategy, int speed, int jobs)
+    {
+        var strategyDetail = $"New fills{Ch.Rsquo} neighbor enumeration"
+                            + $" strategy is {Ch.Ldquo}{strategy}.{Ch.Rdquo}";
+
+        var speedQuantity = (speed == 1 ? $"{speed} pixel per frame"
+                                        : $"{speed} pixels per frame");
+
+        var speedDetail =
+            $"New fills{Ch.Rsquo} drawing speed is {speedQuantity}.";
+
+        var jobsDetail = jobs switch {
+            0 => "No fills are currently running.",
+            1 => $"{jobs} fill is currently running.",
+            _ => $"{jobs} fills are currently running.",
+        };
+
+        var details = string.Join(Environment.NewLine,
+                                  strategyDetail, speedDetail, jobsDetail);
+
+        _toolTip.SetToolTip(_status, details);
     }
 
     private void UpdateShowHideTips()
@@ -2482,4 +2517,7 @@ internal static class Ch {
 
     /// <summary>Right double quotation mark.</summary>
     internal const char Rdquo = '\u201D';
+
+    /// <summary>Multiplication sign.</summary>
+    internal const char Times = '\u00D7';
 }
