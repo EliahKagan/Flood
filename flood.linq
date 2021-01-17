@@ -30,7 +30,7 @@ const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
 var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
 
-// Make dump headings bigger. (See also Launcher.Display.)
+// Make dump headings bigger. (See Launcher.Display for further customization.)
 Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
 
 if (devmode) {
