@@ -30,8 +30,8 @@ const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
 var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
 
-// Make the dump text 12.5% bigger than with LINQPad's default CSS.
-Util.RawHtml("<style>body { font-size: .9em }</style>").Dump();
+// Make dump headings bigger. (See also Launcher.Display.)
+Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
 
 if (devmode) {
     // Use the launcher ("developer mode").
@@ -149,7 +149,11 @@ internal sealed class Launcher {
 
     internal void Display()
     {
-        _panel.Dump("Developer Mode Launcher");
+        // Make launcher text 12.5% bigger than with LINQPad's default CSS.
+        // Do it here instead of globally so debugging dumps fit in the panel.
+        Util.WithStyle(_panel, "font-size: .9rem")
+            .Dump("Developer Mode Launcher");
+
         ResumeUpdates();
     }
 
