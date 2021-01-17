@@ -75,7 +75,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
         StopButtonVisible = sender.ShowStopButton,
-        ChartingEnabled = sender.EnableCharting,
+        ChartingButtonVisible = sender.ShowChartButton,
     };
 
     ui.Activated += delegate { sender.PauseUpdates(); };
@@ -140,7 +140,7 @@ internal sealed class Launcher {
 
     internal bool ShowStopButton => _stopButton.Checked;
 
-    internal bool EnableCharting => _charting.Checked;
+    internal bool ShowChartButton => _charting.Checked;
 
     internal void Display()
     {
@@ -353,7 +353,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _stop = CreateStop();
-        _chart = CreateChart();
+        _charting = CreateCharting();
         _infoBar = CreateInfoBar();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
@@ -361,12 +361,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         InitializeMainPanel();
         PerformInitialUpdates();
         SubscribePrivateHandlers();
-    }
-
-    internal bool ChartingEnabled
-    {
-        get => _charting;
-        init => _charting = value;
     }
 
     internal int DelayInMilliseconds { get; init; } =
@@ -378,6 +372,12 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         get => _stop.Visible;
         set => _stop.Visible = value;
+    }
+
+    internal bool ChartingButtonVisible
+    {
+        get => _charting.Visible;
+        set => _charting.Visible = value;
     }
 
     internal event EventHandler? Activated;
@@ -509,13 +509,12 @@ internal sealed class MainPanel : TableLayoutPanel {
                             disabledBitmapFilename: "stop-faded.bmp",
                             SmallButtonSize) { Visible = false };
 
-    private CheckBox CreateChart()
-        => new AnimatedBitmapCheckBox(
-            new List<CheckBoxBitmapFilenamePair> {
-                new("chart1.bmp", "chart1-gray.bmp")
-            },
-            SmallButtonSize,
-            FrameSequence.Oscillating);
+    private AnimatedBitmapCheckBox CreateCharting()
+        => new(from i in Enumerable.Range(1, 6)
+               select new CheckBoxBitmapFilenamePair($"chart{i}.bmp",
+                                                     $"chart{i}-gray.bmp"),
+               SmallButtonSize,
+               FrameSequence.Oscillating);
 
     private TableLayoutPanel CreateInfoBar()
     {
@@ -531,7 +530,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         infoBar.Height = _toggles.Height; // Must be after adding _toggles.
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
         infoBar.Controls.Add(_stop, column: 1, row: 0);
-        infoBar.Controls.Add(_chart, column: 2, row: 0);
+        infoBar.Controls.Add(_charting, column: 2, row: 0);
 
         return infoBar;
     }
@@ -561,6 +560,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void PerformInitialUpdates()
     {
         UpdateStopButton();
+        UpdateCharting();
         UpdateStatus();
         UpdateShowHideTips();
         UpdateOpenCloseHelp();
@@ -575,6 +575,36 @@ internal sealed class MainPanel : TableLayoutPanel {
             _stop.Enabled = true;
             _toolTip.SetToolTip(_stop, "Stop running fills");
         }
+    }
+
+    private void UpdateCharting()
+    {
+        _charting.Animated = _jobsCharting != 0;
+
+        var (lede, comment) =
+            _charting.Checked
+                ? ("Click to NOT chart newly started fills.",
+                   "As of now, newly started fills will chart.")
+                : ("Click to chart newly started fills.",
+                   "As of now, newly started fills will not chart.");
+
+        var detail = (_jobsCharting, _charting.Checked) switch {
+            (0, false) =>
+                "Also, no currenty running fills are charting.",
+            (0, true) =>
+                "But no currently running fills are charting.",
+            (1, false) =>
+                $"But {_jobsCharting} currently running fill is charting.",
+            (1, true) =>
+                $"Also, {_jobsCharting} currently running fill is charting.",
+            (_, false) =>
+                $"But {_jobsCharting} currently running fills are charting.",
+            (_, true) =>
+                $"Also, {_jobsCharting} currently running fills are charting.",
+        };
+
+        var report = string.Join(Environment.NewLine, lede, comment, detail);
+        _toolTip.SetToolTip(_charting, report);
     }
 
     private void UpdateStatus()
@@ -625,6 +655,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseWheel += canvas_MouseWheel;
 
         _stop.Click += stop_Click;
+        _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
         _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
@@ -826,20 +857,48 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (_jobs != 0) ++_generation; // Make running fills cancel themselves.
     }
 
+    private void AddChartingJob()
+    {
+        if (_jobsCharting >= _jobs) {
+            throw new InvalidOperationException(
+                    "Bug: more charting jobs than total jobs?!");
+        }
+
+        ++_jobsCharting;
+        UpdateCharting();
+    }
+
+    private void RemoveChartingJob()
+    {
+        if (_jobsCharting <= 0) {
+            throw new InvalidOperationException(
+                    "Bug: negatvely many jobs are charting?!");
+        }
+
+        --_jobsCharting;
+        UpdateCharting();
+    }
+
     private sealed record Job(int FromArgb,
                               int Speed,
                               Func<Point, Point[]> Supplier,
                               Func<Task> Delayer,
                               int Generation,
-                              Action PostAction);
+                              Action? PostAction);
 
-    private Charter? GetCharter(int id, string label)
-        => _charting ? Charter.StartNew($"Job {id} ({label} fill)") : null;
+    private Func<Task> GetSimpleDelayer()
+        => () => Task.Delay(DelayInMilliseconds);
 
-    private Func<Task> GetDelayer(Charter? charter)
+    private Func<Task> GetChartingDelayer(Charter charter)
         => async () => {
             await Task.Delay(DelayInMilliseconds);
-            charter?.Update();
+            charter.Update();
+        };
+
+    private Action GetChartingPostAction(Charter charter)
+        => () => {
+            RemoveChartingJob();
+            charter.Finish();
         };
 
     private Job? BeginFill(Point start, Color toColor, string label)
@@ -849,25 +908,40 @@ internal sealed class MainPanel : TableLayoutPanel {
         var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
         if (fromArgb == toColor.ToArgb()) return null;
 
+        var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
+
         ++_jobs;
-        var charter = GetCharter(++_jobsEver, label);
+        ++_jobsEver;
+
         UpdateStopButton();
         UpdateStatus();
 
-        return new(FromArgb: fromArgb,
-                   Speed: speed,
-                   Supplier:
-                        _neighborEnumerationStrategies.Current.GetSupplier(),
-                   Delayer: GetDelayer(charter),
-                   Generation: _generation,
-                   PostAction: () => charter?.Finish());
+        if (!_charting.Checked) {
+            return new(fromArgb,
+                       speed,
+                       supplier,
+                       GetSimpleDelayer(),
+                       _generation,
+                       null);
+        }
+
+        AddChartingJob();
+
+        var charter = Charter.StartNew($"Job {_jobsEver} ({label} fill)");
+
+        return new(fromArgb,
+                   speed,
+                   supplier,
+                   GetChartingDelayer(charter),
+                   _generation,
+                   GetChartingPostAction(charter));
     }
 
     private void EndFill(Job job)
     {
         if (IsDisposed) return;
 
-        job.PostAction();
+        job.PostAction?.Invoke();
         if (--_jobs == 0) UpdateStopButton();
         UpdateStatus();
     }
@@ -994,7 +1068,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Button _stop;
 
-    private readonly CheckBox _chart;
+    private readonly AnimatedBitmapCheckBox _charting;
 
     private readonly Button _showHideTips = new() {
         Text = "??? Tips", // Placeholder text for height computation.
@@ -1023,8 +1097,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
-    private bool _charting = false;
-
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
     // strategy across a sub-strategy change would be a self-comparison.
@@ -1037,6 +1109,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _jobs = 0;
 
     private int _jobsEver = 0;
+
+    private int _jobsCharting = 0;
 
     private int _generation = 0;
 
@@ -1269,10 +1343,12 @@ internal sealed class BitmapButton : Button {
 /// </remarks>
 internal sealed class AnimatedBitmapCheckBox : CheckBox {
     internal AnimatedBitmapCheckBox(
-            IList<CheckBoxBitmapFilenamePair> filenamePairs,
+            IEnumerable<CheckBoxBitmapFilenamePair> filenamePairs,
             int sideLength,
             Func<int, IEnumerable<int>> frameSequenceSupplier)
     {
+        var pairs = filenamePairs.ToList();
+
         Width = Height = sideLength;
         Margin = Padding.Empty;
         Appearance = Appearance.Button;
@@ -1280,11 +1356,8 @@ internal sealed class AnimatedBitmapCheckBox : CheckBox {
 
         _timer = new(_components) { Interval = DefaultInterval };
         _timer.Tick += timer_Tick;
-
-        _frame = frameSequenceSupplier(filenamePairs.Count)
-                    .GetStartedEnumerator();
-
-        _imagePairs = OpenAllBitmapPairs(filenamePairs);
+        _frame = frameSequenceSupplier(pairs.Count).GetStartedEnumerator();
+        _imagePairs = OpenAllBitmapPairs(pairs);
 
         try {
             UpdateImage();
@@ -1598,7 +1671,7 @@ internal sealed class MyWebView2 : WebView2 {
 /// </summary>
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
-        => new(GetAppFilePath(filename));
+        => new(Path.Combine(QueryDirectory, filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
@@ -1624,13 +1697,13 @@ internal static class Files {
 
     private static Bitmap OpenBitmap(string filename)
     {
-        var bitmap = new Bitmap(Files.GetAppFilePath(filename));
+        var bitmap = new Bitmap(Files.GetImagePath(filename));
         bitmap.MakeTransparent();
         return bitmap;
     }
 
-    private static string GetAppFilePath(string filename)
-        => Path.Combine(QueryDirectory, filename);
+    private static string GetImagePath(string filename)
+        => Path.Combine(QueryDirectory, "images", filename);
 
     private static string QueryDirectory
         => Path.GetDirectoryName(Util.CurrentQueryPath)
