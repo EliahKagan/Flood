@@ -324,8 +324,8 @@ internal sealed class Launcher {
     private readonly LC.CheckBox _useOldWebBrowser =
         new("Use old WebBrowser control even if WebView2 is available");
 
-    private readonly LC.CheckBox _magnifier
-        = new("Magnifier", isChecked: true);
+    private readonly LC.CheckBox _magnifier =
+        new("Magnifier", isChecked: true);
 
     private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
 
@@ -1293,7 +1293,11 @@ internal sealed class ApplicationButton : Button {
         }
     }
 
-    protected override void OnClick(EventArgs e) => Shell.Execute(_path);
+    protected override void OnClick(EventArgs e)
+    {
+        base.OnClick(e);
+        Shell.Execute(_path);
+    }
 
     protected override void Dispose(bool disposing)
     {
@@ -1945,9 +1949,9 @@ internal static class EnumerableExtensions {
 }
 
 /// <summary>
-/// Provides an extension method for enumrating sequenes known to be infinte.
+/// Provides extension methods for enumerating sequences known to be infinite.
 /// </summary>
-internal static class EnumeratorExtensions {
+internal static class EnumeraExtensions {
     internal static IEnumerator<T>
     GetStartedEnumerator<T>(this IEnumerable<T> source)
     {
