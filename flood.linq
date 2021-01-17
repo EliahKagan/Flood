@@ -126,7 +126,7 @@ internal sealed class Launcher {
             new LC.FieldSet("Features", CreateFeaturesPanel()),
             new LC.FieldSet("Features (Experimental)",
                             CreateExperimentalFeaturesPanel()),
-            _launch);
+            new LC.WrapPanel(_launch, _postLaunch));
 
         SubscribePrivateHandlers();
     }
@@ -246,6 +246,9 @@ internal sealed class Launcher {
 
         DisableInteractiveControls();
 
+        _postLaunch.Text = "(Launched. You can re-run the LINQPad query to"
+                            + " re-enable the launcher.)";
+
         var size = new Size(width: width, height: height);
         var eLauncher = new LauncherEventArgs(size, _useOldWebBrowser.Checked);
         Launch?.Invoke(this, eLauncher);
@@ -297,12 +300,12 @@ internal sealed class Launcher {
         => Disable(_widthBox,
                    _heightBox,
                    _delayBox,
-                   _launch,
                    _showPluginFormInTaskbar,
                    _useOldWebBrowser,
                    _magnifier,
                    _charting,
-                   _stopButton);
+                   _stopButton,
+                   _launch);
 
     // Timer for polling the system timer's timings. Not the system timer.
     private readonly Timer _metatimer = new() { Interval = MetaTimerInterval };
@@ -329,6 +332,8 @@ internal sealed class Launcher {
     private readonly LC.CheckBox _stopButton = new("Stop button");
 
     private readonly LC.Button _launch = new("Launch!");
+
+    private readonly LC.Label _postLaunch = new();
 
     private readonly LC.StackPanel _panel;
 
