@@ -74,6 +74,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     var ui = new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
+        MagnifierButtonVisible = sender.ShowMagnifierButton,
         StopButtonVisible = sender.ShowStopButton,
         ChartingButtonVisible = sender.ShowChartButton,
     };
@@ -122,7 +123,9 @@ internal sealed class Launcher {
             new LC.FieldSet("Asynchronous Delay Behavior", CreateDelayPanel()),
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
-            new LC.FieldSet("Experimental Features", CreateFeaturesPanel()),
+            new LC.FieldSet("Features", CreateFeaturesPanel()),
+            new LC.FieldSet("Features (Experimental)",
+                            CreateExperimentalFeaturesPanel()),
             _launch);
 
         SubscribePrivateHandlers();
@@ -137,6 +140,8 @@ internal sealed class Launcher {
                 "Bug: Launch button enabled without delay set.");
 
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
+
+    internal bool ShowMagnifierButton => _magnifier.Checked;
 
     internal bool ShowStopButton => _stopButton.Checked;
 
@@ -199,7 +204,10 @@ internal sealed class Launcher {
     }
 
     private LC.StackPanel CreateFeaturesPanel()
-        => new(horizontal: false, _stopButton, _charting);
+        => new(horizontal: false, _magnifier, _charting);
+
+    private LC.StackPanel CreateExperimentalFeaturesPanel()
+        => new(horizontal: false, _stopButton);
 
     private LC.Table MakeEmptyTable()
         => new LC.Table(noBorders: true,
@@ -288,8 +296,9 @@ internal sealed class Launcher {
                    _launch,
                    _showPluginFormInTaskbar,
                    _useOldWebBrowser,
-                   _stopButton,
-                   _charting);
+                   _magnifier,
+                   _charting,
+                   _stopButton);
 
     // Timer for polling the system timer's timings. Not the system timer.
     private readonly Timer _metatimer = new() { Interval = MetaTimerInterval };
@@ -308,9 +317,12 @@ internal sealed class Launcher {
     private readonly LC.CheckBox _useOldWebBrowser =
         new("Use old WebBrowser control even if WebView2 is available");
 
-    private readonly LC.CheckBox _stopButton = new("Stop button");
+    private readonly LC.CheckBox _magnifier
+        = new("Magnifier", isChecked: true);
 
-    private readonly LC.CheckBox _charting = new("Charting");
+    private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
+
+    private readonly LC.CheckBox _stopButton = new("Stop button");
 
     private readonly LC.Button _launch = new("Launch!");
 
@@ -367,6 +379,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         DefaultDelayInMilliseconds;
 
     internal bool ShowParentInTaskbar { get; init; } = false;
+
+    internal bool MagnifierButtonVisible
+    {
+        get => _magnify.Visible;
+        set => _magnify.Visible = value;
+    }
 
     internal bool StopButtonVisible
     {
