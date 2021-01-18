@@ -2,6 +2,7 @@
   <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
+  <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
   <Namespace>LC = LINQPad.Controls</Namespace>
@@ -531,6 +532,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
+    private static void OpenMagnifierSettings()
+        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
     private AlertBar CreateAlertBar() => new() {
         Width = _rect.Width,
         Margin = CanvasMargin,
@@ -893,11 +897,13 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         if (ShiftIsPressed) {
             e.Cancel = true;
-            Shell.Execute("ms-settings:easeofaccess-magnifier");
-        } else if (HaveMagnifierSmoothing) {
+            OpenMagnifierSettings();
+        } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
             _alert.Show(
                 $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                + $"Smooth edges of images and text{Ch.Rdquo}.");
+                + $"Smooth edges of images and text{Ch.Rdquo}.",
+                onClick: OpenMagnifierSettings,
+                onDismiss: () => _checkMagnifierSettings = false);
         }
     }
 
@@ -1211,6 +1217,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
+    private bool _checkMagnifierSettings = true;
+
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
     // strategy across a sub-strategy change would be a self-comparison.
@@ -1239,9 +1247,12 @@ internal sealed class AlertBar : TableLayoutPanel {
         SubscribePrivateHandlers();
     }
 
-    internal void Show(string message)
+    internal void Show(string message,
+                       Action? onClick = null,
+                       Action? onDismiss = null)
     {
-        _content.Text = message;
+        (_content.Text, _onClick, _onDismiss) = (message, onClick, onDismiss);
+        UpdateStyle();
         Show();
     }
 
@@ -1259,7 +1270,19 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
-    private const int ContentFontSize = 10;
+    private static Style StaticStyle { get; } =
+        new(Font: new("Segoe UI Semibold", 10, FontStyle.Regular),
+            Color: Color.Black,
+            Cursor: Cursors.Arrow);
+
+    private static Style LinkStyle { get; } = StaticStyle with {
+        Color = Color.FromArgb(0, 102, 204),
+        Cursor = Cursors.Hand,
+    };
+
+    private static Style LinkHoverStyle { get; } = LinkStyle with {
+        Color = Color.FromArgb(0, 80, 197),
+    };
 
     [DllImport("user32")]
     private static extern bool HideCaret(IntPtr hWnd);
@@ -1285,10 +1308,25 @@ internal sealed class AlertBar : TableLayoutPanel {
         Height = _dismiss.Height; // Must be after adding _dismiss.
     }
 
+    private void UpdateStyle()
+    {
+        var style = _onClick switch {
+            null                              => StaticStyle,
+            _ when _content.HasMousePointer() => LinkHoverStyle,
+            _                                 => LinkStyle,
+        };
+
+        style.ApplyTo(_content);
+    }
+
     private void SubscribePrivateHandlers()
     {
+        _content.Click += delegate { _onClick?.Invoke(); };
         _content.GotFocus += content_GotFocus;
-        _dismiss.Click += delegate { Hide(); };
+        _content.MouseEnter += delegate { UpdateStyle(); };
+        _content.MouseLeave += delegate { UpdateStyle(); };
+
+        _dismiss.Click += dismiss_Click;
     }
 
     private void content_GotFocus(object? sender, EventArgs e)
@@ -1296,15 +1334,18 @@ internal sealed class AlertBar : TableLayoutPanel {
         if (!HideCaret(_content.Handle)) Warn("Couldn't hide alert caret.");
     }
 
+    private void dismiss_Click(object? sender, EventArgs e)
+    {
+        Hide();
+        _onDismiss?.Invoke();
+    }
+
     private readonly TextBox _content = new() {
         AutoSize = true,
         Anchor = AnchorStyles.Left,
         Margin = Padding.Empty,
         BorderStyle = BorderStyle.None,
-        Font = new("Segoe UI Semibold", ContentFontSize),
-        ForeColor = Color.Black,
         ReadOnly = true,
-        Cursor = Cursors.Arrow,
         TabStop = false,
     };
 
@@ -1315,6 +1356,22 @@ internal sealed class AlertBar : TableLayoutPanel {
         Anchor = AnchorStyles.Right,
         Margin = Padding.Empty,
     };
+
+    Action? _onClick = null;
+
+    Action? _onDismiss = null;
+}
+
+/// <summary>
+/// A bundle of styling information for text, including mouse effects.
+/// </summary>
+internal sealed record Style(Font Font, Color Color, Cursor Cursor) {
+    internal void ApplyTo(Control control)
+    {
+        control.Font = Font;
+        control.ForeColor = Color;
+        control.Cursor = Cursor;
+    }
 }
 
 /// <summary>
@@ -2067,7 +2124,7 @@ internal static class EnumeraExtensions {
 }
 
 /// <summary>
-/// Provides extension methods for invalidating regions of a control.
+/// Provides extension methods for region invalidation and mouse polling.
 /// </summary>
 internal static class ControlExtensions {
     internal static void Invalidate(this Control control, Point point)
@@ -2081,6 +2138,12 @@ internal static class ControlExtensions {
     internal static void Invalidate(this Control control,
                                     RectangleBuilder bounds)
         => control.Invalidate(bounds.Build());
+
+    internal static bool HasMousePointer(this Control control)
+    {
+        var clientPoint = control.PointToClient(Control.MousePosition);
+        return control.ClientRectangle.Contains(clientPoint);
+    }
 }
 
 /// <summary>
