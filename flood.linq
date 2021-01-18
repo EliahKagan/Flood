@@ -1273,13 +1273,11 @@ internal sealed class AlertBar : TableLayoutPanel {
     private static Style StaticStyle { get; } =
         new(Font: new("Segoe UI Semibold", 10, FontStyle.Regular),
             Color: Color.Black,
-            Cursor: Cursors.Arrow,
-            TabStop: false);
+            Cursor: Cursors.Arrow);
 
     private static Style LinkStyle { get; } = StaticStyle with {
         Color = Color.FromArgb(0, 102, 204),
         Cursor = Cursors.Hand,
-        TabStop = true,
     };
 
     private static Style LinkHoverStyle { get; } = LinkStyle with {
@@ -1318,7 +1316,7 @@ internal sealed class AlertBar : TableLayoutPanel {
             _                                 => LinkStyle,
         };
 
-        _content.ApplyStyle(style);
+        style.ApplyTo(_content);
     }
 
     private void SubscribePrivateHandlers()
@@ -1347,10 +1345,20 @@ internal sealed class AlertBar : TableLayoutPanel {
         _onDismiss?.Invoke();
     }
 
-    private readonly LabelBox _content = new() {
+    private readonly TextBox _content = new() {
         AutoSize = true,
         Anchor = AnchorStyles.Left,
         Margin = Padding.Empty,
+        BorderStyle = BorderStyle.None,
+        ReadOnly = true,
+
+        // FIXME: This must be set to true when the alert is interactive, so
+        // there is a keyboard alternative to clicking. So this should be set
+        // in UpdateStyle(). But other changes have to made at the same time:
+        // the textbox needs to look similar to a tab-selected hyperlink, the
+        // text in it must not be automatically selected, and Spacebar and
+        // Enter must have the same effect as clicking.
+        TabStop = false,
     };
 
     private readonly Button _dismiss = new() {
@@ -1367,31 +1375,15 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
-/// Some styling information for text, including mouse and keyboard effects.
+/// A bundle of styling information for text, including mouse effects.
 /// </summary>
-internal sealed record Style(Font Font,
-                             Color Color,
-                             Cursor Cursor,
-                             bool TabStop);
-
-/// <summary>A textbox customized for use as a text-selectable label.</summary>
-internal sealed class LabelBox : TextBox {
-    internal LabelBox()
+internal sealed record Style(Font Font, Color Color, Cursor Cursor) {
+    internal void ApplyTo(Control control)
     {
-        BorderStyle = BorderStyle.None;
-        ReadOnly = true;
+        control.Font = Font;
+        control.ForeColor = Color;
+        control.Cursor = Cursor;
     }
-
-    internal void ApplyStyle(Style style)
-    {
-        Font = style.Font;
-        ForeColor = style.Color;
-        Cursor = style.Cursor;
-        TabStop = style.TabStop;
-    }
-
-    // FIXME: This doesn't work. Maybe override OnPaint and do it manually.
-    protected override bool ShowFocusCues => true;
 }
 
 /// <summary>
