@@ -895,9 +895,9 @@ internal sealed class MainPanel : TableLayoutPanel {
             e.Cancel = true;
             Shell.Execute("ms-settings:easeofaccess-magnifier");
         } else if (HaveMagnifierSmoothing) {
-            const string name = "Smooth edges of images and text";
             _alert.Show(
-                $"Uncheck {Ch.Ldquo}{name}{Ch.Rdquo} to see distinct pixels.");
+                $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                + $"Smooth edges of images and text{Ch.Rdquo}.");
         }
     }
 
@@ -2625,4 +2625,7 @@ internal static class Ch {
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
+
+    /// <summary> Gear (emoji).</summary>
+    internal const char Gear = '\u2699';
 }
