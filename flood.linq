@@ -489,6 +489,10 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
 
+    private static bool ShiftIsPressed => ModifierKeys.HasFlag(Keys.Shift);
+
+    private static bool CtrlIsPressed => ModifierKeys.HasFlag(Keys.Control);
+
     private static bool AltIsPressed => ModifierKeys.HasFlag(Keys.Alt);
 
     private static bool SuperIsPressed
@@ -526,10 +530,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         return toggles;
     }
 
-    private Button CreateMagnify()
-        => new ApplicationButton(Files.GetSystem32ExePath("magnify"),
-                                 SmallButtonSize,
-                                 _toolTip);
+    private ApplicationButton CreateMagnify()
+        => new(executablePath: Files.GetSystem32ExePath("magnify"),
+               SmallButtonSize,
+               fallbackDescription: "Magnifier");
 
     private Button CreateStop()
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
@@ -593,6 +597,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateOpenCloseHelp();
     }
 
+    private void UpdateMagnifyToolTip()
+        => _magnify.SetToolTip(ShiftIsPressed ? "Magnifier Settings" : null);
+
     private void UpdateStopButton()
     {
         if (_jobs == 0) {
@@ -644,6 +651,14 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         UpdateStatusText(strategy, speed, _jobs);
         UpdateStatusToolTip(strategy, speed, _jobs);
+
+        // TODO: This doesn't conceptually belong here, but it needs to trigger
+        // under the same conditions that update the speed. Refactor so the
+        // code makes more sense, or avoid carrying over this confusion when
+        // splitting up and rewriting UpdateStatus--as will have to be done
+        // the status bar is converted from a label to a toolstrip or other
+        // collection of multiple controls.
+        UpdateMagnifyToolTip();
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
     }
@@ -716,6 +731,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
+        _magnify.StartingApplication += magnify_StartingApplication;
         _stop.Click += stop_Click;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
@@ -820,7 +836,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (e.Delta == 0) return; // I'm not sure if this is possible.
         ((HandledMouseEventArgs)e).Handled = true;
 
-        if (!ModifierKeys.HasFlag(Keys.Shift)) {
+        if (!ShiftIsPressed) {
             // Scrolling without Shift cycles neighbor enumeration strategies.
             if (scrollingDown)
                 _neighborEnumerationStrategies.CycleNext();
@@ -832,7 +848,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             _alert.Show(
                 $"{Ch.Ldquo}{_neighborEnumerationStrategies.Current}{Ch.Rdquo}"
                 + " strategy has no sub-strategies to scroll.");
-        } else if (ModifierKeys.HasFlag(Keys.Control)) {
+        } else if (CtrlIsPressed) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
                 strategy.CycleFastAheadSubStrategy();
@@ -847,6 +863,15 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         UpdateStatus();
+    }
+
+    private void magnify_StartingApplication(ApplicationButton sender,
+                                             StartingApplicationEventArgs e)
+    {
+        if (ShiftIsPressed) {
+            e.Cancel = true;
+            Shell.Execute("ms-settings:easeofaccess-magnifier");
+        }
     }
 
     private void stop_Click(object? sender, EventArgs e)
@@ -1126,7 +1151,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly TableLayoutPanel _toggles;
 
-    private readonly Button _magnify;
+    private readonly ApplicationButton _magnify;
 
     private readonly Button _stop;
 
@@ -1266,42 +1291,70 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
+/// Provides the ability to cancel the
+/// <see cref="ApplicationButton.StartingApplication"/> event.
+/// </summary>
+internal sealed class StartingApplicationEventArgs : EventArgs {
+    internal bool Cancel { get; set; } = false;
+}
+
+/// <summary>
+/// Represents a method that will handle the
+/// <see cref="ApplicationButton.StartingApplication"/> event.
+/// </summary>
+internal delegate void
+StartingApplicationEventHandler(ApplicationButton sender,
+                                StartingApplicationEventArgs e);
+
+/// <summary>
 /// A square button to launch an application, showing an icon and (optionally)
 /// toolip obtained from the executable's metadata.
 /// </summary>
 internal sealed class ApplicationButton : Button {
     internal ApplicationButton(string executablePath,
                                int sideLength,
-                               ToolTip? toolTip = null)
+                               string? fallbackDescription = null)
     {
         Width = Height = sideLength;
         Margin = Padding.Empty;
         BackgroundImageLayout = ImageLayout.Stretch;
 
+        _toolTip = new(_components) { ShowAlways = true };
+
         _path = executablePath;
+
+        _description = FileVersionInfo.GetVersionInfo(_path).FileDescription
+                        ?? fallbackDescription
+                        ?? string.Empty;
+
         _bitmap = CreateBitmap(_path);
 
         try {
             BackgroundImage = _bitmap;
-
-            toolTip?.SetToolTip(
-                this,
-                FileVersionInfo.GetVersionInfo(_path).FileDescription);
+            SetToolTip();
         } catch {
-            _bitmap.Dispose();
+            DisposeState();
             throw;
         }
     }
 
+    internal event StartingApplicationEventHandler? StartingApplication;
+
+    internal void SetToolTip(string? caption = null)
+        => _toolTip.SetToolTip(this, caption ?? _description);
+
     protected override void OnClick(EventArgs e)
     {
         base.OnClick(e);
-        Shell.Execute(_path);
+
+        var eStartingApplication = new StartingApplicationEventArgs();
+        StartingApplication?.Invoke(this, eStartingApplication);
+        if (!eStartingApplication.Cancel) Shell.Execute(_path);
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _bitmap.Dispose();
+        if (disposing) DisposeState();
         base.Dispose(disposing);
     }
 
@@ -1341,6 +1394,18 @@ internal sealed class ApplicationButton : Button {
 
     [DllImport("user32", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
+
+    private void DisposeState()
+    {
+        _components.Dispose();
+        _bitmap.Dispose();
+    }
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
+
+    private readonly string _description;
 
     private readonly string _path;
 
@@ -1495,9 +1560,9 @@ internal sealed class AnimatedBitmapCheckBox : CheckBox {
 
     private void DisposeState()
     {
+        _components.Dispose();
         DisposeImagePairs(_imagePairs);
         _frame.Dispose();
-        _components.Dispose();
     }
 
     private readonly IContainer _components = new Container();
