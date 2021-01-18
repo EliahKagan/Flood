@@ -1307,6 +1307,14 @@ internal sealed class AlertBar : TableLayoutPanel {
         Color = Color.FromArgb(0, 80, 197),
     };
 
+    private static Style FocusedLinkStyle { get; } = LinkStyle with {
+        Font = UnderlinedFont,
+    };
+
+    private static Style FocusedLinkHoverStyle { get; } = LinkHoverStyle with {
+        Font = UnderlinedFont,
+    };
+
     [DllImport("user32")]
     private static extern bool HideCaret(IntPtr hWnd);
 
@@ -1333,14 +1341,15 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void UpdateStyle()
     {
-        var style = _onClick switch {
-            null                              => StaticStyle,
-            _ when _content.HasMousePointer() => LinkHoverStyle,
-            _                                 => LinkStyle,
+        var style = (action: _onClick,
+                     hover: _content.HasMousePointer(),
+                     focus: _content.Focused) switch {
+            (action: null, hover: _,     focus: _)     => StaticStyle,
+            (action: _,    hover: false, focus: false) => LinkStyle,
+            (action: _,    hover: false, focus: true)  => FocusedLinkStyle,
+            (action: _,    hover: true,  focus: false) => LinkHoverStyle,
+            (action: _,    hover: true,  focus: true)  => FocusedLinkHoverStyle
         };
-
-        if (_onClick is not null && _content.Focused)
-            style = style with { Font = UnderlinedFont };
 
         style.ApplyTo(_content);
     }
