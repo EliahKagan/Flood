@@ -7,6 +7,7 @@
   <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>Microsoft.Web.WebView2.Core</Namespace>
   <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
+  <Namespace>Microsoft.Win32</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>static MoreLinq.Extensions.PairwiseExtension</Namespace>
@@ -14,6 +15,7 @@
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Drawing.Imaging</Namespace>
   <Namespace>System.Runtime.InteropServices</Namespace>
+  <Namespace>System.Security</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
@@ -508,6 +510,27 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private int SmallButtonSize => _showHideTips.Height;
 
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MainPanel)})");
+
+    private static bool HaveMagnifierSmoothing
+    {
+        get {
+            try {
+                var result = Registry.GetValue(
+                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
+                    "UseBitmapSmoothing",
+                    null);
+
+                return result is int value && value != 0;
+            } catch (SystemException ex) when (ex is SecurityException
+                                                  or IOException) {
+                Warn("Couldn't check for magnifier smoothing.");
+                return false;
+            }
+        }
+    }
+
     private AlertBar CreateAlertBar() => new() {
         Width = _rect.Width,
         Margin = CanvasMargin,
@@ -871,6 +894,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (ShiftIsPressed) {
             e.Cancel = true;
             Shell.Execute("ms-settings:easeofaccess-magnifier");
+        } else if (HaveMagnifierSmoothing) {
+            const string name = "Smooth edges of images and text";
+            _alert.Show(
+                $"Uncheck {Ch.Ldquo}{name}{Ch.Rdquo} to see distinct pixels.");
         }
     }
 
