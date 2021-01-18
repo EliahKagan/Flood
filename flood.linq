@@ -1351,6 +1351,13 @@ internal sealed class AlertBar : TableLayoutPanel {
         Margin = Padding.Empty,
         BorderStyle = BorderStyle.None,
         ReadOnly = true,
+
+        // FIXME: This must be set to true when the alert is interactive, so
+        // there is a keyboard alternative to clicking. So this should be set
+        // in UpdateStyle(). But other changes have to made at the same time:
+        // the textbox needs to look similar to a tab-selected hyperlink, the
+        // text in it must not be automatically selected, and Spacebar and
+        // Enter must have the same effect as clicking.
         TabStop = false,
     };
 
