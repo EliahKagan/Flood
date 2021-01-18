@@ -1270,14 +1270,37 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
+    private sealed record Style(Font Font,
+                                Color Color,
+                                Cursor Cursor,
+                                bool TabStop) {
+        internal void ApplyTo(Control control)
+        {
+            control.Font = Font;
+            control.ForeColor = Color;
+            control.Cursor = Cursor;
+            control.TabStop = TabStop;
+        }
+    }
+
+    private const int FontSize = 10;
+
+    private static Font RegularFont { get; } =
+        new("Segoe UI Semibold", FontSize, FontStyle.Regular);
+
+    private static Font UnderlinedFont { get; } =
+        new(RegularFont, FontStyle.Underline);
+
     private static Style StaticStyle { get; } =
-        new(Font: new("Segoe UI Semibold", 10, FontStyle.Regular),
+        new(Font: RegularFont,
             Color: Color.Black,
-            Cursor: Cursors.Arrow);
+            Cursor: Cursors.Arrow,
+            TabStop: false);
 
     private static Style LinkStyle { get; } = StaticStyle with {
         Color = Color.FromArgb(0, 102, 204),
         Cursor = Cursors.Hand,
+        TabStop = true,
     };
 
     private static Style LinkHoverStyle { get; } = LinkStyle with {
@@ -1316,15 +1339,21 @@ internal sealed class AlertBar : TableLayoutPanel {
             _                                 => LinkStyle,
         };
 
+        if (_onClick is not null && _content.Focused)
+            style = style with { Font = UnderlinedFont };
+
         style.ApplyTo(_content);
     }
 
     private void SubscribePrivateHandlers()
     {
         _content.Click += content_Click;
+        _content.DoubleClick += content_DoubleClick;
         _content.GotFocus += content_GotFocus;
+        _content.LostFocus += delegate { UpdateStyle(); };
         _content.MouseEnter += delegate { UpdateStyle(); };
         _content.MouseLeave += delegate { UpdateStyle(); };
+        _content.KeyDown += content_KeyDown;
 
         _dismiss.Click += dismiss_Click;
     }
@@ -1334,9 +1363,22 @@ internal sealed class AlertBar : TableLayoutPanel {
         if (_content.SelectedText.Length == 0) _onClick?.Invoke();
     }
 
+    private void content_DoubleClick(object? sender, EventArgs e)
+    {
+        _content.DeselectAll();
+        Clipboard.SetText(_content.Text);
+    }
+
     private void content_GotFocus(object? sender, EventArgs e)
     {
+        UpdateStyle();
         if (!HideCaret(_content.Handle)) Warn("Couldn't hide alert caret.");
+        _content.SelectionStart =_content.SelectionLength = 0;
+    }
+
+    private void content_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode is Keys.Space or Keys.Enter) _onClick?.Invoke();
     }
 
     private void dismiss_Click(object? sender, EventArgs e)
@@ -1372,18 +1414,6 @@ internal sealed class AlertBar : TableLayoutPanel {
     Action? _onClick = null;
 
     Action? _onDismiss = null;
-}
-
-/// <summary>
-/// A bundle of styling information for text, including mouse effects.
-/// </summary>
-internal sealed record Style(Font Font, Color Color, Cursor Cursor) {
-    internal void ApplyTo(Control control)
-    {
-        control.Font = Font;
-        control.ForeColor = Color;
-        control.Cursor = Cursor;
-    }
 }
 
 /// <summary>
