@@ -23,32 +23,32 @@ Different fills use different data structures for the fringe, which affects the 
                 </tr>
               </thead>
               <tbody>
-                <tr title="Use a stack/LIFO (last-in first-out) for the fringe.">
+                <tr class="item" title="Use a stack/LIFO (last-in first-out) for the fringe.">
                   <td><div class="box box-red" title="red"></div></td>
                   <td>Stack</td>
                   <td>Right click</td>
                 </tr>
-                <tr title="Use a queue/FIFO (first-in first-out) for the fringe.">
+                <tr class="item" title="Use a queue/FIFO (first-in first-out) for the fringe.">
                   <td><div class="box box-blue" title="blue"></div></td>
                   <td>Queue</td>
                   <td>Middle click</td>
                 </tr>
-                <tr title="Use a fringe where extraction is by random selection.">
+                <tr class="item" title="Use a fringe where extraction is by random selection.">
                   <td><div class="box box-yellow" title="yellow"></div></td>
                   <td>Random</td>
                   <td><kbd>Alt</kbd>+Right-click</td>
                 </tr>
-                <tr title="Use a deque for the fringe, extracting from either end with equal probability.">
+                <tr class="item" title="Use a deque for the fringe, extracting from either end with equal probability.">
                   <td><div class="box box-purple" title="purple"></div></td>
                   <td>Deque</td>
                   <td><kbd>Alt</kbd>+Middle-click</td>
                 </tr>
-                <tr title="Recursive depth-first fill (similar to stack fill).">
+                <tr class="item" title="Recursive depth-first fill (similar to stack fill).">
                   <td><div class="box box-orange" title="orange"></div></td>
                   <td>Recursive</td>
                   <td><kbd>&#8862;Win</kbd>+Right-click</td>
                 </tr>
-                <tr title="Non-animated fill, performed all at once.">
+                <tr class="item" title="Non-animated fill, performed all at once.">
                   <td><div class="box box-black" title="black"></div></td>
                   <td>Instant</td>
                   <td><kbd>&#8862;Win</kbd>+Left-click</td>
@@ -77,19 +77,19 @@ Different fills use different data structures for the fringe, which affects the 
                             </tr>
                           </thead>
                           <tbody>
-                            <tr title="Update the canvas for each pixel.">
+                            <tr class="item" title="Update the canvas for each pixel.">
                               <td><kbd>Shift</kbd></td>
                               <td class="number-cell">1&times;</td>
                             </tr>
-                            <tr title="Update the canvas after every 5 pixels.">
+                            <tr class="item" title="Update the canvas after every 5 pixels.">
                               <td>(default)</td>
                               <td class="number-cell">5&times;</td>
                             </tr>
-                            <tr title="Update the canvas after every 10 pixels.">
+                            <tr class="item" title="Update the canvas after every 10 pixels.">
                               <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd></td>
                               <td class="number-cell">10&times;</td>
                             </tr>
-                            <tr title="Update the canvas after every 20 pixels.">
+                            <tr class="item" title="Update the canvas after every 20 pixels.">
                               <td><kbd>Ctrl</kbd></td>
                               <td class="number-cell">20&times;</td>
                             </tr>
@@ -108,10 +108,10 @@ Different fills use different data structures for the fringe, which affects the 
                           </thead>
                           <tbody>
                             <tr>
-                              <td title="Add neighbors to the fringe in a specific, fixed order.">
+                              <td class="item" title="Add neighbors to the fringe in a specific, fixed order.">
                                 Uniform
                               </td>
-                              <td title="Choose between the 24 orders:
+                              <td class="item" title="Choose between the 24 orders:
 LRUD, LRDU, LURD, etc.
 
 Shift+WheelDown &mdash; next permutation
@@ -124,17 +124,17 @@ behave the same.)">
                                 <kbd>Shift</kbd>+scroll to set order
                               </td>
                             </tr>
-                            <tr title="In a fill, add neighbors to the fringe in the same order.
+                            <tr class="item" title="In a fill, add neighbors to the fringe in the same order.
 But choose this order randomly at the start of each fill.">
                               <td>Random per fill</td>
                               <td>(order same within a fill)</td>
                             </tr>
-                            <tr title="Add neighbors to the fringe in random order.
+                            <tr class="item" title="Add neighbors to the fringe in random order.
 Pick an order each time neighbors are added.">
                               <td>Random always</td>
                               <td>(random during traversal)</td>
                             </tr>
-                            <tr title="Each pixel has a predetermined order of it neighbors, randomly chosen when the program starts and used in all fills. (This looks very similar to &quot;Random always&quot;.)">
+                            <tr class="item" title="Each pixel has a predetermined order of it neighbors, randomly chosen when the program starts and used in all fills. (This looks very similar to &quot;Random always&quot;.)">
                               <td>Random per pixel</td>
                               <td>(randomized on launch)</td>
                             </tr>

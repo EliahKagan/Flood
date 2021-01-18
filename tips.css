@@ -1,4 +1,5 @@
 body {
+  cursor: default;
   font-family: 'Segoe UI', 'Nimbus Sans L', sans-serif;
   font-size: small;
   font-variant-numeric: tabular-nums;
@@ -30,6 +31,10 @@ kbd {
   font-family: 'IBM Plex Mono', 'Consolas', 'Source Code Pro', monospace;
   font-variant: normal;
   text-transform: uppercase;
+}
+
+.item:hover {
+  background-color: aliceblue;
 }
 
 .number-cell {
