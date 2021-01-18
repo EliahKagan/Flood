@@ -152,7 +152,7 @@ internal sealed class Launcher {
     internal void Display()
     {
         // Make launcher text 12.5% bigger than with LINQPad's default CSS.
-        // Do it here instead of globally so debugging dumps fit in the panel.
+        // Do it here instead of globally so debugging dumps have normal size.
         Util.WithStyle(_panel, "font-size: .9rem")
             .Dump("Developer Mode Launcher");
 
@@ -2154,7 +2154,7 @@ internal abstract class ConfigurableNeighborEnumerationStrategy
         : base(name) { }
 
     /// <inheritdoc/>
-    public override string ToString() => $"{Name} - {Detail}";
+    public override string ToString() => $"{Name} {Ch.Ndash} {Detail}";
 
     /// <summary>
     /// Switches to the next sub-strategy, or from the last to the first.
@@ -2622,6 +2622,9 @@ internal static class Ch {
 
     /// <summary>Right double quotation mark.</summary>
     internal const char Rdquo = '\u201D';
+
+    /// <summary>En dash.</summary>
+    internal const char Ndash = '\u2013';
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
