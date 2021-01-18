@@ -1321,12 +1321,17 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void SubscribePrivateHandlers()
     {
-        _content.Click += delegate { _onClick?.Invoke(); };
+        _content.Click += content_Click;
         _content.GotFocus += content_GotFocus;
         _content.MouseEnter += delegate { UpdateStyle(); };
         _content.MouseLeave += delegate { UpdateStyle(); };
 
         _dismiss.Click += dismiss_Click;
+    }
+
+    private void content_Click(object? sender, EventArgs e)
+    {
+        if (_content.SelectedText.Length == 0) _onClick?.Invoke();
     }
 
     private void content_GotFocus(object? sender, EventArgs e)
