@@ -1972,7 +1972,7 @@ internal sealed class MyWebView2 : WebView2 {
 /// </summary>
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
-        => new(Path.Combine(QueryDirectory, filename));
+        => new(Path.Combine(QueryDirectory, "doc", filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
