@@ -1365,15 +1365,21 @@ internal sealed class AlertBar : TableLayoutPanel {
             Warn("Couldn't hide alert caret.");
     }
 
+    private void RemoveUnderline()
+    {
+        _content.Font = RegularFont;
+        HideContentCaret();
+    }
+
     private void SubscribePrivateHandlers()
     {
         _content.Click += content_Click;
         _content.DoubleClick += content_DoubleClick;
         _content.GotFocus += content_GotFocus;
-        _content.LostFocus += delegate { UpdateStyle(); };
+        _content.LostFocus += content_LostFocus;
         _content.MouseEnter += delegate { UpdateStyle(); };
         _content.MouseLeave += delegate { UpdateStyle(); };
-        _content.MouseDown += delegate { _content.Font = RegularFont; };
+        _content.MouseDown += delegate { RemoveUnderline(); };
         _content.MouseUp += delegate { UpdateStyle(); };
         _content.KeyDown += content_KeyDown;
 
@@ -1397,6 +1403,12 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.SelectionStart =_content.SelectionLength = 0;
     }
 
+    private void content_LostFocus(object? sender, EventArgs e)
+    {
+        _content.DeselectAll();
+        UpdateStyle();
+    }
+
     private void content_KeyDown(object? sender, KeyEventArgs e)
     {
         switch (e.KeyCode) {
@@ -1405,8 +1417,7 @@ internal sealed class AlertBar : TableLayoutPanel {
             break;
 
         case Keys.Left or Keys.Right or Keys.Home or Keys.End:
-            _content.Font = RegularFont;
-            HideContentCaret();
+            RemoveUnderline();
             break;
 
         default:
