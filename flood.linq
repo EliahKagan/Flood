@@ -2,11 +2,13 @@
   <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
+  <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
   <Namespace>LC = LINQPad.Controls</Namespace>
   <Namespace>Microsoft.Web.WebView2.Core</Namespace>
   <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
+  <Namespace>Microsoft.Win32</Namespace>
   <Namespace>Nito.Collections</Namespace>
   <Namespace>static LINQPad.Controls.ControlExtensions</Namespace>
   <Namespace>static MoreLinq.Extensions.PairwiseExtension</Namespace>
@@ -14,6 +16,7 @@
   <Namespace>System.Drawing</Namespace>
   <Namespace>System.Drawing.Imaging</Namespace>
   <Namespace>System.Runtime.InteropServices</Namespace>
+  <Namespace>System.Security</Namespace>
   <Namespace>System.Security.Cryptography</Namespace>
   <Namespace>System.Threading.Tasks</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
@@ -508,6 +511,30 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private int SmallButtonSize => _showHideTips.Height;
 
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MainPanel)})");
+
+    private static bool HaveMagnifierSmoothing
+    {
+        get {
+            try {
+                var result = Registry.GetValue(
+                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
+                    "UseBitmapSmoothing",
+                    null);
+
+                return result is int value && value != 0;
+            } catch (SystemException ex) when (ex is SecurityException
+                                                  or IOException) {
+                Warn("Couldn't check for magnifier smoothing.");
+                return false;
+            }
+        }
+    }
+
+    private static void OpenMagnifierSettings()
+        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
     private AlertBar CreateAlertBar() => new() {
         Width = _rect.Width,
         Margin = CanvasMargin,
@@ -870,7 +897,13 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         if (ShiftIsPressed) {
             e.Cancel = true;
-            Shell.Execute("ms-settings:easeofaccess-magnifier");
+            OpenMagnifierSettings();
+        } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
+            _alert.Show(
+                $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                + $"Smooth edges of images and text{Ch.Rdquo}.",
+                onClick: OpenMagnifierSettings,
+                onDismiss: () => _checkMagnifierSettings = false);
         }
     }
 
@@ -1184,6 +1217,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
 
+    private bool _checkMagnifierSettings = true;
+
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
     // strategy across a sub-strategy change would be a self-comparison.
@@ -1212,9 +1247,12 @@ internal sealed class AlertBar : TableLayoutPanel {
         SubscribePrivateHandlers();
     }
 
-    internal void Show(string message)
+    internal void Show(string message,
+                       Action? onClick = null,
+                       Action? onDismiss = null)
     {
-        _content.Text = message;
+        (_content.Text, _onClick, _onDismiss) = (message, onClick, onDismiss);
+        UpdateStyle();
         Show();
     }
 
@@ -1232,7 +1270,50 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
-    private const int ContentFontSize = 10;
+    private sealed record Style(Font Font,
+                                Color Color,
+                                Cursor Cursor,
+                                bool TabStop) {
+        internal void ApplyTo(Control control)
+        {
+            control.Font = Font;
+            control.ForeColor = Color;
+            control.Cursor = Cursor;
+            control.TabStop = TabStop;
+        }
+    }
+
+    private const int FontSize = 10;
+
+    private static Font RegularFont { get; } =
+        new("Segoe UI Semibold", FontSize, FontStyle.Regular);
+
+    private static Font UnderlinedFont { get; } =
+        new(RegularFont, FontStyle.Underline);
+
+    private static Style StaticStyle { get; } =
+        new(Font: RegularFont,
+            Color: Color.Black,
+            Cursor: Cursors.Arrow,
+            TabStop: false);
+
+    private static Style LinkStyle { get; } = StaticStyle with {
+        Color = Color.FromArgb(0, 0, 238),
+        Cursor = Cursors.Hand,
+        TabStop = true,
+    };
+
+    private static Style LinkHoverStyle { get; } = LinkStyle with {
+        Color = Color.FromArgb(0, 80, 238),
+    };
+
+    private static Style FocusedLinkStyle { get; } = LinkStyle with {
+        Font = UnderlinedFont,
+    };
+
+    private static Style FocusedLinkHoverStyle { get; } = LinkHoverStyle with {
+        Font = UnderlinedFont,
+    };
 
     [DllImport("user32")]
     private static extern bool HideCaret(IntPtr hWnd);
@@ -1258,15 +1339,104 @@ internal sealed class AlertBar : TableLayoutPanel {
         Height = _dismiss.Height; // Must be after adding _dismiss.
     }
 
+    private void UpdateStyle()
+    {
+        var style = (action: _onClick,
+                     hover: _content.HasMousePointer(),
+                     cue: ShouldSimulateFocusCue) switch {
+            (action: null, hover: _,     cue: _)     => StaticStyle,
+            (action: _,    hover: false, cue: false) => LinkStyle,
+            (action: _,    hover: false, cue: true)  => FocusedLinkStyle,
+            (action: _,    hover: true,  cue: false) => LinkHoverStyle,
+            (action: _,    hover: true,  cue: true)  => FocusedLinkHoverStyle,
+        };
+
+        style.ApplyTo(_content);
+
+        HideContentCaret();
+    }
+
+    private bool ShouldSimulateFocusCue
+        => _content.Focused && _content.SelectionLength == 0;
+
+    private void HideContentCaret()
+    {
+        if (_content.Focused && !HideCaret(_content.Handle))
+            Warn("Couldn't hide alert caret.");
+    }
+
+    private void RemoveUnderline()
+    {
+        _content.Font = RegularFont;
+        HideContentCaret();
+    }
+
     private void SubscribePrivateHandlers()
     {
+        _content.Click += content_Click;
+        _content.DoubleClick += content_DoubleClick;
         _content.GotFocus += content_GotFocus;
-        _dismiss.Click += delegate { Hide(); };
+        _content.LostFocus += content_LostFocus;
+        _content.MouseEnter += delegate { UpdateStyle(); };
+        _content.MouseLeave += delegate { UpdateStyle(); };
+        _content.MouseDown += delegate { RemoveUnderline(); };
+        _content.MouseUp += delegate { UpdateStyle(); };
+        _content.KeyDown += content_KeyDown;
+
+        _dismiss.Click += dismiss_Click;
+    }
+
+    private void content_Click(object? sender, EventArgs e)
+    {
+        if (_content.SelectionLength == 0) RunClickAction();
+    }
+
+    private void content_DoubleClick(object? sender, EventArgs e)
+    {
+        _content.DeselectAll();
+        Clipboard.SetText(_content.Text);
     }
 
     private void content_GotFocus(object? sender, EventArgs e)
     {
-        if (!HideCaret(_content.Handle)) Warn("Couldn't hide alert caret.");
+        UpdateStyle();
+        _content.SelectionStart =_content.SelectionLength = 0;
+    }
+
+    private void content_LostFocus(object? sender, EventArgs e)
+    {
+        _content.DeselectAll();
+        UpdateStyle();
+    }
+
+    private void content_KeyDown(object? sender, KeyEventArgs e)
+    {
+        switch (e.KeyCode) {
+        case Keys.Space or Keys.Enter:
+            RunClickAction();
+            break;
+
+        case Keys.Left or Keys.Right or Keys.Home or Keys.End:
+            RemoveUnderline();
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    private void dismiss_Click(object? sender, EventArgs e)
+    {
+        Hide();
+        _onDismiss?.Invoke();
+    }
+
+    private void RunClickAction()
+    {
+        if (_onClick is Action action) {
+            action();
+            _dismiss.Focus();
+        }
     }
 
     private readonly TextBox _content = new() {
@@ -1274,11 +1444,7 @@ internal sealed class AlertBar : TableLayoutPanel {
         Anchor = AnchorStyles.Left,
         Margin = Padding.Empty,
         BorderStyle = BorderStyle.None,
-        Font = new("Segoe UI Semibold", ContentFontSize),
-        ForeColor = Color.Black,
         ReadOnly = true,
-        Cursor = Cursors.Arrow,
-        TabStop = false,
     };
 
     private readonly Button _dismiss = new() {
@@ -1288,6 +1454,10 @@ internal sealed class AlertBar : TableLayoutPanel {
         Anchor = AnchorStyles.Right,
         Margin = Padding.Empty,
     };
+
+    Action? _onClick = null;
+
+    Action? _onDismiss = null;
 }
 
 /// <summary>
@@ -1802,7 +1972,7 @@ internal sealed class MyWebView2 : WebView2 {
 /// </summary>
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
-        => new(Path.Combine(QueryDirectory, filename));
+        => new(Path.Combine(QueryDirectory, "doc", filename));
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
@@ -2040,7 +2210,7 @@ internal static class EnumeraExtensions {
 }
 
 /// <summary>
-/// Provides extension methods for invalidating regions of a control.
+/// Provides extension methods for region invalidation and mouse polling.
 /// </summary>
 internal static class ControlExtensions {
     internal static void Invalidate(this Control control, Point point)
@@ -2054,6 +2224,12 @@ internal static class ControlExtensions {
     internal static void Invalidate(this Control control,
                                     RectangleBuilder bounds)
         => control.Invalidate(bounds.Build());
+
+    internal static bool HasMousePointer(this Control control)
+    {
+        var clientPoint = control.PointToClient(Control.MousePosition);
+        return control.ClientRectangle.Contains(clientPoint);
+    }
 }
 
 /// <summary>
@@ -2601,4 +2777,7 @@ internal static class Ch {
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
+
+    /// <summary> Gear (emoji).</summary>
+    internal const char Gear = '\u2699';
 }
