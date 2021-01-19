@@ -1343,15 +1343,26 @@ internal sealed class AlertBar : TableLayoutPanel {
     {
         var style = (action: _onClick,
                      hover: _content.HasMousePointer(),
-                     focus: _content.Focused) switch {
-            (action: null, hover: _,     focus: _)     => StaticStyle,
-            (action: _,    hover: false, focus: false) => LinkStyle,
-            (action: _,    hover: false, focus: true)  => FocusedLinkStyle,
-            (action: _,    hover: true,  focus: false) => LinkHoverStyle,
-            (action: _,    hover: true,  focus: true)  => FocusedLinkHoverStyle
+                     cue: ShouldSimulateFocusCue) switch {
+            (action: null, hover: _,     cue: _)     => StaticStyle,
+            (action: _,    hover: false, cue: false) => LinkStyle,
+            (action: _,    hover: false, cue: true)  => FocusedLinkStyle,
+            (action: _,    hover: true,  cue: false) => LinkHoverStyle,
+            (action: _,    hover: true,  cue: true)  => FocusedLinkHoverStyle,
         };
 
         style.ApplyTo(_content);
+
+        HideContentCaret();
+    }
+
+    private bool ShouldSimulateFocusCue
+        => _content.Focused && _content.SelectionLength == 0;
+
+    private void HideContentCaret()
+    {
+        if (_content.Focused && !HideCaret(_content.Handle))
+            Warn("Couldn't hide alert caret.");
     }
 
     private void SubscribePrivateHandlers()
@@ -1362,6 +1373,8 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.LostFocus += delegate { UpdateStyle(); };
         _content.MouseEnter += delegate { UpdateStyle(); };
         _content.MouseLeave += delegate { UpdateStyle(); };
+        _content.MouseDown += delegate { _content.Font = RegularFont; };
+        _content.MouseUp += delegate { UpdateStyle(); };
         _content.KeyDown += content_KeyDown;
 
         _dismiss.Click += dismiss_Click;
@@ -1369,7 +1382,7 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void content_Click(object? sender, EventArgs e)
     {
-        if (_content.SelectedText.Length == 0) _onClick?.Invoke();
+        if (_content.SelectionLength == 0) RunClickAction();
     }
 
     private void content_DoubleClick(object? sender, EventArgs e)
@@ -1381,19 +1394,38 @@ internal sealed class AlertBar : TableLayoutPanel {
     private void content_GotFocus(object? sender, EventArgs e)
     {
         UpdateStyle();
-        if (!HideCaret(_content.Handle)) Warn("Couldn't hide alert caret.");
         _content.SelectionStart =_content.SelectionLength = 0;
     }
 
     private void content_KeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode is Keys.Space or Keys.Enter) _onClick?.Invoke();
+        switch (e.KeyCode) {
+        case Keys.Space or Keys.Enter:
+            RunClickAction();
+            break;
+
+        case Keys.Left or Keys.Right or Keys.Home or Keys.End:
+            _content.Font = RegularFont;
+            HideContentCaret();
+            break;
+
+        default:
+            break;
+        }
     }
 
     private void dismiss_Click(object? sender, EventArgs e)
     {
         Hide();
         _onDismiss?.Invoke();
+    }
+
+    private void RunClickAction()
+    {
+        if (_onClick is Action action) {
+            action();
+            _dismiss.Focus();
+        }
     }
 
     private readonly TextBox _content = new() {
