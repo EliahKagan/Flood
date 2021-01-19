@@ -1298,13 +1298,13 @@ internal sealed class AlertBar : TableLayoutPanel {
             TabStop: false);
 
     private static Style LinkStyle { get; } = StaticStyle with {
-        Color = Color.FromArgb(0, 102, 204),
+        Color = Color.FromArgb(0, 0, 238),
         Cursor = Cursors.Hand,
         TabStop = true,
     };
 
     private static Style LinkHoverStyle { get; } = LinkStyle with {
-        Color = Color.FromArgb(0, 80, 197),
+        Color = Color.FromArgb(0, 80, 238),
     };
 
     private static Style FocusedLinkStyle { get; } = LinkStyle with {
