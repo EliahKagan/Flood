@@ -1087,7 +1087,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) fringe.Insert(dest);
         }
@@ -1113,7 +1113,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) {
                 await FillFromAsync(dest);
