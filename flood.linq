@@ -899,11 +899,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             e.Cancel = true;
             OpenMagnifierSettings();
         } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
-            _alert.Show(
-                $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                + $"Smooth edges of images and text{Ch.Rdquo}.",
-                onClick: OpenMagnifierSettings,
-                onDismiss: () => _checkMagnifierSettings = false);
+            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                        + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        onClick: OpenMagnifierSettings,
+                        onDismiss: () => _checkMagnifierSettings = false);
         }
     }
 
@@ -1087,7 +1086,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) fringe.Insert(dest);
         }
@@ -1113,7 +1112,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) {
                 await FillFromAsync(dest);
