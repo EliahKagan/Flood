@@ -364,14 +364,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         _rect = new(Point.Empty, canvasSize);
         _bmp = new(width: _rect.Width, height: _rect.Height);
-        _graphics = Graphics.FromImage(_bmp);
-        _graphics.FillRectangle(Brushes.White, _rect);
-
-        _canvas = new() {
-            Image = _bmp,
-            SizeMode = PictureBoxSizeMode.AutoSize,
-            Margin = CanvasMargin,
-        };
+        _graphics = CreateCanvasGraphics();
+        _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
         _toggles = CreateToggles();
@@ -534,6 +528,19 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static void OpenMagnifierSettings()
         => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
+    private Graphics CreateCanvasGraphics()
+    {
+        var graphics = Graphics.FromImage(_bmp);
+        graphics.FillRectangle(Brushes.White, _rect);
+        return graphics;
+    }
+
+    private PictureBox CreateCanvas() => new() {
+        Image = _bmp,
+        SizeMode = PictureBoxSizeMode.AutoSize,
+        Margin = CanvasMargin,
+    };
 
     private AlertBar CreateAlertBar() => new() {
         Width = _rect.Width,
