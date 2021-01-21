@@ -1767,7 +1767,7 @@ internal sealed class HelpButton : DualUseButton {
         if (_helpPanel is null)
             await OpenHelp();
         else
-            _helpPanel.Show();
+            _helpPanel.Activate();
     }
 
     private protected override void OnModifiedClick(EventArgs e)
@@ -2287,20 +2287,33 @@ internal static class ControlExtensions {
 /// Provides extension methods for interacting with LINQPad output panels.
 /// </summary>
 internal static class OutputPanelExtensions {
-    internal static void Show(this OutputPanel panel)
-        => Util.SelectedOutputPanelIndex = panel.GetIndex();
-
-    private static int GetIndex(this OutputPanel panel)
-    {
-        var index = Array.IndexOf(PanelManager.GetOutputPanels(), panel);
-
-        if (index < 0) {
-            throw new InvalidOperationException(
-                    "Bug: The panel is not displayed.");
-        }
-
-        return index + 1; // The array omits panel 0, the results panel.
-    }
+    // FIXME: Since I'm using this for important UI features--switching to the
+    // open help panel when Help is clicked again, and to a chart when its
+    // notification is clicked--it's very bad I'm violating encapsulation.
+    // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
+    // expected to use it and it may be removed (or worse, change) at any time.
+    // Unfortunately, there doesn't seem to be another way to do this.
+    // PanelManager.GetOutputPanels() returns an array of output panels, and
+    // writing to Util.SelectedOutputPanelIndex switches panels. When output
+    // panels are created in such a way as to be listed from left to right in
+    // the order of creation--such as when they are created sequentally by
+    // interacting with LINQPad controls in the Results panel--they are indexed
+    // in the same order and it is sufficient to add and subtract 1 [since
+    // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
+    // actually an OutputPanel object and thus doesn't appear in
+    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
+    // beleive because new panels are not necessarily added to the very end of
+    // the strip, but are instead usually added just to the right of the panel
+    // from which they're displayed. I don't think it's reasonable to attempt
+    // to maintain a correspondence between the two orders. (Besides writing to
+    // Util.SelectOutputPanelIndex, it is also possible to read from it, but
+    // the indices are not stable as panels open and close; caching an index to
+    // get back to it does not seems to work either, aside from 0 for getting
+    // back to the Results panel or checking if we are there.) What I need to
+    // do is investigate a bit futher; produce simple, reproducible examples;
+    // and inquire on the LINQPad forums and/or request a feature.
+    internal static void Activate(this OutputPanel panel)
+        => panel.Uncapsulate().Activate();
 }
 
 /// <summary>
