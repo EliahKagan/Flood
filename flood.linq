@@ -1198,7 +1198,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Button _openCloseHelp = new() {
         Text = "??? Help", // Placeholder text for height computation.
         AutoSize = true,
-        Margin = new(left: Pad, top: 0, right: 0, bottom: 0),
+        Margin = Padding.Empty,
     };
 
     private readonly MyWebBrowser _tips = new() {
