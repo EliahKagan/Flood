@@ -1786,10 +1786,11 @@ internal sealed class HelpButton : Button {
         _toolTip = new(_components) { ShowAlways = true };
         _supplier = supplier;
 
+        Text = "Help";
         AutoSize = true;
         Margin = Padding.Empty;
 
-        UpdateState();
+        UpdateToolTip();
     }
 
     protected override async void OnClick(EventArgs e)
@@ -1799,7 +1800,7 @@ internal sealed class HelpButton : Button {
         if (_helpPanel is null)
             await OpenHelp();
         else
-            _helpPanel.Close();
+            _helpPanel.Show();
     }
 
     protected override void Dispose(bool disposing)
@@ -1807,6 +1808,10 @@ internal sealed class HelpButton : Button {
         if (disposing) _components.Dispose();
         base.Dispose(disposing);
     }
+
+    private const string Title = "Flood Fill Visualization - Help";
+
+    private const string FileName = "help.html";
 
     private static void help_Navigating(object sender,
                                         HelpViewerNavigatingEventArgs e)
@@ -1830,36 +1835,28 @@ internal sealed class HelpButton : Button {
     private void helpPanel_PanelClosed(object? sender, EventArgs e)
     {
         _helpPanel = null;
-        UpdateState();
+        UpdateToolTip();
     }
 
     private async Task OpenHelp()
     {
-        const string title = "Flood Fill Visualization - Help";
-
         Enabled = false;
 
         var help = await _supplier();
-        help.Source = Files.GetDocUrl("help.html");
+        help.Source = Files.GetDocUrl(FileName);
         help.Navigating += help_Navigating;
-        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
+        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, Title);
         _helpPanel.PanelClosed += helpPanel_PanelClosed;
-
-        UpdateState();
-    }
-
-    private void UpdateState()
-    {
-        if (_helpPanel is null) {
-            Text = "Open Help";
-            _toolTip.SetToolTip(this, "View full help in new panel");
-        } else {
-            Text = "Close Help";
-            _toolTip.SetToolTip(this, "Close panel with full help");
-        }
+        UpdateToolTip();
 
         Enabled = true;
     }
+
+    private void UpdateToolTip()
+        =>  _toolTip.SetToolTip(this, _helpPanel switch {
+                null => "View the full help in a new panel",
+                _    => "Go to the panel with the full help"
+            });
 
     private readonly IContainer _components = new Container();
 
@@ -2262,6 +2259,26 @@ internal static class ControlExtensions {
     {
         var clientPoint = control.PointToClient(Control.MousePosition);
         return control.ClientRectangle.Contains(clientPoint);
+    }
+}
+
+/// <summary>
+/// Provides extension methods for interacting with LINQPad output panels.
+/// </summary>
+internal static class OutputPanelExtensions {
+    internal static void Show(this OutputPanel panel)
+        => Util.SelectedOutputPanelIndex = panel.GetIndex();
+
+    private static int GetIndex(this OutputPanel panel)
+    {
+        var index = Array.IndexOf(PanelManager.GetOutputPanels(), panel);
+
+        if (index < 0) {
+            throw new InvalidOperationException(
+                    "Bug: The panel is not displayed.");
+        }
+
+        return index + 1; // The array omits panel 0, the results panel.
     }
 }
 
