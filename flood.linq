@@ -899,11 +899,10 @@ internal sealed class MainPanel : TableLayoutPanel {
             e.Cancel = true;
             OpenMagnifierSettings();
         } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
-            _alert.Show(
-                $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                + $"Smooth edges of images and text{Ch.Rdquo}.",
-                onClick: OpenMagnifierSettings,
-                onDismiss: () => _checkMagnifierSettings = false);
+            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                        + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        onClick: OpenMagnifierSettings,
+                        onDismiss: () => _checkMagnifierSettings = false);
         }
     }
 
