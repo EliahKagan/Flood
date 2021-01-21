@@ -48,13 +48,21 @@ if (devmode) {
 
 static Size SuggestCanvasSize()
 {
-    // TODO: Maybe try to check which screen the LINQPad window is on.
-    var (screenWidth, screenHeight) = Screen.PrimaryScreen.Bounds.Size;
+    var (screenWidth, screenHeight) = GetBestScreen().Bounds.Size;
 
     var sideLength = (int)(Math.Min(screenWidth, screenHeight)
                             * defaultScreenFractionForCanvas);
 
     return new(width: sideLength, height: sideLength);
+}
+
+static Screen GetBestScreen()
+{
+    // We want the screen that (most of) the LINQPad window is on.
+    var screen = Screen.FromHandle(Util.HostWindowHandle);
+
+    // But fall back to the primary screen if we couldn't find that.
+    return screen.WorkingArea.IsEmpty ? Screen.PrimaryScreen : screen;
 }
 
 static Task<HelpViewer> GetOldHelpViewerAsync()
