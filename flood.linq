@@ -376,7 +376,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         _alert = CreateAlertBar();
         _help = new HelpButton(supplier);
-        _toggles = CreateToggles();
+        _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert);
         _stop = CreateStop();
         _charting = CreateCharting();
@@ -520,7 +520,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = CanvasMargin,
     };
 
-    private TableLayoutPanel CreateToggles()
+    private TableLayoutPanel CreateHelpButtons()
     {
         var toggles = new TableLayoutPanel {
             RowCount = 1,
@@ -559,8 +559,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         infoBar.Controls.Add(_status, column: 2, row: 0);
-        infoBar.Controls.Add(_toggles, column: 3, row: 0);
-        infoBar.Height = _toggles.Height; // Must be after adding _toggles.
+        infoBar.Controls.Add(_helpButtons, column: 3, row: 0);
+
+        // Must be after adding _helpButtons.
+        infoBar.Height = _helpButtons.Height;
+
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
         infoBar.Controls.Add(_stop, column: 1, row: 0);
         infoBar.Controls.Add(_charting, column: 2, row: 0);
@@ -1074,7 +1077,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Font = new(Label.DefaultFont.FontFamily, StatusFontSize),
     };
 
-    private readonly TableLayoutPanel _toggles;
+    private readonly TableLayoutPanel _helpButtons;
 
     private readonly DualUseButton _magnify;
 
