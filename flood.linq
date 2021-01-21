@@ -31,7 +31,7 @@
 
 const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
-var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
+var devmode = GotKey.Shift;
 
 // Make dump headings bigger. (See Launcher.Display for further customization.)
 Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
@@ -369,7 +369,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _alert = CreateAlertBar();
         _help = new HelpButton(supplier);
         _toggles = CreateToggles();
-        _magnify = CreateMagnify();
+        _magnify = new MagnifyButton(_showHideTips.Height, _alert);
         _stop = CreateStop();
         _charting = CreateCharting();
         _infoBar = CreateInfoBar();
@@ -486,15 +486,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
 
-    private static bool ShiftIsPressed => ModifierKeys.HasFlag(Keys.Shift);
-
-    private static bool CtrlIsPressed => ModifierKeys.HasFlag(Keys.Control);
-
-    private static bool AltIsPressed => ModifierKeys.HasFlag(Keys.Alt);
-
-    private static bool SuperIsPressed
-        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
-
     private static int DecideSpeed()
         => (ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -502,32 +493,6 @@ internal sealed class MainPanel : TableLayoutPanel {
             Keys.Shift | Keys.Control => 10,
             _                         =>  5
         };
-
-    private int SmallButtonSize => _showHideTips.Height;
-
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(MainPanel)})");
-
-    private static bool HaveMagnifierSmoothing
-    {
-        get {
-            try {
-                var result = Registry.GetValue(
-                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
-                    "UseBitmapSmoothing",
-                    null);
-
-                return result is int value && value != 0;
-            } catch (SystemException ex) when (ex is SecurityException
-                                                  or IOException) {
-                Warn("Couldn't check for magnifier smoothing.");
-                return false;
-            }
-        }
-    }
-
-    private static void OpenMagnifierSettings()
-        => Shell.Execute("ms-settings:easeofaccess-magnifier");
 
     private Graphics CreateCanvasGraphics()
     {
@@ -564,21 +529,16 @@ internal sealed class MainPanel : TableLayoutPanel {
         return toggles;
     }
 
-    private ApplicationButton CreateMagnify()
-        => new(executablePath: Files.GetSystem32ExePath("magnify"),
-               SmallButtonSize,
-               fallbackDescription: "Magnifier");
-
     private Button CreateStop()
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
                             disabledBitmapFilename: "stop-faded.bmp",
-                            SmallButtonSize) { Visible = false };
+                            _showHideTips.Height) { Visible = false };
 
     private AnimatedBitmapCheckBox CreateCharting()
         => new(from i in Enumerable.Range(1, 6)
                select new CheckBoxBitmapFilenamePair($"chart{i}.bmp",
                                                      $"chart{i}-gray.bmp"),
-               SmallButtonSize,
+               _showHideTips.Height,
                FrameSequence.Oscillating);
 
     private TableLayoutPanel CreateInfoBar()
@@ -629,9 +589,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
         UpdateShowHideTips();
     }
-
-    private void UpdateMagnifyToolTip()
-        => _magnify.SetToolTip(ShiftIsPressed ? "Magnifier Settings" : null);
 
     private void UpdateStopButton()
     {
@@ -685,13 +642,14 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatusText(strategy, speed, _jobs);
         UpdateStatusToolTip(strategy, speed, _jobs);
 
-        // TODO: This doesn't conceptually belong here, but it needs to trigger
+        // TODO: These don't conceptually belong here, but they need to trigger
         // under the same conditions that update the speed. Refactor so the
         // code makes more sense, or avoid carrying over this confusion when
         // splitting up and rewriting UpdateStatus--as will have to be done
         // the status bar is converted from a label to a toolstrip or other
         // collection of multiple controls.
-        UpdateMagnifyToolTip();
+        _magnify.UpdateToolTip();
+        _help.UpdateToolTip();
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
     }
@@ -751,7 +709,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
-        _magnify.StartingApplication += magnify_StartingApplication;
         _stop.Click += stop_Click;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
@@ -805,7 +762,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (!_rect.Contains(e.Location)) return;
 
         switch (e.Button) {
-        case MouseButtons.Left when SuperIsPressed:
+        case MouseButtons.Left when GotKey.Super:
             InstantFill(e.Location, Color.Black);
             break;
 
@@ -814,11 +771,11 @@ internal sealed class MainPanel : TableLayoutPanel {
             _canvas.Invalidate(e.Location);
             break;
 
-        case MouseButtons.Right when SuperIsPressed:
+        case MouseButtons.Right when GotKey.Super:
             await RecursiveFloodFillAsync(e.Location, Color.Orange);
             break;
 
-        case MouseButtons.Right when AltIsPressed:
+        case MouseButtons.Right when GotKey.Alt:
             await FloodFillAsync(new RandomFringe<Point>(_generator),
                                  e.Location,
                                  Color.Yellow);
@@ -830,7 +787,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                                  Color.Red);
             break;
 
-        case MouseButtons.Middle when AltIsPressed:
+        case MouseButtons.Middle when GotKey.Alt:
             await FloodFillAsync(new DequeFringe<Point>(_generator),
                                  e.Location,
                                  Color.Purple);
@@ -855,7 +812,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (e.Delta == 0) return; // I'm not sure if this is possible.
         ((HandledMouseEventArgs)e).Handled = true;
 
-        if (!ShiftIsPressed) {
+        if (!GotKey.Shift) {
             // Scrolling without Shift cycles neighbor enumeration strategies.
             if (scrollingDown)
                 _neighborEnumerationStrategies.CycleNext();
@@ -867,7 +824,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             _alert.Show(
                 $"{Ch.Ldquo}{_neighborEnumerationStrategies.Current}{Ch.Rdquo}"
                 + " strategy has no sub-strategies to scroll.");
-        } else if (CtrlIsPressed) {
+        } else if (GotKey.Ctrl) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
                 strategy.CycleFastAheadSubStrategy();
@@ -882,20 +839,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         UpdateStatus();
-    }
-
-    private void magnify_StartingApplication(ApplicationButton sender,
-                                             StartingApplicationEventArgs e)
-    {
-        if (ShiftIsPressed) {
-            e.Cancel = true;
-            OpenMagnifierSettings();
-        } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
-            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                        + $"Smooth edges of images and text{Ch.Rdquo}.",
-                        onClick: OpenMagnifierSettings,
-                        onDismiss: () => _checkMagnifierSettings = false);
-        }
     }
 
     private void stop_Click(object? sender, EventArgs e)
@@ -1125,7 +1068,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly TableLayoutPanel _toggles;
 
-    private readonly ApplicationButton _magnify;
+    private readonly DualUseButton _magnify;
 
     private readonly Button _stop;
 
@@ -1140,7 +1083,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
 
-    private readonly Button _help;
+    private readonly DualUseButton _help;
 
     private readonly MyWebBrowser _tips = new() {
         Visible = false,
@@ -1154,8 +1097,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
-
-    private bool _checkMagnifierSettings = true;
 
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
@@ -1399,72 +1340,98 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
-/// Provides the ability to cancel the
-/// <see cref="ApplicationButton.StartingApplication"/> event.
+/// A square button to launch the system Magnifier or configure it in Settings.
 /// </summary>
-internal sealed class StartingApplicationEventArgs : EventArgs {
-    internal bool Cancel { get; set; } = false;
-}
+internal sealed class MagnifyButton : ApplicationButton {
+    internal MagnifyButton(int sideLength, AlertBar alert)
+            : base(executablePath: Files.GetSystem32ExePath("magnify"),
+                   sideLength: sideLength,
+                   fallbackDescription: "Magnifier")
+        => _alert = alert;
 
-/// <summary>
-/// Represents a method that will handle the
-/// <see cref="ApplicationButton.StartingApplication"/> event.
-/// </summary>
-internal delegate void
-StartingApplicationEventHandler(ApplicationButton sender,
-                                StartingApplicationEventArgs e);
+    private protected override string ModifiedToolTip => "Magnifier Settings";
+
+    private protected override void OnMainClick(EventArgs e)
+    {
+        base.OnMainClick(e);
+
+        if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
+            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                        + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        onClick: OpenMagnifierSettings,
+                        onDismiss: () => _checkMagnifierSettings = false);
+        }
+    }
+
+    private protected override void OnModifiedClick(EventArgs e)
+        => OpenMagnifierSettings();
+
+    private static bool HaveMagnifierSmoothing
+    {
+        get {
+            try {
+                var result = Registry.GetValue(
+                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
+                    "UseBitmapSmoothing",
+                    null);
+
+                return result is int value && value != 0;
+            } catch (SystemException ex) when (ex is SecurityException
+                                                  or IOException) {
+                Warn("Couldn't check for magnifier smoothing.");
+                return false;
+            }
+        }
+    }
+
+    private static void OpenMagnifierSettings()
+        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MagnifyButton)})");
+
+    private readonly AlertBar _alert;
+
+    private bool _checkMagnifierSettings = true;
+}
 
 /// <summary>
 /// A square button to launch an application, showing an icon and (optionally)
 /// toolip obtained from the executable's metadata.
 /// </summary>
-internal sealed class ApplicationButton : Button {
+internal abstract class ApplicationButton : DualUseButton {
     internal ApplicationButton(string executablePath,
                                int sideLength,
                                string? fallbackDescription = null)
     {
         Width = Height = sideLength;
-        Margin = Padding.Empty;
         BackgroundImageLayout = ImageLayout.Stretch;
-
-        _toolTip = new(_components) { ShowAlways = true };
 
         _path = executablePath;
 
-        _description = FileVersionInfo.GetVersionInfo(_path).FileDescription
+        MainToolTip = FileVersionInfo.GetVersionInfo(_path).FileDescription
                         ?? fallbackDescription
                         ?? string.Empty;
 
         _bitmap = CreateBitmap(_path);
-
         try {
             BackgroundImage = _bitmap;
-            SetToolTip();
         } catch {
-            DisposeState();
+            _bitmap.Dispose();
             throw;
         }
     }
 
-    internal event StartingApplicationEventHandler? StartingApplication;
-
-    internal void SetToolTip(string? caption = null)
-        => _toolTip.SetToolTip(this, caption ?? _description);
-
-    protected override void OnClick(EventArgs e)
-    {
-        base.OnClick(e);
-
-        var eStartingApplication = new StartingApplicationEventArgs();
-        StartingApplication?.Invoke(this, eStartingApplication);
-        if (!eStartingApplication.Cancel) Shell.Execute(_path);
-    }
-
     protected override void Dispose(bool disposing)
     {
-        if (disposing) DisposeState();
+        if (disposing) _bitmap.Dispose();
         base.Dispose(disposing);
     }
+
+    private protected override string MainToolTip { get; }
+
+    private protected override void OnMainClick(EventArgs e)
+        => Shell.Execute(_path);
 
     private static Bitmap CreateBitmap(string path)
     {
@@ -1502,18 +1469,6 @@ internal sealed class ApplicationButton : Button {
 
     [DllImport("user32", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr hIcon);
-
-    private void DisposeState()
-    {
-        _components.Dispose();
-        _bitmap.Dispose();
-    }
-
-    private readonly IContainer _components = new Container();
-
-    private readonly ToolTip _toolTip;
-
-    private readonly string _description;
 
     private readonly string _path;
 
@@ -1780,33 +1735,40 @@ internal sealed class MyWebBrowser : WebBrowser {
 /// This is a bridge between <see cref="MainPanel"/> and
 /// <see cref="HelpViewer"/>.
 /// </remarks>
-internal sealed class HelpButton : Button {
+internal sealed class HelpButton : DualUseButton {
     internal HelpButton(HelpViewerSupplier supplier)
     {
-        _toolTip = new(_components) { ShowAlways = true };
         _supplier = supplier;
 
         Text = "Help";
         AutoSize = true;
-        Margin = Padding.Empty;
-
-        UpdateToolTip();
     }
 
-    protected override async void OnClick(EventArgs e)
-    {
-        base.OnClick(e);
+    private protected override string MainToolTip
+        => _helpPanel is null ? "View the full help in a new panel"
+                              : "Go to the panel with the full help";
 
+    private protected override string ModifiedToolTip
+        => "Open the full help in your web browser";
+
+    private protected override async void OnMainClick(EventArgs e)
+    {
         if (_helpPanel is null)
             await OpenHelp();
         else
             _helpPanel.Show();
     }
 
-    protected override void Dispose(bool disposing)
+    private protected override void OnModifiedClick(EventArgs e)
     {
-        if (disposing) _components.Dispose();
-        base.Dispose(disposing);
+        var uri = Files.GetDocUrl(FileName);
+
+        if (!uri.SchemeIs(Uri.UriSchemeFile)) {
+            throw new InvalidOperationException(
+                    "Bug: Help URI isn't a file:/// URL");
+        }
+
+        Shell.Execute(uri.AbsoluteUri);
     }
 
     private const string Title = "Flood Fill Visualization - Help";
@@ -1852,19 +1814,67 @@ internal sealed class HelpButton : Button {
         Enabled = true;
     }
 
-    private void UpdateToolTip()
-        =>  _toolTip.SetToolTip(this, _helpPanel switch {
-                null => "View the full help in a new panel",
-                _    => "Go to the panel with the full help"
-            });
+    private readonly HelpViewerSupplier _supplier;
+
+    private OutputPanel? _helpPanel = null;
+}
+
+/// <summary>
+/// A button with a primary (non-Shift) action and secondary (Shift) action,
+/// and a tooltip that changes accordingly.
+/// </summary>
+/// <remarks>
+/// Modifier keys are checked when the button is clicked, but the state can
+/// also be refreshed, so the tooltip text can change immediately, even when
+/// the control is not focused and the tooltip is currently visible.
+/// </remarks>
+internal abstract class DualUseButton : Button {
+    internal DualUseButton()
+    {
+        Margin = Padding.Empty;
+        _toolTip = new(_components) { ShowAlways = true };
+    }
+
+    internal void UpdateToolTip() => _toolTip.SetToolTip(this, CurrentToolTip);
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        UpdateToolTip();
+    }
+
+    protected override void OnClick(EventArgs e)
+    {
+        var doModified = GotKey.Shift;
+
+        base.OnClick(e);
+
+        if (doModified)
+            OnModifiedClick(e);
+        else
+            OnMainClick(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private protected abstract string MainToolTip { get; }
+
+    private protected abstract string ModifiedToolTip { get; }
+
+    private protected abstract void OnMainClick(EventArgs e);
+
+    private protected abstract void OnModifiedClick(EventArgs e);
+
+    private string CurrentToolTip
+        => GotKey.Shift ? ModifiedToolTip : MainToolTip;
 
     private readonly IContainer _components = new Container();
 
     private readonly ToolTip _toolTip;
-
-    private readonly HelpViewerSupplier _supplier;
-
-    private OutputPanel? _helpPanel = null;
 }
 
 /// <summary>
@@ -2803,6 +2813,18 @@ internal readonly ref struct LockedBits {
     private readonly BitmapData _metadata;
 
     private readonly Span<int> _argbs;
+}
+
+/// <summary>Convienice properties for polling modifier keys.</summary>
+internal static class GotKey {
+    internal static bool Shift => Control.ModifierKeys.HasFlag(Keys.Shift);
+
+    internal static bool Ctrl => Control.ModifierKeys.HasFlag(Keys.Control);
+
+    internal static bool Alt => Control.ModifierKeys.HasFlag(Keys.Alt);
+
+    internal static bool Super
+        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
 }
 
 /// <summary>Named aliases for some Unicode characters.</summary>
