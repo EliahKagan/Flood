@@ -944,7 +944,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         AddChartingJob();
 
-        var charter = Charter.StartNew($"Job {_jobsEver} ({label} fill)");
+        var charter = Charter.StartNew($"Job {_jobsEver} ({label} fill)",
+                                       _alert);
 
         return new(fromArgb,
                    speed,
@@ -2287,19 +2288,46 @@ internal static class ControlExtensions {
 /// Provides extension methods for interacting with LINQPad output panels.
 /// </summary>
 internal static class OutputPanelExtensions {
-    internal static void Show(this OutputPanel panel)
-        => Util.SelectedOutputPanelIndex = panel.GetIndex();
-
-    private static int GetIndex(this OutputPanel panel)
+    internal static OutputPanel BackgroundControl(Control control,
+                                                  string panelTitle)
     {
-        var index = Array.IndexOf(PanelManager.GetOutputPanels(), panel);
+        var oldPanel = CurrentPanel;
+        var newPanel = PanelManager.DisplayControl(control, panelTitle);
+        oldPanel.Show();
+        return newPanel;
+    }
 
-        if (index < 0) {
+    internal static void Show(this OutputPanel? panel)
+    {
+        if (!panel.TryShow()) {
             throw new InvalidOperationException(
-                    "Bug: The panel is not displayed.");
+                    "Bug: The panel is closed or otherwise unavailable.");
+        }
+    }
+
+    internal static bool TryShow(this OutputPanel? panel)
+    {
+        if (TryGetIndex(panel) is int index) {
+            Util.SelectedOutputPanelIndex = index;
+            return true;
         }
 
-        return index + 1; // The array omits panel 0, the results panel.
+        return false;
+    }
+
+    private static OutputPanel? CurrentPanel
+        => Util.SelectedOutputPanelIndex switch {
+            0 => null, // The array omits the results panel.
+            var index => PanelManager.GetOutputPanels()[index - 1],
+        };
+
+    private static int? TryGetIndex(this OutputPanel? panel)
+    {
+        if (panel is null) return 0; // The array omits the results panel.
+
+        var arrayIndex = Array.IndexOf(PanelManager.GetOutputPanels(), panel);
+        if (arrayIndex < 0) return null;
+        return arrayIndex + 1;
     }
 }
 
@@ -2636,7 +2664,8 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
-    internal static Charter StartNew(string name) => new(name);
+    internal static Charter StartNew(string name, AlertBar alert)
+        => new(name, alert);
 
     internal void Finish()
     {
@@ -2646,7 +2675,8 @@ internal sealed class Charter {
         CustomizeSeries(chart);
         CustomizeArea(chart);
         TryCustomizeToolTip(chart);
-        chart.Dump(_name);
+
+        DisplayChart(chart);
     }
 
     internal void Update() => _times.Add(_timer.Elapsed);
@@ -2657,7 +2687,8 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name) => _name = name;
+    private Charter(string name, AlertBar alert)
+        => (_name, _alert) = (name, alert);
 
     private static Font ChartTitleFont { get; } =
         new Font("Segoe UI Semibold", LabelFontSize);
@@ -2728,10 +2759,24 @@ internal sealed class Charter {
         toolTip.InitialDelay = toolTip.ReshowDelay = ToolTipDelay;
     }
 
+    private void DisplayChart(Chart chart)
+    {
+        var panel = OutputPanelExtensions.BackgroundControl(chart, _name);
+
+        _alert.Show($"{_name} has charted.", onClick: () => {
+            if (panel.TryShow())
+                _alert.Hide();
+            else
+                _alert.Show($"{_name} chart was closed and can't be shown.");
+        });
+    }
+
     private static void Warn(string message)
         => message.Dump($"Warning ({nameof(Charter)})");
 
     private readonly string _name;
+
+    private readonly AlertBar _alert;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
