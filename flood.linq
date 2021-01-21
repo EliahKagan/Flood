@@ -360,7 +360,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         _nonessentialTimer = new(_components) { Interval = NonessentialDelay };
         _toolTip = new(_components) { ShowAlways = true };
-        _helpViewerSupplier = supplier;
 
         _rect = new(Point.Empty, canvasSize);
         _bmp = new(width: _rect.Width, height: _rect.Height);
@@ -368,6 +367,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
+        _help = new HelpButton(supplier);
         _toggles = CreateToggles();
         _magnify = CreateMagnify();
         _stop = CreateStop();
@@ -559,7 +559,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         toggles.Controls.Add(_showHideTips);
-        toggles.Controls.Add(_openCloseHelp);
+        toggles.Controls.Add(_help);
 
         return toggles;
     }
@@ -628,7 +628,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateCharting();
         UpdateStatus();
         UpdateShowHideTips();
-        UpdateOpenCloseHelp();
     }
 
     private void UpdateMagnifyToolTip()
@@ -743,19 +742,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
-    private void UpdateOpenCloseHelp()
-    {
-        if (_helpPanel is null) {
-            _openCloseHelp.Text = "Open Help";
-            _toolTip.SetToolTip(_openCloseHelp, "View full help in new panel");
-        } else {
-            _openCloseHelp.Text = "Close Help";
-            _toolTip.SetToolTip(_openCloseHelp, "Close panel with full help");
-        }
-
-        _openCloseHelp.Enabled = true;
-    }
-
     private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { Dispose(); };
@@ -769,7 +755,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop.Click += stop_Click;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
-        _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
 
         // Update the status bar from modifier keys pressed or released while
@@ -926,57 +911,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateShowHideTips();
     }
 
-    private async void openCloseHelp_Click(object? sender, EventArgs e)
-    {
-        if (_helpPanel is null)
-            await OpenHelp();
-        else
-            _helpPanel.Close();
-    }
-
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
-
-    private void helpPanel_PanelClosed(object? sender, EventArgs e)
-    {
-        _helpPanel = null;
-        UpdateOpenCloseHelp();
-    }
-
-    private static void help_Navigating(object sender,
-                                        HelpViewerNavigatingEventArgs e)
-    {
-        // Open file:// URLs normally, inside the help browser.
-        if  (e.Uri.SchemeIs(Uri.UriSchemeFile)) return;
-
-        // No other URLs shall be opened in the help browser panel.
-        e.Cancel = true;
-
-        // Open web links externally, in the default browser. [This check is
-        // also important for security, to make sure we are actually opening
-        // them in a web browser, i.e., a program (or COM object) registered as
-        // an appropriate protocol handler. We can't guarantee the user won't
-        // manage to navigate somewhere that offers up a hyperlink starting
-        // with something ShellExecuteExW would take as a Windows executable.]
-        if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
-            Shell.Execute(e.Uri.AbsoluteUri);
-    }
-
-    private async Task OpenHelp()
-    {
-        const string title = "Flood Fill Visualization - Help";
-
-        _openCloseHelp.Enabled = false;
-
-        var help = await _helpViewerSupplier();
-        help.Source = Files.GetDocUrl("help.html");
-        help.Navigating += help_Navigating;
-        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
-        _helpPanel.PanelClosed += helpPanel_PanelClosed;
-
-        UpdateOpenCloseHelp();
-    }
 
     private void StopAllFills()
     {
@@ -1165,8 +1102,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly ToolTip _toolTip;
 
-    private readonly HelpViewerSupplier _helpViewerSupplier;
-
     private readonly Rectangle _rect;
 
     private readonly Bitmap _bmp;
@@ -1202,11 +1137,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
 
-    private readonly Button _openCloseHelp = new() {
-        Text = "??? Help", // Placeholder text for height computation.
-        AutoSize = true,
-        Margin = Padding.Empty,
-    };
+    private readonly Button _help;
 
     private readonly MyWebBrowser _tips = new() {
         Visible = false,
@@ -1214,8 +1145,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         ScrollBarsEnabled = false,
         Url = Files.GetDocUrl("tips.html"),
     };
-
-    private OutputPanel? _helpPanel = null;
 
     private readonly Func<int, int> _generator =
         Permutations.CreateRandomGenerator();
@@ -1841,6 +1770,102 @@ internal sealed class MyWebBrowser : WebBrowser {
         KEYUP    = 0x0101,
         SYSKEYUP = 0x0105,
     }
+}
+
+/// <summary>Help launcher button.</summary>
+/// <remarks>
+/// This is a bridge between <see cref="MainPanel"/> and
+/// <see cref="HelpViewer"/>.
+/// </remarks>
+internal sealed class HelpButton : Button {
+    internal HelpButton(HelpViewerSupplier supplier)
+    {
+        _toolTip = new(_components) { ShowAlways = true };
+        _supplier = supplier;
+
+        Text = "??? Help"; // Placeholder text for height computation. FIXME: Remove?
+        AutoSize = true;
+        Margin = Padding.Empty;
+
+        UpdateState();
+    }
+
+    protected override async void OnClick(EventArgs e)
+    {
+        base.OnClick(e);
+
+        if (_helpPanel is null)
+            await OpenHelp();
+        else
+            _helpPanel.Close();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private static void help_Navigating(object sender,
+                                        HelpViewerNavigatingEventArgs e)
+    {
+        // Open file:// URLs normally, inside the help browser.
+        if (e.Uri.SchemeIs(Uri.UriSchemeFile)) return;
+
+        // No other URLs shall be opened in the help browser panel.
+        e.Cancel = true;
+
+        // Open web links externally, in the default browser. [This check is
+        // also important for security, to make sure we are actually opening
+        // them in a web browser, i.e., a program (or COM object) registered as
+        // an appropriate protocol handler. We can't guarantee the user won't
+        // manage to navigate somewhere that offers up a hyperlink starting
+        // with something ShellExecuteExW would take as a Windows executable.]
+        if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
+            Shell.Execute(e.Uri.AbsoluteUri);
+    }
+
+    private void helpPanel_PanelClosed(object? sender, EventArgs e)
+    {
+        _helpPanel = null;
+        UpdateState();
+    }
+
+    private async Task OpenHelp()
+    {
+        const string title = "Flood Fill Visualization - Help";
+
+        Enabled = false;
+
+        var help = await _supplier();
+        help.Source = Files.GetDocUrl("help.html");
+        help.Navigating += help_Navigating;
+        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
+        _helpPanel.PanelClosed += helpPanel_PanelClosed;
+
+        UpdateState();
+    }
+
+    private void UpdateState()
+    {
+        if (_helpPanel is null) {
+            Text = "Open Help";
+            _toolTip.SetToolTip(this, "View full help in new panel");
+        } else {
+            Text = "Close Help";
+            _toolTip.SetToolTip(this, "Close panel with full help");
+        }
+
+        Enabled = true;
+    }
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
+
+    private readonly HelpViewerSupplier _supplier;
+
+    private OutputPanel? _helpPanel = null;
 }
 
 /// <summary>
