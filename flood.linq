@@ -1132,7 +1132,10 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly AnimatedBitmapCheckBox _charting;
 
     private readonly Button _showHideTips = new() {
-        Text = "??? Tips", // Placeholder text for height computation.
+        // Placeholder text for height computation. Without this, some other
+        // parts of the infobar don't scale correctly at >100% display scaling.
+        Text = "??? Tips",
+
         AutoSize = true,
         Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
@@ -1783,7 +1786,6 @@ internal sealed class HelpButton : Button {
         _toolTip = new(_components) { ShowAlways = true };
         _supplier = supplier;
 
-        Text = "??? Help"; // Placeholder text for height computation. FIXME: Remove?
         AutoSize = true;
         Margin = Padding.Empty;
 
