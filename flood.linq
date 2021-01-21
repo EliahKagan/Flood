@@ -1768,7 +1768,7 @@ internal sealed class HelpButton : DualUseButton {
         if (_helpPanel is null)
             await OpenHelp();
         else
-            _helpPanel.Show();
+            _helpPanel.Activate();
     }
 
     private protected override void OnModifiedClick(EventArgs e)
@@ -2288,46 +2288,67 @@ internal static class ControlExtensions {
 /// Provides extension methods for interacting with LINQPad output panels.
 /// </summary>
 internal static class OutputPanelExtensions {
+    // FIXME: Since I'm using this for important UI features--switching to the
+    // open help panel when Help is clicked again, and to a chart when its
+    // notification is clicked--it's very bad I'm violating encapsulation.
+    // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
+    // expected to use it and it may be removed (or worse, change) at any time.
+    // Unfortunately, there doesn't seem to be another way to do this.
+    // PanelManager.GetOutputPanels() returns an array of output panels, and
+    // writing to Util.SelectedOutputPanelIndex switches panels. When output
+    // panels are created in such a way as to be listed from left to right in
+    // the order of creation--such as when they are created sequentally by
+    // interacting with LINQPad controls in the Results panel--they are indexed
+    // in the same order and it is sufficient to add and subtract 1 [since
+    // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
+    // actually an OutputPanel object and thus doesn't appear in
+    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
+    // beleive because new panels are not necessarily added to the very end of
+    // the strip, but are instead usually added just to the right of the panel
+    // from which they're displayed. I don't think it's reasonable to attempt
+    // to maintain a correspondence between the two orders. (Besides writing to
+    // Util.SelectOutputPanelIndex, it is also possible to read from it, but
+    // the indices are not stable as panels open and close; caching an index to
+    // get back to it does not seems to work either, aside from 0 for getting
+    // back to the Results panel or checking if we are there.) What I need to
+    // do is investigate a bit futher; produce simple, reproducible examples;
+    // and inquire on the LINQPad forums and/or request a feature.
+
     internal static OutputPanel BackgroundControl(Control control,
                                                   string panelTitle)
     {
-        var oldPanel = CurrentPanel;
+        var oldPanel = PanelManager.GetOutputPanels()
+                                   .SingleOrDefault(panel => panel.IsVisible);
+
         var newPanel = PanelManager.DisplayControl(control, panelTitle);
-        oldPanel.Show();
+
+        if (oldPanel is null) {
+            // The "Results" panel is always panel 0 for this property.
+            Util.SelectedOutputPanelIndex = 0;
+        } else {
+            // Other panels aren't realiably indexed; do the activation hack.
+            oldPanel.Activate();
+        }
+
         return newPanel;
     }
 
-    internal static void Show(this OutputPanel? panel)
+    internal static bool TryActivate(this OutputPanel panel)
     {
-        if (!panel.TryShow()) {
-            throw new InvalidOperationException(
-                    "Bug: The panel is closed or otherwise unavailable.");
-        }
-    }
-
-    internal static bool TryShow(this OutputPanel? panel)
-    {
-        if (TryGetIndex(panel) is int index) {
-            Util.SelectedOutputPanelIndex = index;
+        if (PanelManager.GetOutputPanels().Contains(panel)) {
+            panel.Uncapsulate().Activate();
             return true;
         }
 
         return false;
     }
 
-    private static OutputPanel? CurrentPanel
-        => Util.SelectedOutputPanelIndex switch {
-            0 => null, // The array omits the results panel.
-            var index => PanelManager.GetOutputPanels()[index - 1],
-        };
-
-    private static int? TryGetIndex(this OutputPanel? panel)
+    internal static void Activate(this OutputPanel panel)
     {
-        if (panel is null) return 0; // The array omits the results panel.
-
-        var arrayIndex = Array.IndexOf(PanelManager.GetOutputPanels(), panel);
-        if (arrayIndex < 0) return null;
-        return arrayIndex + 1;
+        if (!panel.TryActivate()) {
+            throw new InvalidOperationException(
+                    "Bug: The panel is closed or otherwise unavailable.");
+        }
     }
 }
 
@@ -2764,7 +2785,7 @@ internal sealed class Charter {
         var panel = OutputPanelExtensions.BackgroundControl(chart, _name);
 
         _alert.Show($"{_name} has charted.", onClick: () => {
-            if (panel.TryShow())
+            if (panel.TryActivate())
                 _alert.Hide();
             else
                 _alert.Show($"{_name} chart was closed and can't be shown.");
