@@ -2293,22 +2293,14 @@ internal static class OutputPanelExtensions {
     internal static OutputPanel BackgroundControl(Control control,
                                                   string panelTitle)
     {
-        var prev = (_oldest == _older ? _older : _old);
-        var curIndex = Util.SelectedOutputPanelIndex;
-        var cur = CurrentVisiblePanel;
+        // This Rube Goldberg machine tries to get us back to where we started.
+        var visible = CurrentVisiblePanel;
+        var index = Util.SelectedOutputPanelIndex;
+        var cur = (index == 0 ? _old : visible);
+        //var best = (_oldest == _older ? _older : cur);
+        var best = (_older == cur ? _older : _oldest);
         var next = PanelManager.DisplayControl(control, panelTitle);
-
-        if (cur is not null) {
-            // Output panels aren't stably indexed. Do the activation hack.
-            cur.Activate();
-        } else if (curIndex == 0 || prev is null) {
-            // The "Results" panel is always selected as panel 0.
-            Util.SelectedOutputPanelIndex = 0;
-        } else {
-            // Nothing is visible, but we can guess the foreground panel.
-            prev.TryActivate();
-        }
-
+        if (!TrySwitch(best) && best != cur) TrySwitch(cur);
         return next;
     }
 
@@ -2360,6 +2352,16 @@ internal static class OutputPanelExtensions {
         => PanelManager.GetOutputPanels()
                        .SingleOrDefault(panel => panel.IsVisible);
 
+    private static bool TrySwitch(OutputPanel? panel)
+    {
+        if (panel is null) {
+            Util.SelectedOutputPanelIndex = 0;
+            return true;
+        }
+
+        return panel.TryActivate();
+    }
+
     // FIXME: See BackgroundControl(). These should all be instance members:
 
     static OutputPanelExtensions() => _timer.Tick += timer_Tick;
@@ -2374,7 +2376,7 @@ internal static class OutputPanelExtensions {
     }
 
     private static Timer _timer = new Timer {
-        Interval = 110,
+        Interval = 400, // FIXME: This is too big.
         Enabled = true,
     };
 
