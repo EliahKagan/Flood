@@ -2327,7 +2327,7 @@ internal static class OutputPanelExtensions {
     // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
     // actually an OutputPanel object and thus doesn't appear in
     // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
-    // beleive because new panels are not necessarily added to the very end of
+    // believe because new panels are not necessarily added to the very end of
     // the strip, but are instead usually added just to the right of the panel
     // from which they're displayed. I don't think it's reasonable to attempt
     // to maintain a correspondence between the two orders. (Besides writing to
@@ -2374,7 +2374,7 @@ internal static class OutputPanelExtensions {
     }
 
     private static Timer _timer = new Timer {
-        Interval = 110,
+        Interval = 350,
         Enabled = true,
     };
 
