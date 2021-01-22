@@ -2293,22 +2293,23 @@ internal static class OutputPanelExtensions {
     internal static OutputPanel BackgroundControl(Control control,
                                                   string panelTitle)
     {
+        var prev = (_oldest == _older ? _older : _old);
         var curIndex = Util.SelectedOutputPanelIndex;
-        var curPanel = CurrentVisiblePanel;
-        var nextPanel = PanelManager.DisplayControl(control, panelTitle);
+        var cur = CurrentVisiblePanel;
+        var next = PanelManager.DisplayControl(control, panelTitle);
 
-        if (curPanel is not null) {
-            // Output panels aren't reliably indexed. Do the activation hack.
-            curPanel.Activate();
-        } else if (curIndex == 0 || _oldPanel is null) {
-            // The "Results" panel is always panel 0 for this property.
+        if (cur is not null) {
+            // Output panels aren't stably indexed. Do the activation hack.
+            cur.Activate();
+        } else if (curIndex == 0 || prev is null) {
+            // The "Results" panel is always selected as panel 0.
             Util.SelectedOutputPanelIndex = 0;
         } else {
             // Nothing is visible, but we can guess the foreground panel.
-            _oldPanel.TryActivate();
+            prev.TryActivate();
         }
 
-        return nextPanel;
+        return next;
     }
 
     // FIXME: Since I'm using this for important UI features--switching to the
@@ -2365,10 +2366,11 @@ internal static class OutputPanelExtensions {
 
     private static void timer_Tick(object? sender, EventArgs e)
     {
-        if (Util.SelectedOutputPanelIndex == 0)
-            _oldPanel = null;
-        else if (CurrentVisiblePanel is OutputPanel panel)
-            _oldPanel = panel;
+        var last = (Util.SelectedOutputPanelIndex == 0
+                        ? null
+                        : CurrentVisiblePanel ?? _old);
+
+        (_oldest, _older, _old) = (_older, _old, last);
     }
 
     private static Timer _timer = new Timer {
@@ -2376,7 +2378,9 @@ internal static class OutputPanelExtensions {
         Enabled = true,
     };
 
-    private static OutputPanel? _oldPanel;
+    private static OutputPanel? _old = null;
+    private static OutputPanel? _older = null;
+    private static OutputPanel? _oldest = null;
 }
 
 /// <summary>
