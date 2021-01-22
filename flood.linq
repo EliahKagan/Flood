@@ -474,6 +474,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             StopAllFills();
 
             _components.Dispose();
+            _displayer.Dispose();
 
             _bmp.Dispose();
             _graphics.Dispose();
@@ -929,7 +930,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         ++_jobs;
         ++_jobsEver;
-
         UpdateStopButton();
         UpdateStatus();
 
@@ -943,9 +943,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         AddChartingJob();
-
-        var charter = Charter.StartNew($"Job {_jobsEver} ({label} fill)",
-                                       _alert);
+        var name = $"Job {_jobsEver} ({label} fill)";
+        var charter = Charter.StartNew(name, _alert, _displayer);
 
         return new(fromArgb,
                    speed,
@@ -1056,6 +1055,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Timer _nonessentialTimer;
 
     private readonly ToolTip _toolTip;
+
+    private readonly PanelDisplayer _displayer = new();
 
     private readonly Rectangle _rect;
 
@@ -2284,14 +2285,13 @@ internal static class ControlExtensions {
     }
 }
 
-/// <summary>
-/// Provides extension methods for interacting with LINQPad output panels.
-/// </summary>
-internal static class OutputPanelExtensions {
-    // FIXME: Move the global state this depends on into an object, and
-    // make this an instance method.
-    internal static OutputPanel BackgroundControl(Control control,
-                                                  string panelTitle)
+/// <summary>Helper for creating backgrounded output panels.</summary>
+internal sealed class PanelDisplayer : IDisposable {
+    internal PanelDisplayer() => _timer.Tick += timer_Tick;
+
+    public void Dispose() => _timer.Dispose();
+
+    internal OutputPanel BackgroundControl(Control control, string panelTitle)
     {
         var prev = (_oldest == _older ? _older : _old);
         var curIndex = Util.SelectedOutputPanelIndex;
@@ -2312,6 +2312,33 @@ internal static class OutputPanelExtensions {
         return next;
     }
 
+    private static OutputPanel? CurrentVisiblePanel
+        => PanelManager.GetOutputPanels()
+                       .SingleOrDefault(panel => panel.IsVisible);
+
+    private void timer_Tick(object? sender, EventArgs e)
+    {
+        var last = (Util.SelectedOutputPanelIndex == 0
+                        ? null
+                        : CurrentVisiblePanel ?? _old);
+
+        (_oldest, _older, _old) = (_older, _old, last);
+    }
+
+    private readonly Timer _timer = new Timer {
+        Interval = 350,
+        Enabled = true,
+    };
+
+    private OutputPanel? _old = null;
+    private OutputPanel? _older = null;
+    private OutputPanel? _oldest = null;
+}
+
+/// <summary>
+/// Provides extension methods for interacting with LINQPad output panels.
+/// </summary>
+internal static class OutputPanelExtensions {
     // FIXME: Since I'm using this for important UI features--switching to the
     // open help panel when Help is clicked again, and to a chart when its
     // notification is clicked--it's very bad I'm violating encapsulation.
@@ -2355,32 +2382,6 @@ internal static class OutputPanelExtensions {
                     "Bug: The panel is closed or otherwise unavailable.");
         }
     }
-
-    private static OutputPanel? CurrentVisiblePanel
-        => PanelManager.GetOutputPanels()
-                       .SingleOrDefault(panel => panel.IsVisible);
-
-    // FIXME: See BackgroundControl(). These should all be instance members:
-
-    static OutputPanelExtensions() => _timer.Tick += timer_Tick;
-
-    private static void timer_Tick(object? sender, EventArgs e)
-    {
-        var last = (Util.SelectedOutputPanelIndex == 0
-                        ? null
-                        : CurrentVisiblePanel ?? _old);
-
-        (_oldest, _older, _old) = (_older, _old, last);
-    }
-
-    private static Timer _timer = new Timer {
-        Interval = 350,
-        Enabled = true,
-    };
-
-    private static OutputPanel? _old = null;
-    private static OutputPanel? _older = null;
-    private static OutputPanel? _oldest = null;
 }
 
 /// <summary>
@@ -2716,8 +2717,9 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
-    internal static Charter StartNew(string name, AlertBar alert)
-        => new(name, alert);
+    internal static Charter
+    StartNew(string name, AlertBar alert, PanelDisplayer displayer)
+        => new(name, alert, displayer);
 
     internal void Finish()
     {
@@ -2739,8 +2741,8 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name, AlertBar alert)
-        => (_name, _alert) = (name, alert);
+    private Charter(string name, AlertBar alert, PanelDisplayer displayer)
+        => (_name, _alert, _displayer) = (name, alert, displayer);
 
     private static Font ChartTitleFont { get; } =
         new Font("Segoe UI Semibold", LabelFontSize);
@@ -2813,7 +2815,7 @@ internal sealed class Charter {
 
     private void DisplayChart(Chart chart)
     {
-        var panel = OutputPanelExtensions.BackgroundControl(chart, _name);
+        var panel = _displayer.BackgroundControl(chart, _name);
 
         _alert.Show($"{_name} has charted.", onClick: () => {
             if (panel.TryActivate()) {
@@ -2831,6 +2833,8 @@ internal sealed class Charter {
     private readonly string _name;
 
     private readonly AlertBar _alert;
+
+    private readonly PanelDisplayer _displayer;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
