@@ -2785,10 +2785,12 @@ internal sealed class Charter {
         var panel = OutputPanelExtensions.BackgroundControl(chart, _name);
 
         _alert.Show($"{_name} has charted.", onClick: () => {
-            if (panel.TryActivate())
+            if (panel.TryActivate()) {
                 _alert.Hide();
-            else
-                _alert.Show($"{_name} chart was closed and can't be shown.");
+            } else {
+                _alert.Show($"{_name}{Ch.Rsquo}s chart was closed and"
+                            + $" can{Ch.Rsquo}t be shown.");
+            }
         });
     }
 
