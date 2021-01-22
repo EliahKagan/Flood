@@ -2288,6 +2288,29 @@ internal static class ControlExtensions {
 /// Provides extension methods for interacting with LINQPad output panels.
 /// </summary>
 internal static class OutputPanelExtensions {
+    // FIXME: Move the global state this depends on into an object, and
+    // make this an instance method.
+    internal static OutputPanel BackgroundControl(Control control,
+                                                  string panelTitle)
+    {
+        var curIndex = Util.SelectedOutputPanelIndex;
+        var curPanel = CurrentVisiblePanel;
+        var nextPanel = PanelManager.DisplayControl(control, panelTitle);
+
+        if (curPanel is not null) {
+            // Output panels aren't reliably indexed. Do the activation hack.
+            curPanel.Activate();
+        } else if (curIndex == 0 || _oldPanel is null) {
+            // The "Results" panel is always panel 0 for this property.
+            Util.SelectedOutputPanelIndex = 0;
+        } else {
+            // Nothing is visible, but we can guess the foreground panel.
+            _oldPanel.TryActivate();
+        }
+
+        return nextPanel;
+    }
+
     // FIXME: Since I'm using this for important UI features--switching to the
     // open help panel when Help is clicked again, and to a chart when its
     // notification is clicked--it's very bad I'm violating encapsulation.
@@ -2313,26 +2336,7 @@ internal static class OutputPanelExtensions {
     // back to the Results panel or checking if we are there.) What I need to
     // do is investigate a bit futher; produce simple, reproducible examples;
     // and inquire on the LINQPad forums and/or request a feature.
-
-    internal static OutputPanel BackgroundControl(Control control,
-                                                  string panelTitle)
-    {
-        var oldPanel = PanelManager.GetOutputPanels()
-                                   .SingleOrDefault(panel => panel.IsVisible);
-
-        var newPanel = PanelManager.DisplayControl(control, panelTitle);
-
-        if (oldPanel is null) {
-            // The "Results" panel is always panel 0 for this property.
-            Util.SelectedOutputPanelIndex = 0;
-        } else {
-            // Other panels aren't realiably indexed; do the activation hack.
-            oldPanel.Activate();
-        }
-
-        return newPanel;
-    }
-
+    // FIXME: Make this comment shorter, or at least more readable.
     internal static bool TryActivate(this OutputPanel panel)
     {
         if (PanelManager.GetOutputPanels().Contains(panel)) {
@@ -2350,6 +2354,29 @@ internal static class OutputPanelExtensions {
                     "Bug: The panel is closed or otherwise unavailable.");
         }
     }
+
+    private static OutputPanel? CurrentVisiblePanel
+        => PanelManager.GetOutputPanels()
+                       .SingleOrDefault(panel => panel.IsVisible);
+
+    // FIXME: See BackgroundControl(). These should all be instance members:
+
+    static OutputPanelExtensions() => _timer.Tick += timer_Tick;
+
+    private static void timer_Tick(object? sender, EventArgs e)
+    {
+        if (Util.SelectedOutputPanelIndex == 0)
+            _oldPanel = null;
+        else if (CurrentVisiblePanel is OutputPanel panel)
+            _oldPanel = panel;
+    }
+
+    private static Timer _timer = new Timer {
+        Interval = 110,
+        Enabled = true,
+    };
+
+    private static OutputPanel? _oldPanel;
 }
 
 /// <summary>
