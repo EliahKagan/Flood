@@ -1446,11 +1446,14 @@ internal abstract class ApplicationButton : DualUseButton {
 
     private static Bitmap CreateBitmap(string path)
     {
-        var hIcon = ExtractIcon(Process.GetCurrentProcess().Handle, path, 0);
+        var hIcon = ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
+                                       path,
+                                       0);
+
         try {
             return Icon.FromHandle(hIcon).ToBitmap();
         } finally {
-            DestroyIcon(hIcon);
+            DestroyIconOrThrow(hIcon);
         }
     }
 
