@@ -357,8 +357,53 @@ internal sealed class Launcher {
     private uint? _oldWorstTimerResolution = null;
 }
 
-/// <summary>Helper for creating and switching output panels.</summary>
-internal sealed class PanelSwitcher : IDisposable {
+/// <summary>
+/// Represents a helper for creating and switching output panels.
+/// </summary>
+/// <remarks>
+/// See <see cref="PanelSwitcher"/>. Although it would make sense to have
+/// different implementations for different policies, the main purpose of this
+/// interface is to distinguish non-owning <see cref="PanelSwitcher"/>
+/// references.
+/// </remarks>
+internal interface IPanelSwitcher {
+    /// <summary>Switches to a LINQPad panel, if it is open.</summary>
+    /// <param name="panel">
+    /// The <see cref="LINQPad.OutputPanel"/> to switch to, or <c>null</c> to
+    /// switch to the "Results" panel.
+    /// </param>
+    /// <returns><c>true</c> on success, <c>false</c> on failure.</returns>
+    bool TrySwitch(OutputPanel? panel);
+
+    /// <summary>
+    /// Switches to a LINQPad if it is open. Throws an exception otherwise.
+    /// </summary>
+    /// <param name="panel">
+    /// The <see cref="LINQPad.OutputPanel"/> to switch to, or <c>null</c> to
+    /// switch to the "Results" panel.
+    /// </param>
+    /// <remarks>See <see cref="TrySwitch"/>.</remarks>
+    void Switch(OutputPanel? panel);
+
+    /// <summary>
+    /// Opens an output panel for a control and switches to it.
+    /// </summary>
+    /// <param name="control">The control to display in the panel.</param>
+    /// <param name="panelTitle">The panel's title in the toolstrip.</param>
+    /// <returns>The panel that was created.</returns>
+    OutputPanel DisplayForeground(Control control, string panelTitle);
+
+    /// <summary>
+    /// Opens an output panel for a control. Tries not to switch to it.
+    /// </summary?
+    /// <param name="control">The control to display in the panel.</param>
+    /// <param name="panelTitle">The panel's title in the toolstrip.</param>
+    /// <returns>The panel that was created.</returns>
+    OutputPanel DisplayBackground(Control control, string panelTitle);
+}
+
+/// <summary>Default implementation of <see cref="IPanelSwitcher"/>.</summary>
+internal sealed class PanelSwitcher : IPanelSwitcher, IDisposable {
     internal PanelSwitcher() => _timer.Tick += timer_Tick;
 
     // FIXME: Since I'm using this for important UI features--switching to the
@@ -389,7 +434,8 @@ internal sealed class PanelSwitcher : IDisposable {
     // checking if we are there. What I need to do is investigate a bit futher;
     // produce simple, reproducible examples; and inquire on the LINQPad forums
     // and/or request a feature.
-    internal bool TrySwitch(OutputPanel? panel)
+    /// <inheritdoc/>
+    public bool TrySwitch(OutputPanel? panel)
     {
         ThrowIfDisposed();
 
@@ -405,7 +451,8 @@ internal sealed class PanelSwitcher : IDisposable {
         return true;
     }
 
-    internal void Switch(OutputPanel? panel)
+    /// <inheritdoc/>
+    public void Switch(OutputPanel? panel)
     {
         if (!TrySwitch(panel)) {
             throw new InvalidOperationException(
@@ -413,7 +460,8 @@ internal sealed class PanelSwitcher : IDisposable {
         }
     }
 
-    internal OutputPanel DisplayForeground(Control control, string panelTitle)
+    /// <inheritdoc/>
+    public OutputPanel DisplayForeground(Control control, string panelTitle)
     {
         ThrowIfDisposed();
 
@@ -422,7 +470,13 @@ internal sealed class PanelSwitcher : IDisposable {
         return panel;
     }
 
-    internal OutputPanel DisplayBackground(Control control, string panelTitle)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// LINQPad doesn't support opening a new <see cref="OutputPanel"/> without
+    /// activating it. So this opens the panel and then, on a best-effort
+    /// basis, tries to switch back to the panel that is would next be active.
+    /// </remarks>
+    public OutputPanel DisplayBackground(Control control, string panelTitle)
     {
         var foreground = ForegroundPanel;
         var background = PanelManager.DisplayControl(control, panelTitle);
@@ -1874,7 +1928,7 @@ internal sealed class MyWebBrowser : WebBrowser {
 /// <see cref="HelpViewer"/>.
 /// </remarks>
 internal sealed class HelpButton : DualUseButton {
-    internal HelpButton(HelpViewerSupplier supplier, PanelSwitcher switcher)
+    internal HelpButton(HelpViewerSupplier supplier, IPanelSwitcher switcher)
     {
         (_supplier, _switcher) = (supplier, switcher);
 
@@ -1954,7 +2008,7 @@ internal sealed class HelpButton : DualUseButton {
 
     private readonly HelpViewerSupplier _supplier;
 
-    private readonly PanelSwitcher _switcher;
+    private readonly IPanelSwitcher _switcher;
 
     private OutputPanel? _helpPanel = null;
 }
@@ -2746,7 +2800,7 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
     internal static Charter
-    StartNew(string name, AlertBar alert, PanelSwitcher switcher)
+    StartNew(string name, AlertBar alert, IPanelSwitcher switcher)
         => new(name, alert, switcher);
 
     internal void Finish()
@@ -2769,7 +2823,7 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name, AlertBar alert, PanelSwitcher switcher)
+    private Charter(string name, AlertBar alert, IPanelSwitcher switcher)
         => (_name, _alert, _switcher) = (name, alert, switcher);
 
     private static Font ChartTitleFont { get; } =
@@ -2862,7 +2916,7 @@ internal sealed class Charter {
 
     private readonly AlertBar _alert;
 
-    private readonly PanelSwitcher _switcher;
+    private readonly IPanelSwitcher _switcher;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
