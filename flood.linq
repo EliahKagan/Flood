@@ -405,7 +405,7 @@ internal sealed class PanelSwitcher : IDisposable {
         return true;
     }
 
-    internal void Switch(OutputPanel panel)
+    internal void Switch(OutputPanel? panel)
     {
         if (!TrySwitch(panel)) {
             throw new InvalidOperationException(
