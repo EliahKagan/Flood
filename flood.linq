@@ -358,6 +358,106 @@ internal sealed class Launcher {
 }
 
 /// <summary>
+/// Functionality for switching and backgrounding output panels.
+/// </summary>
+internal sealed class PanelSwitcher : IDisposable {
+    // FIXME: Since I'm using this for important UI features--switching to the
+    // open help panel when Help is clicked again, and to a chart when its
+    // notification is clicked--it's very bad I'm violating encapsulation.
+    // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
+    // expected to use it and it may be removed (or worse, change) at any time.
+    // Unfortunately, there doesn't seem to be another way to do this.
+    //
+    // PanelManager.GetOutputPanels() returns an array of output panels, and
+    // writing to Util.SelectedOutputPanelIndex switches panels. When output
+    // panels are created in such a way as to be listed from left to right in
+    // the order of creation--such as when they are created sequentally by
+    // interacting with LINQPad controls in the Results panel--they are indexed
+    // in the same order and it is sufficient to add and subtract 1 [since
+    // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
+    // actually an OutputPanel object and thus doesn't appear in
+    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
+    // believe because new panels are not necessarily added to the very end of
+    // the strip, but are instead usually added just to the right of the panel
+    // from which they're displayed.
+    //
+    // I don't think it's reasonable to attempt to maintain a correspondence
+    // between the two orders. Besides writing to Util.SelectOutputPanelIndex,
+    // it is also possible to read from it, but the indices are not stable as
+    // panels open and close; caching an index to get back to it does not seems
+    // to work either, aside from 0 for getting back to the Results panel or
+    // checking if we are there. What I need to do is investigate a bit futher;
+    // produce simple, reproducible examples; and inquire on the LINQPad forums
+    // and/or request a feature.
+    internal static bool TrySwitch(OutputPanel panel)
+    {
+        if (PanelManager.GetOutputPanels().Contains(panel)) {
+            panel.Uncapsulate().Activate();
+            return true;
+        }
+
+        return false;
+    }
+
+    internal static void Switch(OutputPanel panel)
+    {
+        if (!TrySwitch(panel)) {
+            throw new InvalidOperationException(
+                    "Bug: The panel is closed or otherwise unavailable.");
+        }
+    }
+
+    internal PanelSwitcher() => _timer.Tick += timer_Tick;
+
+    internal OutputPanel DisplayBackground(Control control, string panelTitle)
+    {
+        var prev = (_oldest == _older ? _older : _old);
+        var curIndex = Util.SelectedOutputPanelIndex;
+        var cur = CurrentVisiblePanel;
+        var next = PanelManager.DisplayControl(control, panelTitle);
+
+        if (cur is not null) {
+            // Output panels aren't stably indexed. Do the activation hack.
+            Switch(cur);
+        } else if (curIndex == 0 || prev is null) {
+            // The "Results" panel is always selected as panel 0.
+            Util.SelectedOutputPanelIndex = 0;
+        } else {
+            // Nothing is visible, but we can guess the foreground panel.
+            TrySwitch(prev);
+        }
+
+        return next;
+    }
+
+    public void Dispose() => _timer.Dispose();
+
+    private const int ForegroundSnapshotInterval = 300;
+
+    private static OutputPanel? CurrentVisiblePanel
+        => PanelManager.GetOutputPanels()
+                       .SingleOrDefault(panel => panel.IsVisible);
+
+    private void timer_Tick(object? sender, EventArgs e)
+    {
+        var last = (Util.SelectedOutputPanelIndex == 0
+                        ? null
+                        : CurrentVisiblePanel ?? _old);
+
+        (_oldest, _older, _old) = (_older, _old, last);
+    }
+
+    private readonly Timer _timer = new Timer {
+        Interval = ForegroundSnapshotInterval,
+        Enabled = true,
+    };
+
+    private OutputPanel? _old = null;
+    private OutputPanel? _older = null;
+    private OutputPanel? _oldest = null;
+}
+
+/// <summary>
 /// The main user interface, containing an interactive canvas, an info bar, and
 /// expandable/collapsable tips.
 /// </summary>
@@ -2283,106 +2383,6 @@ internal static class ControlExtensions {
         var clientPoint = control.PointToClient(Control.MousePosition);
         return control.ClientRectangle.Contains(clientPoint);
     }
-}
-
-/// <summary>
-/// Functionality for switching and backgrounding output panels.
-/// </summary>
-internal sealed class PanelSwitcher : IDisposable {
-    // FIXME: Since I'm using this for important UI features--switching to the
-    // open help panel when Help is clicked again, and to a chart when its
-    // notification is clicked--it's very bad I'm violating encapsulation.
-    // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
-    // expected to use it and it may be removed (or worse, change) at any time.
-    // Unfortunately, there doesn't seem to be another way to do this.
-    //
-    // PanelManager.GetOutputPanels() returns an array of output panels, and
-    // writing to Util.SelectedOutputPanelIndex switches panels. When output
-    // panels are created in such a way as to be listed from left to right in
-    // the order of creation--such as when they are created sequentally by
-    // interacting with LINQPad controls in the Results panel--they are indexed
-    // in the same order and it is sufficient to add and subtract 1 [since
-    // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
-    // actually an OutputPanel object and thus doesn't appear in
-    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
-    // believe because new panels are not necessarily added to the very end of
-    // the strip, but are instead usually added just to the right of the panel
-    // from which they're displayed.
-    //
-    // I don't think it's reasonable to attempt to maintain a correspondence
-    // between the two orders. Besides writing to Util.SelectOutputPanelIndex,
-    // it is also possible to read from it, but the indices are not stable as
-    // panels open and close; caching an index to get back to it does not seems
-    // to work either, aside from 0 for getting back to the Results panel or
-    // checking if we are there. What I need to do is investigate a bit futher;
-    // produce simple, reproducible examples; and inquire on the LINQPad forums
-    // and/or request a feature.
-    internal static bool TrySwitch(OutputPanel panel)
-    {
-        if (PanelManager.GetOutputPanels().Contains(panel)) {
-            panel.Uncapsulate().Activate();
-            return true;
-        }
-
-        return false;
-    }
-
-    internal static void Switch(OutputPanel panel)
-    {
-        if (!TrySwitch(panel)) {
-            throw new InvalidOperationException(
-                    "Bug: The panel is closed or otherwise unavailable.");
-        }
-    }
-
-    internal PanelSwitcher() => _timer.Tick += timer_Tick;
-
-    internal OutputPanel DisplayBackground(Control control, string panelTitle)
-    {
-        var prev = (_oldest == _older ? _older : _old);
-        var curIndex = Util.SelectedOutputPanelIndex;
-        var cur = CurrentVisiblePanel;
-        var next = PanelManager.DisplayControl(control, panelTitle);
-
-        if (cur is not null) {
-            // Output panels aren't stably indexed. Do the activation hack.
-            Switch(cur);
-        } else if (curIndex == 0 || prev is null) {
-            // The "Results" panel is always selected as panel 0.
-            Util.SelectedOutputPanelIndex = 0;
-        } else {
-            // Nothing is visible, but we can guess the foreground panel.
-            TrySwitch(prev);
-        }
-
-        return next;
-    }
-
-    public void Dispose() => _timer.Dispose();
-
-    private const int ForegroundSnapshotInterval = 300;
-
-    private static OutputPanel? CurrentVisiblePanel
-        => PanelManager.GetOutputPanels()
-                       .SingleOrDefault(panel => panel.IsVisible);
-
-    private void timer_Tick(object? sender, EventArgs e)
-    {
-        var last = (Util.SelectedOutputPanelIndex == 0
-                        ? null
-                        : CurrentVisiblePanel ?? _old);
-
-        (_oldest, _older, _old) = (_older, _old, last);
-    }
-
-    private readonly Timer _timer = new Timer {
-        Interval = ForegroundSnapshotInterval,
-        Enabled = true,
-    };
-
-    private OutputPanel? _old = null;
-    private OutputPanel? _older = null;
-    private OutputPanel? _oldest = null;
 }
 
 /// <summary>
