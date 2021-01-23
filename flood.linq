@@ -2295,6 +2295,7 @@ internal sealed class PanelSwitcher : IDisposable {
     // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
     // expected to use it and it may be removed (or worse, change) at any time.
     // Unfortunately, there doesn't seem to be another way to do this.
+    //
     // PanelManager.GetOutputPanels() returns an array of output panels, and
     // writing to Util.SelectedOutputPanelIndex switches panels. When output
     // panels are created in such a way as to be listed from left to right in
@@ -2306,15 +2307,16 @@ internal sealed class PanelSwitcher : IDisposable {
     // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
     // believe because new panels are not necessarily added to the very end of
     // the strip, but are instead usually added just to the right of the panel
-    // from which they're displayed. I don't think it's reasonable to attempt
-    // to maintain a correspondence between the two orders. (Besides writing to
-    // Util.SelectOutputPanelIndex, it is also possible to read from it, but
-    // the indices are not stable as panels open and close; caching an index to
-    // get back to it does not seems to work either, aside from 0 for getting
-    // back to the Results panel or checking if we are there.) What I need to
-    // do is investigate a bit futher; produce simple, reproducible examples;
-    // and inquire on the LINQPad forums and/or request a feature.
-    // FIXME: Make this comment shorter, or at least more readable.
+    // from which they're displayed.
+    //
+    // I don't think it's reasonable to attempt to maintain a correspondence
+    // between the two orders. Besides writing to Util.SelectOutputPanelIndex,
+    // it is also possible to read from it, but the indices are not stable as
+    // panels open and close; caching an index to get back to it does not seems
+    // to work either, aside from 0 for getting back to the Results panel or
+    // checking if we are there. What I need to do is investigate a bit futher;
+    // produce simple, reproducible examples; and inquire on the LINQPad forums
+    // and/or request a feature.
     internal static bool TrySwitch(OutputPanel panel)
     {
         if (PanelManager.GetOutputPanels().Contains(panel)) {
@@ -2334,8 +2336,6 @@ internal sealed class PanelSwitcher : IDisposable {
     }
 
     internal PanelSwitcher() => _timer.Tick += timer_Tick;
-
-    public void Dispose() => _timer.Dispose();
 
     internal OutputPanel DisplayBackground(Control control, string panelTitle)
     {
@@ -2358,6 +2358,10 @@ internal sealed class PanelSwitcher : IDisposable {
         return next;
     }
 
+    public void Dispose() => _timer.Dispose();
+
+    private const int ForegroundSnapshotInterval = 300;
+
     private static OutputPanel? CurrentVisiblePanel
         => PanelManager.GetOutputPanels()
                        .SingleOrDefault(panel => panel.IsVisible);
@@ -2372,7 +2376,7 @@ internal sealed class PanelSwitcher : IDisposable {
     }
 
     private readonly Timer _timer = new Timer {
-        Interval = 350,
+        Interval = ForegroundSnapshotInterval,
         Enabled = true,
     };
 
