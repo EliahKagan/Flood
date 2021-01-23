@@ -2305,13 +2305,13 @@ internal sealed class PanelSwitcher : IDisposable {
         ThrowIfDisposed();
 
         var panel = PanelManager.DisplayControl(control, panelTitle);
-        Remember(panel);
+        _sticky = panel;
         return panel;
     }
 
     internal OutputPanel DisplayBackground(Control control, string panelTitle)
     {
-        var foreground = (_oldest == _older ? _older : _old);
+        var foreground = ForegroundPanel;
         var background = PanelManager.DisplayControl(control, panelTitle);
         TrySwitch(foreground);
         return background;
@@ -2363,7 +2363,7 @@ internal sealed class PanelSwitcher : IDisposable {
             return false;
         }
 
-        Remember(panel);
+        _sticky = panel;
         return true;
     }
 
@@ -2371,8 +2371,10 @@ internal sealed class PanelSwitcher : IDisposable {
         => PanelManager.GetOutputPanels()
                        .SingleOrDefault(panel => panel.IsVisible);
 
-    private void Remember(OutputPanel? panel)
-        => _oldest = _older = _old = panel;
+    private OutputPanel? ForegroundPanel
+        => (_sticky is null || (_oldest == _older && _older == _old))
+            ? _old
+            : _sticky;
 
     private void ThrowIfDisposed()
     {
@@ -2393,13 +2395,15 @@ internal sealed class PanelSwitcher : IDisposable {
     }
 
     private readonly Timer _timer = new Timer {
-        Interval = 250,
+        Interval = 180,
         Enabled = true,
     };
 
-    private OutputPanel? _old = null;
-    private OutputPanel? _older = null;
+    private OutputPanel? _sticky = null;
+
     private OutputPanel? _oldest = null;
+    private OutputPanel? _older = null;
+    private OutputPanel? _old = null;
 
     private bool _disposed = false;
 }
