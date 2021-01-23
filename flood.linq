@@ -492,11 +492,6 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
         if (disposing && !_disposed) {
             _disposed = true;
             _timer.Dispose();
-
-            // FIXME: Remove after testing.
-            using var f = File.OpenWrite(
-                Path.Join((string)Uncapsulate("Files").QueryDirectory,
-                          "disposed.txt"));
         }
 
         base.Dispose(disposing);
