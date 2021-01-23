@@ -375,7 +375,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
-        _help = new HelpButton(supplier, _switcher);
+        _help = new HelpButton(supplier);
         _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert);
         _stop = CreateStop();
@@ -416,8 +416,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal event EventHandler? Deactivate;
 
-    internal void Display()
-        => _switcher.DisplayForeground(this, "Flood Fill Visualization");
+    internal void Display() => this.Dump("Flood Fill Visualization");
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -475,7 +474,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             StopAllFills();
 
             _components.Dispose();
-            _switcher.Dispose();
+            _displayer.Dispose();
 
             _bmp.Dispose();
             _graphics.Dispose();
@@ -945,7 +944,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         AddChartingJob();
         var name = $"Job {_jobsEver} ({label} fill)";
-        var charter = Charter.StartNew(name, _alert, _switcher);
+        var charter = Charter.StartNew(name, _alert, _displayer);
 
         return new(fromArgb,
                    speed,
@@ -1057,7 +1056,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly ToolTip _toolTip;
 
-    private readonly PanelSwitcher _switcher = new();
+    private readonly PanelDisplayer _displayer = new();
 
     private readonly Rectangle _rect;
 
@@ -1750,9 +1749,9 @@ internal sealed class MyWebBrowser : WebBrowser {
 /// <see cref="HelpViewer"/>.
 /// </remarks>
 internal sealed class HelpButton : DualUseButton {
-    internal HelpButton(HelpViewerSupplier supplier, PanelSwitcher switcher)
+    internal HelpButton(HelpViewerSupplier supplier)
     {
-        (_supplier, _switcher) = (supplier, switcher);
+        _supplier = supplier;
 
         Text = "Help";
         AutoSize = true;
@@ -1770,7 +1769,7 @@ internal sealed class HelpButton : DualUseButton {
         if (_helpPanel is null)
             await OpenHelp();
         else
-            _switcher.Switch(_helpPanel);
+            _helpPanel.Activate();
     }
 
     private protected override void OnModifiedClick(EventArgs e)
@@ -1821,7 +1820,7 @@ internal sealed class HelpButton : DualUseButton {
         var help = await _supplier();
         help.Source = Files.GetDocUrl(FileName);
         help.Navigating += help_Navigating;
-        _helpPanel = _switcher.DisplayForeground(help.WrappedControl, Title);
+        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, Title);
         _helpPanel.PanelClosed += helpPanel_PanelClosed;
         UpdateToolTip();
 
@@ -1829,8 +1828,6 @@ internal sealed class HelpButton : DualUseButton {
     }
 
     private readonly HelpViewerSupplier _supplier;
-
-    private readonly PanelSwitcher _switcher;
 
     private OutputPanel? _helpPanel = null;
 }
@@ -2288,43 +2285,60 @@ internal static class ControlExtensions {
     }
 }
 
-/// <summary>Helper for creating and switching output panels.</summary>
-internal sealed class PanelSwitcher : IDisposable {
-    internal PanelSwitcher() => _timer.Tick += timer_Tick;
+/// <summary>Helper for creating backgrounded output panels.</summary>
+internal sealed class PanelDisplayer : IDisposable {
+    internal PanelDisplayer() => _timer.Tick += timer_Tick;
 
-    public void Dispose()
+    public void Dispose() => _timer.Dispose();
+
+    internal OutputPanel BackgroundControl(Control control, string panelTitle)
     {
-        if (!_disposed) {
-            _disposed = true;
-            _timer.Dispose();
+        var prev = (_oldest == _older ? _older : _old);
+        var curIndex = Util.SelectedOutputPanelIndex;
+        var cur = CurrentVisiblePanel;
+        var next = PanelManager.DisplayControl(control, panelTitle);
+
+        if (cur is not null) {
+            // Output panels aren't stably indexed. Do the activation hack.
+            cur.Activate();
+        } else if (curIndex == 0 || prev is null) {
+            // The "Results" panel is always selected as panel 0.
+            Util.SelectedOutputPanelIndex = 0;
+        } else {
+            // Nothing is visible, but we can guess the foreground panel.
+            prev.TryActivate();
         }
+
+        return next;
     }
 
-    internal OutputPanel DisplayForeground(Control control, string panelTitle)
+    private static OutputPanel? CurrentVisiblePanel
+        => PanelManager.GetOutputPanels()
+                       .SingleOrDefault(panel => panel.IsVisible);
+
+    private void timer_Tick(object? sender, EventArgs e)
     {
-        ThrowIfDisposed();
+        var last = (Util.SelectedOutputPanelIndex == 0
+                        ? null
+                        : CurrentVisiblePanel ?? _old);
 
-        var panel = PanelManager.DisplayControl(control, panelTitle);
-        _sticky = panel;
-        return panel;
+        (_oldest, _older, _old) = (_older, _old, last);
     }
 
-    internal OutputPanel DisplayBackground(Control control, string panelTitle)
-    {
-        var foreground = ForegroundPanel;
-        var background = PanelManager.DisplayControl(control, panelTitle);
-        TrySwitch(foreground);
-        return background;
-    }
+    private readonly Timer _timer = new Timer {
+        Interval = 350,
+        Enabled = true,
+    };
 
-    internal void Switch(OutputPanel panel)
-    {
-        if (!TrySwitch(panel)) {
-            throw new InvalidOperationException(
-                    "Bug: The panel is closed or otherwise unavailable.");
-        }
-    }
+    private OutputPanel? _old = null;
+    private OutputPanel? _older = null;
+    private OutputPanel? _oldest = null;
+}
 
+/// <summary>
+/// Provides extension methods for interacting with LINQPad output panels.
+/// </summary>
+internal static class OutputPanelExtensions {
     // FIXME: Since I'm using this for important UI features--switching to the
     // open help panel when Help is clicked again, and to a chart when its
     // notification is clicked--it's very bad I'm violating encapsulation.
@@ -2351,61 +2365,23 @@ internal sealed class PanelSwitcher : IDisposable {
     // do is investigate a bit futher; produce simple, reproducible examples;
     // and inquire on the LINQPad forums and/or request a feature.
     // FIXME: Make this comment shorter, or at least more readable.
-    internal bool TrySwitch(OutputPanel? panel)
+    internal static bool TryActivate(this OutputPanel panel)
     {
-        ThrowIfDisposed();
-
-        if (panel is null) {
-            Util.SelectedOutputPanelIndex = 0;
-        } else if (PanelManager.GetOutputPanels().Contains(panel)) {
+        if (PanelManager.GetOutputPanels().Contains(panel)) {
             panel.Uncapsulate().Activate();
-        } else {
-            return false;
+            return true;
         }
 
-        _sticky = panel;
-        return true;
+        return false;
     }
 
-    private static OutputPanel? CurrentVisiblePanel
-        => PanelManager.GetOutputPanels()
-                       .SingleOrDefault(panel => panel.IsVisible);
-
-    private OutputPanel? ForegroundPanel
-        => (_sticky is null || (_oldest == _older && _older == _old))
-            ? _old
-            : _sticky;
-
-    private void ThrowIfDisposed()
+    internal static void Activate(this OutputPanel panel)
     {
-        if (_disposed) {
-            throw new ObjectDisposedException(
-                    objectName: nameof(PanelSwitcher),
-                    message: "Can't switch panels with disposed switcher.");
+        if (!panel.TryActivate()) {
+            throw new InvalidOperationException(
+                    "Bug: The panel is closed or otherwise unavailable.");
         }
     }
-
-    private void timer_Tick(object? sender, EventArgs e)
-    {
-        var last = (Util.SelectedOutputPanelIndex == 0
-                        ? null
-                        : CurrentVisiblePanel ?? _old);
-
-        (_oldest, _older, _old) = (_older, _old, last);
-    }
-
-    private readonly Timer _timer = new Timer {
-        Interval = 180,
-        Enabled = true,
-    };
-
-    private OutputPanel? _sticky = null;
-
-    private OutputPanel? _oldest = null;
-    private OutputPanel? _older = null;
-    private OutputPanel? _old = null;
-
-    private bool _disposed = false;
 }
 
 /// <summary>
@@ -2742,8 +2718,8 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
     internal static Charter
-    StartNew(string name, AlertBar alert, PanelSwitcher switcher)
-        => new(name, alert, switcher);
+    StartNew(string name, AlertBar alert, PanelDisplayer displayer)
+        => new(name, alert, displayer);
 
     internal void Finish()
     {
@@ -2765,8 +2741,8 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name, AlertBar alert, PanelSwitcher switcher)
-        => (_name, _alert, _switcher) = (name, alert, switcher);
+    private Charter(string name, AlertBar alert, PanelDisplayer displayer)
+        => (_name, _alert, _displayer) = (name, alert, displayer);
 
     private static Font ChartTitleFont { get; } =
         new Font("Segoe UI Semibold", LabelFontSize);
@@ -2839,10 +2815,10 @@ internal sealed class Charter {
 
     private void DisplayChart(Chart chart)
     {
-        var panel = _switcher.DisplayBackground(chart, _name);
+        var panel = _displayer.BackgroundControl(chart, _name);
 
         _alert.Show($"{_name} has charted.", onClick: () => {
-            if (_switcher.TrySwitch(panel)) {
+            if (panel.TryActivate()) {
                 _alert.Hide();
             } else {
                 _alert.Show($"{_name}{Ch.Rsquo}s chart was closed and"
@@ -2858,7 +2834,7 @@ internal sealed class Charter {
 
     private readonly AlertBar _alert;
 
-    private readonly PanelSwitcher _switcher;
+    private readonly PanelDisplayer _displayer;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
