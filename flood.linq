@@ -403,7 +403,10 @@ internal interface IPanelSwitcher {
 }
 
 /// <summary>Default implementation of <see cref="IPanelSwitcher"/>.</summary>
-internal sealed class PanelSwitcher : IPanelSwitcher, IDisposable {
+internal sealed class PanelSwitcher : Component, IPanelSwitcher {
+    internal PanelSwitcher(IContainer components) : this()
+        => components.Add(this);
+
     internal PanelSwitcher() => _timer.Tick += timer_Tick;
 
     // FIXME: Since I'm using this for important UI features--switching to the
@@ -484,12 +487,14 @@ internal sealed class PanelSwitcher : IPanelSwitcher, IDisposable {
         return background;
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        if (!_disposed) {
+        if (disposing && !_disposed) {
             _disposed = true;
             _timer.Dispose();
         }
+
+        base.Dispose(disposing);
     }
 
     private const int ForegroundSnapshotInterval = 180;
@@ -546,6 +551,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         _nonessentialTimer = new(_components) { Interval = NonessentialDelay };
         _toolTip = new(_components) { ShowAlways = true };
+        _switcher = new PanelSwitcher(_components);
 
         _rect = new(Point.Empty, canvasSize);
         _bmp = new(width: _rect.Width, height: _rect.Height);
@@ -653,7 +659,6 @@ internal sealed class MainPanel : TableLayoutPanel {
             StopAllFills();
 
             _components.Dispose();
-            _switcher.Dispose();
 
             _bmp.Dispose();
             _graphics.Dispose();
@@ -1235,7 +1240,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly ToolTip _toolTip;
 
-    private readonly PanelSwitcher _switcher = new();
+    private readonly IPanelSwitcher _switcher;
 
     private readonly Rectangle _rect;
 
