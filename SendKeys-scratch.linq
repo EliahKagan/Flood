@@ -8,11 +8,10 @@ using System.Windows.Forms;
 using Keyboard = System.Windows.Input.Keyboard;
 using Key = System.Windows.Input.Key;
 
-var form = new MyForm();
-Application.Run(form);
+new MainPanel().Dump();
 
-internal sealed class MyForm : Form {
-    internal MyForm()
+internal sealed class MainPanel : Panel {
+    internal MainPanel()
     {
         _canvas.MouseDown += canvas_MouseDown;
         Controls.Add(_canvas);
@@ -50,6 +49,7 @@ internal sealed class MyForm : Form {
 
     private void canvas_MouseDown(object? sender, MouseEventArgs e)
     {
+        Focus();
         if (GotKey.Super) _suppressStartMenu = true;
     }
 
