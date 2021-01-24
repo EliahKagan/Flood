@@ -1589,13 +1589,17 @@ internal sealed class MagnifyButton : ApplicationButton {
     private static bool HaveMagnifierSmoothing
     {
         get {
-            try {
-                var result = Registry.GetValue(
-                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
-                    "UseBitmapSmoothing",
-                    null);
+            const string key =
+                @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier";
 
-                return result is int value && value != 0;
+            try {
+                // Check if smoothing is on. If the Magnifier has never been
+                // configured, the key exists not the value. Then the default
+                // behavior is to smooth, as with a truthy (nonzero) value.
+                return Registry.GetValue(keyName: key,
+                                         valueName: "UseBitmapSmoothing",
+                                         defaultValue: 1)
+                        is int and not 0;
             } catch (SystemException ex) when (ex is SecurityException
                                                   or IOException) {
                 Warn("Couldn't check for magnifier smoothing.");
