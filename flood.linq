@@ -1595,15 +1595,25 @@ internal sealed class MagnifyButton : ApplicationButton {
 
             try {
                 // Check if smoothing is on. If the Magnifier has never been
-                // configured, the key exists but not the value; the default
-                // behavior is to smooth, as with a truthy (nonzero) value.
-                return Registry.GetValue(keyName: key,
-                                         valueName: "UseBitmapSmoothing",
-                                         defaultValue: 1)
-                        is int and not 0;
+                // configured, the key exists but not the value and the
+                // Magnifier's default behavior is to smooth, as with a
+                // truthy (nonzero) value.
+                switch (Registry.GetValue(keyName: key,
+                                          valueName: "UseBitmapSmoothing",
+                                          defaultValue: 1)) {
+                case 0:
+                    return false;
+
+                case int:
+                    return true;
+
+                default:
+                    Warn("Magnifier configuration not found.");
+                    return false;
+                }
             } catch (SystemException ex) when (ex is SecurityException
                                                   or IOException) {
-                Warn("Couldn't check for magnifier smoothing.");
+                Warn($"Magnifier configuration inaccessible.");
                 return false;
             }
         }
