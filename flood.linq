@@ -1594,7 +1594,7 @@ internal sealed class MagnifyButton : ApplicationButton {
 
             try {
                 // Check if smoothing is on. If the Magnifier has never been
-                // configured, the key exists not the value. Then the default
+                // configured, the key exists but not the value; the default
                 // behavior is to smooth, as with a truthy (nonzero) value.
                 return Registry.GetValue(keyName: key,
                                          valueName: "UseBitmapSmoothing",
