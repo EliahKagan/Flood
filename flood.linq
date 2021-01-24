@@ -174,19 +174,10 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
-    // NtQueryTimerResolution returns times in units of 100 ns.
-    private const double HundredNanosecondsPerMillisecond = 10_000.0;
-
     private const int MetaTimerInterval = 150; // See _metatimer.
 
-    [DllImport("ntdll")]
-    private static extern int
-    NtQueryTimerResolution(out uint MinimumResolution,
-                           out uint MaximumResolution,
-                           out uint CurrentResolution);
-
     private static string FormatTimerResolution(uint ticks)
-        => $"{ticks / HundredNanosecondsPerMillisecond}{Ch.Nbsp}ms";
+        => $"{ticks / NtDll.HundredNanosecondsPerMillisecond}{Ch.Nbsp}ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -284,10 +275,10 @@ internal sealed class Launcher {
 
     private string GetTimingNoteDetail()
     {
-        var success =
-            NtQueryTimerResolution(out var worst, out _, out var actual) >= 0;
+        var result =
+            NtDll.NtQueryTimerResolution(out var worst, out _, out var actual);
 
-        if (success) {
+        if (result >= 0) {
             _oldWorstTimerResolution = worst;
         } else if (_oldWorstTimerResolution is uint oldWorst) {
             worst = oldWorst;
@@ -297,7 +288,7 @@ internal sealed class Launcher {
 
         var worstStr = FormatTimerResolution(worst);
 
-        if (success) {
+        if (result >= 0) {
             var actualStr = FormatTimerResolution(actual);
 
             return $"Your system timer resolution is {worstStr} at worst,"
@@ -1205,9 +1196,6 @@ internal sealed class AlertBar : TableLayoutPanel {
         Font = UnderlinedFont,
     };
 
-    [DllImport("user32")]
-    private static extern bool HideCaret(IntPtr hWnd);
-
     private static void Warn(string message)
         => message.Dump($"Warning ({nameof(AlertBar)})");
 
@@ -1251,7 +1239,7 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void HideContentCaret()
     {
-        if (_content.Focused && !HideCaret(_content.Handle))
+        if (_content.Focused && !User32.HideCaret(_content.Handle))
             Warn("Couldn't hide alert caret.");
     }
 
@@ -1446,43 +1434,18 @@ internal abstract class ApplicationButton : DualUseButton {
 
     private static Bitmap CreateBitmap(string path)
     {
-        var hIcon = ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
+        // TODO: Degrade gracefully and use some generic icon on failure.
+        var hIcon =
+            Shell32.ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
                                        path,
                                        0);
 
         try {
             return Icon.FromHandle(hIcon).ToBitmap();
         } finally {
-            DestroyIconOrThrow(hIcon);
+            User32.DestroyIconOrThrow(hIcon);
         }
     }
-
-    // TODO: Degrade gracefully and use some generic icon on failure instead.
-    private static IntPtr ExtractIconOrThrow(IntPtr hInst,
-                                             string pszExeFileName,
-                                             uint nIconIndex)
-    {
-        var hIcon = ExtractIcon(hInst, pszExeFileName, nIconIndex);
-        if (hIcon == IntPtr.Zero) Throw();
-        return hIcon;
-    }
-
-    private static void DestroyIconOrThrow(IntPtr hIcon)
-    {
-        if (!DestroyIcon(hIcon)) Throw();
-    }
-
-    private static void Throw()
-        => throw new Win32Exception(Marshal.GetLastWin32Error());
-
-    // TODO: Use a SafeHandle-based approach instead.
-    [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr ExtractIcon(IntPtr hInst,
-                                             string pszExeFileName,
-                                             uint nIconIndex);
-
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool DestroyIcon(IntPtr hIcon);
 
     private readonly string _path;
 
@@ -1730,18 +1693,13 @@ internal sealed class MyWebBrowser : WebBrowser {
     {
         // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
         // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
-        if ((WM)msg.Msg is WM.KEYUP or WM.SYSKEYUP)
+        if ((User32.WM)msg.Msg is User32.WM.KEYUP or User32.WM.SYSKEYUP)
             PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
 
         return base.PreProcessMessage(ref msg);
     }
 
     internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
-
-    private enum WM : uint {
-        KEYUP    = 0x0101,
-        SYSKEYUP = 0x0105,
-    }
 }
 
 /// <summary>Help launcher button.</summary>
@@ -2879,4 +2837,62 @@ internal static class Ch {
 
     /// <summary> Gear (emoji).</summary>
     internal const char Gear = '\u2699';
+}
+
+/// <summary>Access to the winbase.h/kernel32.dll Windows API.</summary>
+internal static class Kernel32 {
+    internal static void ThrowLastError()
+        => throw new Win32Exception(Marshal.GetLastWin32Error());
+}
+
+/// <summary>Access to the ntdll.dll Windows API.</summary>
+internal static class NtDll {
+    /// <remarks>
+    /// <see cref="NtQueryTimerResolution"/> returns times in units of 100 ns.
+    /// </remarks>
+    internal const double HundredNanosecondsPerMillisecond = 10_000.0;
+
+    [DllImport("ntdll")]
+    internal static extern int
+    NtQueryTimerResolution(out uint MinimumResolution,
+                           out uint MaximumResolution,
+                           out uint CurrentResolution);
+}
+
+/// <summary>Access to the shellapi.h/shell32.dll Windows API.</summary>
+internal static class Shell32 {
+    // TODO: Use a SafeHandle-based way instead. (See User32.DestroyIcon.)
+    internal static IntPtr ExtractIconOrThrow(IntPtr hInst,
+                                              string pszExeFileName,
+                                              uint nIconIndex)
+    {
+        var hIcon = ExtractIcon(hInst, pszExeFileName, nIconIndex);
+        if (hIcon == IntPtr.Zero) Kernel32.ThrowLastError();
+        return hIcon;
+    }
+
+    [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr ExtractIcon(IntPtr hInst,
+                                             string pszExeFileName,
+                                             uint nIconIndex);
+}
+
+/// <summary>Access to the winuser.h/user32.dll Windows API.</summary>
+internal static class User32 {
+    internal enum WM : uint {
+        KEYUP    = 0x0101,
+        SYSKEYUP = 0x0105,
+    }
+
+    [DllImport("user32")]
+    internal static extern bool HideCaret(IntPtr hWnd);
+
+    // TODO: Use a SafeHandle-based way instead. (See Shell32.ExtractIcon.)
+    internal static void DestroyIconOrThrow(IntPtr hIcon)
+    {
+        if (!DestroyIcon(hIcon)) Kernel32.ThrowLastError();
+    }
+
+    [DllImport("user32", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 }
