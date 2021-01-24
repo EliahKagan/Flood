@@ -850,7 +850,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         var speed = DecideSpeed();
 
         if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
-                && speed == _oldSpeed && _jobs == _oldJobs) return;
+                && speed == _oldSpeed && _jobs == _oldJobs)
+            return;
 
         UpdateStatusText(strategy, speed, _jobs);
         UpdateStatusToolTip(strategy, speed, _jobs);
@@ -954,7 +955,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void canvas_MouseMove(object? sender, MouseEventArgs e)
     {
-        if (e.Button == MouseButtons.Left) {
+        if (e.Button is MouseButtons.Left) {
             _graphics.DrawLine(_pen, _oldLocation, e.Location);
 
             var x1 = Math.Min(_oldLocation.X, e.Location.X);
