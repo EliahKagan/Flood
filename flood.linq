@@ -459,6 +459,20 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        // If the user pressed a Windows key (Super key) as a modifier for a
+        // canvas command (successful or not), avoid activating the Start Menu.
+        if ((User32.WM)m.Msg is User32.WM.KEYUP
+                && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
+                && _suppressStartMenu) {
+            _suppressStartMenu = false;
+            if (Focused) SendKeys.Send("+()"); // Simulate tapping Shift.
+        }
+
+        base.WndProc(ref m);
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) {
@@ -708,6 +722,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _canvas.MouseMove += canvas_MouseMove;
+        _canvas.MouseDown += canvas_MouseDown;
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
@@ -757,6 +772,12 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         _oldLocation = e.Location;
+    }
+
+    private void canvas_MouseDown(object? sender, MouseEventArgs e)
+    {
+        Focus();
+        if (GotKey.Super) _suppressStartMenu = true;
     }
 
     private async void canvas_MouseClick(object? sender, MouseEventArgs e)
@@ -1118,6 +1139,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _generation = 0;
 
     private bool _shownBefore = false;
+
+    private bool _suppressStartMenu = false;
 };
 
 /// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
@@ -2879,6 +2902,14 @@ internal static class Shell32 {
 
 /// <summary>Access to the winuser.h/user32.dll Windows API.</summary>
 internal static class User32 {
+    // These are 16-bit values, but using a 64-bit type ensures that
+    // mistakenly casting from a Message.WParam that does not represent a
+    // virtual key code will not inadventently match something.
+    internal enum VK : ulong {
+        LWIN = 0x5B,
+        RWIN = 0x5C,
+    }
+
     internal enum WM : uint {
         KEYUP    = 0x0101,
         SYSKEYUP = 0x0105,
