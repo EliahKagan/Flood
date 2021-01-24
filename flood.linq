@@ -135,8 +135,6 @@ internal sealed class Launcher {
             new LC.FieldSet("Screen Capture Hack", _showPluginFormInTaskbar),
             new LC.FieldSet("Help Browser", _useOldWebBrowser),
             new LC.FieldSet("Features", CreateFeaturesPanel()),
-            new LC.FieldSet("Features (Experimental)",
-                            CreateExperimentalFeaturesPanel()),
             new LC.WrapPanel(_launch, _postLaunch));
 
         SubscribePrivateHandlers();
@@ -210,10 +208,7 @@ internal sealed class Launcher {
     }
 
     private LC.StackPanel CreateFeaturesPanel()
-        => new(horizontal: false, _magnifier, _charting);
-
-    private LC.StackPanel CreateExperimentalFeaturesPanel()
-        => new(horizontal: false, _stopButton);
+        => new(horizontal: false, _magnifier, _charting, _stopButton);
 
     private LC.Table MakeEmptyTable()
         => new LC.Table(noBorders: true,
@@ -331,7 +326,8 @@ internal sealed class Launcher {
 
     private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
 
-    private readonly LC.CheckBox _stopButton = new("Stop button");
+    private readonly LC.CheckBox _stopButton =
+        new("Stop button (experimental)");
 
     private readonly LC.Button _launch = new("Launch!");
 
