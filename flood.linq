@@ -2971,7 +2971,7 @@ internal sealed class Charter {
     {
         var panel = _switcher.DisplayBackground(chart, _name);
 
-        var cookie = _alert.Show($"{_name} has charted.",
+        var cookie = _alert.Show($"{Ch.BarChart} {_name} has charted.",
                                  toolTip: "Switch to its chart panel",
                                  onClick: () => SwitchToChartPanel(panel));
 
@@ -3127,8 +3127,11 @@ internal static class Ch {
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
 
-    /// <summary> Gear (emoji).</summary>
+    /// <summary>Gear (emoji).</summary>
     internal const char Gear = '\u2699';
+
+    /// <summary>Bar chart (emoji).</summary>
+    internal const string BarChart = "\uD83D\uDCCA";
 }
 
 /// <summary>Access to the winbase.h/kernel32.dll Windows API.</summary>
