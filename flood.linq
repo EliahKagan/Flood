@@ -45,7 +45,7 @@
 
 const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
-var devmode = Control.ModifierKeys.HasFlag(Keys.Shift);
+var devmode = GotKey.Shift;
 
 // Make dump headings bigger. (See Launcher.Display for further customization.)
 Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
@@ -62,13 +62,21 @@ if (devmode) {
 
 static Size SuggestCanvasSize()
 {
-    // TODO: Maybe try to check which screen the LINQPad window is on.
-    var (screenWidth, screenHeight) = Screen.PrimaryScreen.Bounds.Size;
+    var (screenWidth, screenHeight) = GetBestScreen().Bounds.Size;
 
     var sideLength = (int)(Math.Min(screenWidth, screenHeight)
                             * defaultScreenFractionForCanvas);
 
     return new(width: sideLength, height: sideLength);
+}
+
+static Screen GetBestScreen()
+{
+    // We want the screen that (most of) the LINQPad window is on.
+    var screen = Screen.FromHandle(Util.HostWindowHandle);
+
+    // But fall back to the primary screen if we couldn't find that.
+    return screen.WorkingArea.IsEmpty ? Screen.PrimaryScreen : screen;
 }
 
 static Task<HelpViewer> GetOldHelpViewerAsync()
@@ -180,19 +188,10 @@ internal sealed class Launcher {
 
     private const string NumberBoxWidth = "5em";
 
-    // NtQueryTimerResolution returns times in units of 100 ns.
-    private const double HundredNanosecondsPerMillisecond = 10_000.0;
-
     private const int MetaTimerInterval = 150; // See _metatimer.
 
-    [DllImport("ntdll")]
-    private static extern int
-    NtQueryTimerResolution(out uint MinimumResolution,
-                           out uint MaximumResolution,
-                           out uint CurrentResolution);
-
     private static string FormatTimerResolution(uint ticks)
-        => $"{ticks / HundredNanosecondsPerMillisecond}{Ch.Nbsp}ms";
+        => $"{ticks / NtDll.HundredNanosecondsPerMillisecond}{Ch.Nbsp}ms";
 
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
@@ -290,10 +289,10 @@ internal sealed class Launcher {
 
     private string GetTimingNoteDetail()
     {
-        var success =
-            NtQueryTimerResolution(out var worst, out _, out var actual) >= 0;
+        var result =
+            NtDll.NtQueryTimerResolution(out var worst, out _, out var actual);
 
-        if (success) {
+        if (result >= 0) {
             _oldWorstTimerResolution = worst;
         } else if (_oldWorstTimerResolution is uint oldWorst) {
             worst = oldWorst;
@@ -303,7 +302,7 @@ internal sealed class Launcher {
 
         var worstStr = FormatTimerResolution(worst);
 
-        if (success) {
+        if (result >= 0) {
             var actualStr = FormatTimerResolution(actual);
 
             return $"Your system timer resolution is {worstStr} at worst,"
@@ -364,6 +363,189 @@ internal sealed class Launcher {
 }
 
 /// <summary>
+/// Represents a helper for creating and switching output panels.
+/// </summary>
+/// <remarks>
+/// See <see cref="PanelSwitcher"/>. Although it would make sense to have
+/// different implementations for different policies, the main purpose of this
+/// interface is to distinguish non-owning <see cref="PanelSwitcher"/>
+/// references.
+/// </remarks>
+internal interface IPanelSwitcher {
+    /// <summary>Switches to a LINQPad panel, if it is open.</summary>
+    /// <param name="panel">
+    /// The <see cref="LINQPad.OutputPanel"/> to switch to, or <c>null</c> to
+    /// switch to the "Results" panel.
+    /// </param>
+    /// <returns><c>true</c> on success, <c>false</c> on failure.</returns>
+    bool TrySwitch(OutputPanel? panel);
+
+    /// <summary>
+    /// Switches to a LINQPad if it is open. Throws an exception otherwise.
+    /// </summary>
+    /// <param name="panel">
+    /// The <see cref="LINQPad.OutputPanel"/> to switch to, or <c>null</c> to
+    /// switch to the "Results" panel.
+    /// </param>
+    /// <remarks>See <see cref="TrySwitch"/>.</remarks>
+    void Switch(OutputPanel? panel);
+
+    /// <summary>
+    /// Opens an output panel for a control and switches to it.
+    /// </summary>
+    /// <param name="control">The control to display in the panel.</param>
+    /// <param name="panelTitle">The panel's title in the toolstrip.</param>
+    /// <returns>The panel that was created.</returns>
+    OutputPanel DisplayForeground(Control control, string panelTitle);
+
+    /// <summary>
+    /// Opens an output panel for a control. Tries not to switch to it.
+    /// </summary?
+    /// <param name="control">The control to display in the panel.</param>
+    /// <param name="panelTitle">The panel's title in the toolstrip.</param>
+    /// <returns>The panel that was created.</returns>
+    OutputPanel DisplayBackground(Control control, string panelTitle);
+}
+
+/// <summary>Default implementation of <see cref="IPanelSwitcher"/>.</summary>
+internal sealed class PanelSwitcher : Component, IPanelSwitcher {
+    internal PanelSwitcher(IContainer components) : this()
+        => components.Add(this);
+
+    internal PanelSwitcher() => _timer.Tick += timer_Tick;
+
+    // FIXME: Since I'm using this for important UI features--switching to the
+    // open help panel when Help is clicked again, and to a chart when its
+    // notification is clicked--it's very bad I'm violating encapsulation.
+    // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
+    // expected to use it and it may be removed (or worse, change) at any time.
+    // Unfortunately, there doesn't seem to be another way to do this.
+    //
+    // PanelManager.GetOutputPanels() returns an array of output panels, and
+    // writing to Util.SelectedOutputPanelIndex switches panels. When output
+    // panels are created in such a way as to be listed from left to right in
+    // the order of creation--such as when they are created sequentally by
+    // interacting with LINQPad controls in the Results panel--they are indexed
+    // in the same order and it is sufficient to add and subtract 1 [since
+    // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
+    // actually an OutputPanel object and thus doesn't appear in
+    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
+    // believe because new panels are not necessarily added to the very end of
+    // the strip, but are instead usually added just to the right of the panel
+    // from which they're displayed.
+    //
+    // I don't think it's reasonable to attempt to maintain a correspondence
+    // between the two orders. Besides writing to Util.SelectOutputPanelIndex,
+    // it is also possible to read from it, but the indices are not stable as
+    // panels open and close; caching an index to get back to it does not seems
+    // to work either, aside from 0 for getting back to the Results panel or
+    // checking if we are there. What I need to do is investigate a bit futher;
+    // produce simple, reproducible examples; and inquire on the LINQPad forums
+    // and/or request a feature.
+    /// <inheritdoc/>
+    public bool TrySwitch(OutputPanel? panel)
+    {
+        ThrowIfDisposed();
+
+        if (panel is null) {
+            Util.SelectedOutputPanelIndex = 0;
+        } else if (PanelManager.GetOutputPanels().Contains(panel)) {
+            panel.Uncapsulate().Activate();
+        } else {
+            return false;
+        }
+
+        _sticky = panel;
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public void Switch(OutputPanel? panel)
+    {
+        if (!TrySwitch(panel)) {
+            throw new InvalidOperationException(
+                    "Bug: The panel is closed or otherwise unavailable.");
+        }
+    }
+
+    /// <inheritdoc/>
+    public OutputPanel DisplayForeground(Control control, string panelTitle)
+    {
+        ThrowIfDisposed();
+
+        var panel = PanelManager.DisplayControl(control, panelTitle);
+        _sticky = panel;
+        return panel;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// LINQPad doesn't support opening a new <see cref="OutputPanel"/> without
+    /// activating it. So this opens the panel and then, on a best-effort
+    /// basis, tries to switch back to the panel that is would next be active.
+    /// </remarks>
+    public OutputPanel DisplayBackground(Control control, string panelTitle)
+    {
+        var foreground = ForegroundPanel;
+        var background = PanelManager.DisplayControl(control, panelTitle);
+        TrySwitch(foreground);
+        return background;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && !_disposed) {
+            _disposed = true;
+            _timer.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private const int ForegroundSnapshotInterval = 180;
+
+    private static OutputPanel? CurrentVisiblePanel
+        => PanelManager.GetOutputPanels()
+                       .SingleOrDefault(panel => panel.IsVisible);
+
+    private OutputPanel? ForegroundPanel
+        => (_sticky is null || (_oldest == _older && _older == _old))
+            ? _old
+            : _sticky;
+
+    private void ThrowIfDisposed()
+    {
+        if (_disposed) {
+            throw new ObjectDisposedException(
+                    objectName: nameof(PanelSwitcher),
+                    message: "Can't switch panels with disposed switcher.");
+        }
+    }
+
+    private void timer_Tick(object? sender, EventArgs e)
+    {
+        var last = (Util.SelectedOutputPanelIndex == 0
+                        ? null
+                        : CurrentVisiblePanel ?? _old);
+
+        (_oldest, _older, _old) = (_older, _old, last);
+    }
+
+    private readonly Timer _timer = new Timer {
+        Interval = ForegroundSnapshotInterval,
+        Enabled = true,
+    };
+
+    private OutputPanel? _sticky = null;
+
+    private OutputPanel? _oldest = null;
+    private OutputPanel? _older = null;
+    private OutputPanel? _old = null;
+
+    private bool _disposed = false;
+}
+
+/// <summary>
 /// The main user interface, containing an interactive canvas, an info bar, and
 /// expandable/collapsable tips.
 /// </summary>
@@ -374,22 +556,17 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         _nonessentialTimer = new(_components) { Interval = NonessentialDelay };
         _toolTip = new(_components) { ShowAlways = true };
-        _helpViewerSupplier = supplier;
+        _switcher = new PanelSwitcher(_components);
 
         _rect = new(Point.Empty, canvasSize);
         _bmp = new(width: _rect.Width, height: _rect.Height);
-        _graphics = Graphics.FromImage(_bmp);
-        _graphics.FillRectangle(Brushes.White, _rect);
-
-        _canvas = new() {
-            Image = _bmp,
-            SizeMode = PictureBoxSizeMode.AutoSize,
-            Margin = CanvasMargin,
-        };
+        _graphics = CreateCanvasGraphics();
+        _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
-        _toggles = CreateToggles();
-        _magnify = CreateMagnify();
+        _help = new HelpButton(supplier, _switcher);
+        _helpButtons = CreateHelpButtons();
+        _magnify = new MagnifyButton(_showHideTips.Height, _alert);
         _stop = CreateStop();
         _charting = CreateCharting();
         _infoBar = CreateInfoBar();
@@ -428,7 +605,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal event EventHandler? Deactivate;
 
-    internal void Display() => this.Dump("Flood Fill Visualization");
+    internal void Display()
+        => _switcher.DisplayForeground(this, "Flood Fill Visualization");
 
     protected override void OnHandleCreated(EventArgs e)
     {
@@ -480,6 +658,32 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        // If the user pressed a Windows key (Super key) as a modifier for a
+        // canvas command (successful or not), avoid activating the Start Menu.
+        if ((User32.WM)m.Msg is User32.WM.KEYUP
+                && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
+                && _suppressStartMenu) {
+            _suppressStartMenu = false;
+
+            if (Focused) {
+                // Simulate concurrent input to prevent the Windows key from
+                // opening the Start Menu. Don't use anything this program
+                // treats specially. "Win+," is a global shortcut but it's only
+                // going into this program's message queue. (If it did somehow
+                // seep through, it would peek the desktop, which is innocuous
+                // even in combination with other keystrokes.) Global shortcuts
+                // may even be best, as users are less likely to customize them
+                // with a macro program like AutoHotKey.
+                // TODO: Decide if this is really less bad than a manual hook.
+                SendKeys.Send(",");
+            }
+        }
+
+        base.WndProc(ref m);
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) {
@@ -506,15 +710,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
 
-    private static bool ShiftIsPressed => ModifierKeys.HasFlag(Keys.Shift);
-
-    private static bool CtrlIsPressed => ModifierKeys.HasFlag(Keys.Control);
-
-    private static bool AltIsPressed => ModifierKeys.HasFlag(Keys.Alt);
-
-    private static bool SuperIsPressed
-        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
-
     private static int DecideSpeed()
         => (ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -523,38 +718,25 @@ internal sealed class MainPanel : TableLayoutPanel {
             _                         =>  5
         };
 
-    private int SmallButtonSize => _showHideTips.Height;
-
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(MainPanel)})");
-
-    private static bool HaveMagnifierSmoothing
+    private Graphics CreateCanvasGraphics()
     {
-        get {
-            try {
-                var result = Registry.GetValue(
-                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier",
-                    "UseBitmapSmoothing",
-                    null);
-
-                return result is int value && value != 0;
-            } catch (SystemException ex) when (ex is SecurityException
-                                                  or IOException) {
-                Warn("Couldn't check for magnifier smoothing.");
-                return false;
-            }
-        }
+        var graphics = Graphics.FromImage(_bmp);
+        graphics.FillRectangle(Brushes.White, _rect);
+        return graphics;
     }
 
-    private static void OpenMagnifierSettings()
-        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+    private PictureBox CreateCanvas() => new() {
+        Image = _bmp,
+        SizeMode = PictureBoxSizeMode.AutoSize,
+        Margin = CanvasMargin,
+    };
 
     private AlertBar CreateAlertBar() => new() {
         Width = _rect.Width,
         Margin = CanvasMargin,
     };
 
-    private TableLayoutPanel CreateToggles()
+    private TableLayoutPanel CreateHelpButtons()
     {
         var toggles = new TableLayoutPanel {
             RowCount = 1,
@@ -566,26 +748,21 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         toggles.Controls.Add(_showHideTips);
-        toggles.Controls.Add(_openCloseHelp);
+        toggles.Controls.Add(_help);
 
         return toggles;
     }
 
-    private ApplicationButton CreateMagnify()
-        => new(executablePath: Files.GetSystem32ExePath("magnify"),
-               SmallButtonSize,
-               fallbackDescription: "Magnifier");
-
     private Button CreateStop()
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
                             disabledBitmapFilename: "stop-faded.bmp",
-                            SmallButtonSize) { Visible = false };
+                            _showHideTips.Height) { Visible = false };
 
     private AnimatedBitmapCheckBox CreateCharting()
         => new(from i in Enumerable.Range(1, 6)
                select new CheckBoxBitmapFilenamePair($"chart{i}.bmp",
                                                      $"chart{i}-gray.bmp"),
-               SmallButtonSize,
+               _showHideTips.Height,
                FrameSequence.Oscillating);
 
     private TableLayoutPanel CreateInfoBar()
@@ -598,8 +775,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         };
 
         infoBar.Controls.Add(_status, column: 2, row: 0);
-        infoBar.Controls.Add(_toggles, column: 3, row: 0);
-        infoBar.Height = _toggles.Height; // Must be after adding _toggles.
+        infoBar.Controls.Add(_helpButtons, column: 3, row: 0);
+
+        // Must be after adding _helpButtons.
+        infoBar.Height = _helpButtons.Height;
+
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
         infoBar.Controls.Add(_stop, column: 1, row: 0);
         infoBar.Controls.Add(_charting, column: 2, row: 0);
@@ -635,11 +815,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateCharting();
         UpdateStatus();
         UpdateShowHideTips();
-        UpdateOpenCloseHelp();
     }
-
-    private void UpdateMagnifyToolTip()
-        => _magnify.SetToolTip(ShiftIsPressed ? "Magnifier Settings" : null);
 
     private void UpdateStopButton()
     {
@@ -693,13 +869,14 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatusText(strategy, speed, _jobs);
         UpdateStatusToolTip(strategy, speed, _jobs);
 
-        // TODO: This doesn't conceptually belong here, but it needs to trigger
+        // TODO: These don't conceptually belong here, but they need to trigger
         // under the same conditions that update the speed. Refactor so the
         // code makes more sense, or avoid carrying over this confusion when
         // splitting up and rewriting UpdateStatus--as will have to be done
         // the status bar is converted from a label to a toolstrip or other
         // collection of multiple controls.
-        UpdateMagnifyToolTip();
+        _magnify.UpdateToolTip();
+        _help.UpdateToolTip();
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
     }
@@ -750,33 +927,19 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
     }
 
-    private void UpdateOpenCloseHelp()
-    {
-        if (_helpPanel is null) {
-            _openCloseHelp.Text = "Open Help";
-            _toolTip.SetToolTip(_openCloseHelp, "View full help in new panel");
-        } else {
-            _openCloseHelp.Text = "Close Help";
-            _toolTip.SetToolTip(_openCloseHelp, "Close panel with full help");
-        }
-
-        _openCloseHelp.Enabled = true;
-    }
-
     private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { Dispose(); };
         _nonessentialTimer.Tick += delegate { UpdateStatus(); };
 
         _canvas.MouseMove += canvas_MouseMove;
+        _canvas.MouseDown += canvas_MouseDown;
         _canvas.MouseClick += canvas_MouseClick;
         _canvas.MouseWheel += canvas_MouseWheel;
 
-        _magnify.StartingApplication += magnify_StartingApplication;
         _stop.Click += stop_Click;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
-        _openCloseHelp.Click += openCloseHelp_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
 
         // Update the status bar from modifier keys pressed or released while
@@ -822,12 +985,18 @@ internal sealed class MainPanel : TableLayoutPanel {
         _oldLocation = e.Location;
     }
 
+    private void canvas_MouseDown(object? sender, MouseEventArgs e)
+    {
+        Focus();
+        if (GotKey.Super) _suppressStartMenu = true;
+    }
+
     private async void canvas_MouseClick(object? sender, MouseEventArgs e)
     {
         if (!_rect.Contains(e.Location)) return;
 
         switch (e.Button) {
-        case MouseButtons.Left when SuperIsPressed:
+        case MouseButtons.Left when GotKey.Super:
             InstantFill(e.Location, Color.Black);
             break;
 
@@ -836,11 +1005,11 @@ internal sealed class MainPanel : TableLayoutPanel {
             _canvas.Invalidate(e.Location);
             break;
 
-        case MouseButtons.Right when SuperIsPressed:
+        case MouseButtons.Right when GotKey.Super:
             await RecursiveFloodFillAsync(e.Location, Color.Orange);
             break;
 
-        case MouseButtons.Right when AltIsPressed:
+        case MouseButtons.Right when GotKey.Alt:
             await FloodFillAsync(new RandomFringe<Point>(_generator),
                                  e.Location,
                                  Color.Yellow);
@@ -852,7 +1021,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                                  Color.Red);
             break;
 
-        case MouseButtons.Middle when AltIsPressed:
+        case MouseButtons.Middle when GotKey.Alt:
             await FloodFillAsync(new DequeFringe<Point>(_generator),
                                  e.Location,
                                  Color.Purple);
@@ -877,7 +1046,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (e.Delta == 0) return; // I'm not sure if this is possible.
         ((HandledMouseEventArgs)e).Handled = true;
 
-        if (!ShiftIsPressed) {
+        if (!GotKey.Shift) {
             // Scrolling without Shift cycles neighbor enumeration strategies.
             if (scrollingDown)
                 _neighborEnumerationStrategies.CycleNext();
@@ -889,7 +1058,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             _alert.Show(
                 $"{Ch.Ldquo}{_neighborEnumerationStrategies.Current}{Ch.Rdquo}"
                 + " strategy has no sub-strategies to scroll.");
-        } else if (CtrlIsPressed) {
+        } else if (GotKey.Ctrl) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
                 strategy.CycleFastAheadSubStrategy();
@@ -906,21 +1075,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateStatus();
     }
 
-    private void magnify_StartingApplication(ApplicationButton sender,
-                                             StartingApplicationEventArgs e)
-    {
-        if (ShiftIsPressed) {
-            e.Cancel = true;
-            OpenMagnifierSettings();
-        } else if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
-            _alert.Show(
-                $"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                + $"Smooth edges of images and text{Ch.Rdquo}.",
-                onClick: OpenMagnifierSettings,
-                onDismiss: () => _checkMagnifierSettings = false);
-        }
-    }
-
     private void stop_Click(object? sender, EventArgs e)
     {
         _stop.Enabled = false;
@@ -934,57 +1088,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         UpdateShowHideTips();
     }
 
-    private async void openCloseHelp_Click(object? sender, EventArgs e)
-    {
-        if (_helpPanel is null)
-            await OpenHelp();
-        else
-            _helpPanel.Close();
-    }
-
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
-
-    private void helpPanel_PanelClosed(object? sender, EventArgs e)
-    {
-        _helpPanel = null;
-        UpdateOpenCloseHelp();
-    }
-
-    private static void help_Navigating(object sender,
-                                        HelpViewerNavigatingEventArgs e)
-    {
-        // Open file:// URLs normally, inside the help browser.
-        if  (e.Uri.SchemeIs(Uri.UriSchemeFile)) return;
-
-        // No other URLs shall be opened in the help browser panel.
-        e.Cancel = true;
-
-        // Open web links externally, in the default browser. [This check is
-        // also important for security, to make sure we are actually opening
-        // them in a web browser, i.e., a program (or COM object) registered as
-        // an appropriate protocol handler. We can't guarantee the user won't
-        // manage to navigate somewhere that offers up a hyperlink starting
-        // with something ShellExecuteExW would take as a Windows executable.]
-        if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
-            Shell.Execute(e.Uri.AbsoluteUri);
-    }
-
-    private async Task OpenHelp()
-    {
-        const string title = "Flood Fill Visualization - Help";
-
-        _openCloseHelp.Enabled = false;
-
-        var help = await _helpViewerSupplier();
-        help.Source = Files.GetDocUrl("help.html");
-        help.Navigating += help_Navigating;
-        _helpPanel = PanelManager.DisplayControl(help.WrappedControl, title);
-        _helpPanel.PanelClosed += helpPanel_PanelClosed;
-
-        UpdateOpenCloseHelp();
-    }
 
     private void StopAllFills()
     {
@@ -1046,7 +1152,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         ++_jobs;
         ++_jobsEver;
-
         UpdateStopButton();
         UpdateStatus();
 
@@ -1060,8 +1165,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         AddChartingJob();
-
-        var charter = Charter.StartNew($"Job {_jobsEver} ({label} fill)");
+        var name = $"Job {_jobsEver} ({label} fill)";
+        var charter = Charter.StartNew(name, _alert, _switcher);
 
         return new(fromArgb,
                    speed,
@@ -1101,7 +1206,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) fringe.Insert(dest);
         }
@@ -1127,7 +1232,7 @@ internal sealed class MainPanel : TableLayoutPanel {
             }
 
             _bmp.SetPixel(src.X, src.Y, toColor);
-            _canvas.Invalidate(src);
+            _canvas.Invalidate();
 
             foreach (var dest in job.Supplier(src)) {
                 await FillFromAsync(dest);
@@ -1173,7 +1278,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly ToolTip _toolTip;
 
-    private readonly HelpViewerSupplier _helpViewerSupplier;
+    private readonly IPanelSwitcher _switcher;
 
     private readonly Rectangle _rect;
 
@@ -1196,25 +1301,24 @@ internal sealed class MainPanel : TableLayoutPanel {
         Font = new(Label.DefaultFont.FontFamily, StatusFontSize),
     };
 
-    private readonly TableLayoutPanel _toggles;
+    private readonly TableLayoutPanel _helpButtons;
 
-    private readonly ApplicationButton _magnify;
+    private readonly DualUseButton _magnify;
 
     private readonly Button _stop;
 
     private readonly AnimatedBitmapCheckBox _charting;
 
     private readonly Button _showHideTips = new() {
-        Text = "??? Tips", // Placeholder text for height computation.
+        // Placeholder text for height computation. Without this, some other
+        // parts of the infobar don't scale correctly at >100% display scaling.
+        Text = "??? Tips",
+
         AutoSize = true,
         Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
 
-    private readonly Button _openCloseHelp = new() {
-        Text = "??? Help", // Placeholder text for height computation.
-        AutoSize = true,
-        Margin = new(left: Pad, top: 0, right: 0, bottom: 0),
-    };
+    private readonly DualUseButton _help;
 
     private readonly MyWebBrowser _tips = new() {
         Visible = false,
@@ -1223,15 +1327,11 @@ internal sealed class MainPanel : TableLayoutPanel {
         Url = Files.GetDocUrl("tips.html"),
     };
 
-    private OutputPanel? _helpPanel = null;
-
     private readonly Func<int, int> _generator =
         Permutations.CreateRandomGenerator();
 
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
-
-    private bool _checkMagnifierSettings = true;
 
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
@@ -1251,6 +1351,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private int _generation = 0;
 
     private bool _shownBefore = false;
+
+    private bool _suppressStartMenu = false;
 };
 
 /// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
@@ -1329,9 +1431,6 @@ internal sealed class AlertBar : TableLayoutPanel {
         Font = UnderlinedFont,
     };
 
-    [DllImport("user32")]
-    private static extern bool HideCaret(IntPtr hWnd);
-
     private static void Warn(string message)
         => message.Dump($"Warning ({nameof(AlertBar)})");
 
@@ -1375,7 +1474,7 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void HideContentCaret()
     {
-        if (_content.Focused && !HideCaret(_content.Handle))
+        if (_content.Focused && !User32.HideCaret(_content.Handle))
             Warn("Couldn't hide alert caret.");
     }
 
@@ -1475,121 +1574,117 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
-/// Provides the ability to cancel the
-/// <see cref="ApplicationButton.StartingApplication"/> event.
+/// A square button to launch the system Magnifier or configure it in Settings.
 /// </summary>
-internal sealed class StartingApplicationEventArgs : EventArgs {
-    internal bool Cancel { get; set; } = false;
-}
+internal sealed class MagnifyButton : ApplicationButton {
+    internal MagnifyButton(int sideLength, AlertBar alert)
+            : base(executablePath: Files.GetSystem32ExePath("magnify"),
+                   sideLength: sideLength,
+                   fallbackDescription: "Magnifier")
+        => _alert = alert;
 
-/// <summary>
-/// Represents a method that will handle the
-/// <see cref="ApplicationButton.StartingApplication"/> event.
-/// </summary>
-internal delegate void
-StartingApplicationEventHandler(ApplicationButton sender,
-                                StartingApplicationEventArgs e);
+    private protected override string ModifiedToolTip => "Magnifier Settings";
+
+    private protected override void OnMainClick(EventArgs e)
+    {
+        base.OnMainClick(e);
+
+        if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
+            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                        + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        onClick: OpenMagnifierSettings,
+                        onDismiss: () => _checkMagnifierSettings = false);
+        }
+    }
+
+    private protected override void OnModifiedClick(EventArgs e)
+        => OpenMagnifierSettings();
+
+    private static bool HaveMagnifierSmoothing
+    {
+        get {
+            const string key =
+                @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier";
+
+            try {
+                // Check if smoothing is on. If the Magnifier has never been
+                // configured, the key exists not the value. Then the default
+                // behavior is to smooth, as with a truthy (nonzero) value.
+                return Registry.GetValue(keyName: key,
+                                         valueName: "UseBitmapSmoothing",
+                                         defaultValue: 1)
+                        is int and not 0;
+            } catch (SystemException ex) when (ex is SecurityException
+                                                  or IOException) {
+                Warn("Couldn't check for magnifier smoothing.");
+                return false;
+            }
+        }
+    }
+
+    private static void OpenMagnifierSettings()
+        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MagnifyButton)})");
+
+    private readonly AlertBar _alert;
+
+    private bool _checkMagnifierSettings = true;
+}
 
 /// <summary>
 /// A square button to launch an application, showing an icon and (optionally)
 /// toolip obtained from the executable's metadata.
 /// </summary>
-internal sealed class ApplicationButton : Button {
+internal abstract class ApplicationButton : DualUseButton {
     internal ApplicationButton(string executablePath,
                                int sideLength,
                                string? fallbackDescription = null)
     {
         Width = Height = sideLength;
-        Margin = Padding.Empty;
         BackgroundImageLayout = ImageLayout.Stretch;
-
-        _toolTip = new(_components) { ShowAlways = true };
 
         _path = executablePath;
 
-        _description = FileVersionInfo.GetVersionInfo(_path).FileDescription
+        MainToolTip = FileVersionInfo.GetVersionInfo(_path).FileDescription
                         ?? fallbackDescription
                         ?? string.Empty;
 
         _bitmap = CreateBitmap(_path);
-
         try {
             BackgroundImage = _bitmap;
-            SetToolTip();
         } catch {
-            DisposeState();
+            _bitmap.Dispose();
             throw;
         }
     }
 
-    internal event StartingApplicationEventHandler? StartingApplication;
-
-    internal void SetToolTip(string? caption = null)
-        => _toolTip.SetToolTip(this, caption ?? _description);
-
-    protected override void OnClick(EventArgs e)
-    {
-        base.OnClick(e);
-
-        var eStartingApplication = new StartingApplicationEventArgs();
-        StartingApplication?.Invoke(this, eStartingApplication);
-        if (!eStartingApplication.Cancel) Shell.Execute(_path);
-    }
-
     protected override void Dispose(bool disposing)
     {
-        if (disposing) DisposeState();
+        if (disposing) _bitmap.Dispose();
         base.Dispose(disposing);
     }
 
+    private protected override string MainToolTip { get; }
+
+    private protected override void OnMainClick(EventArgs e)
+        => Shell.Execute(_path);
+
     private static Bitmap CreateBitmap(string path)
     {
-        var hIcon = ExtractIcon(Process.GetCurrentProcess().Handle, path, 0);
+        // TODO: Degrade gracefully and use some generic icon on failure.
+        var hIcon =
+            Shell32.ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
+                                       path,
+                                       0);
+
         try {
             return Icon.FromHandle(hIcon).ToBitmap();
         } finally {
-            DestroyIcon(hIcon);
+            User32.DestroyIconOrThrow(hIcon);
         }
     }
-
-    // TODO: Degrade gracefully and use some generic icon on failure instead.
-    private static IntPtr ExtractIconOrThrow(IntPtr hInst,
-                                             string pszExeFileName,
-                                             uint nIconIndex)
-    {
-        var hIcon = ExtractIcon(hInst, pszExeFileName, nIconIndex);
-        if (hIcon == IntPtr.Zero) Throw();
-        return hIcon;
-    }
-
-    private static void DestroyIconOrThrow(IntPtr hIcon)
-    {
-        if (!DestroyIcon(hIcon)) Throw();
-    }
-
-    private static void Throw()
-        => throw new Win32Exception(Marshal.GetLastWin32Error());
-
-    // TODO: Use a SafeHandle-based approach instead.
-    [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr ExtractIcon(IntPtr hInst,
-                                             string pszExeFileName,
-                                             uint nIconIndex);
-
-    [DllImport("user32", SetLastError = true)]
-    private static extern bool DestroyIcon(IntPtr hIcon);
-
-    private void DisposeState()
-    {
-        _components.Dispose();
-        _bitmap.Dispose();
-    }
-
-    private readonly IContainer _components = new Container();
-
-    private readonly ToolTip _toolTip;
-
-    private readonly string _description;
 
     private readonly string _path;
 
@@ -1837,18 +1932,162 @@ internal sealed class MyWebBrowser : WebBrowser {
     {
         // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
         // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
-        if ((WM)msg.Msg is WM.KEYUP or WM.SYSKEYUP)
+        if ((User32.WM)msg.Msg is User32.WM.KEYUP or User32.WM.SYSKEYUP)
             PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
 
         return base.PreProcessMessage(ref msg);
     }
 
     internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
+}
 
-    private enum WM : uint {
-        KEYUP    = 0x0101,
-        SYSKEYUP = 0x0105,
+/// <summary>Help launcher button.</summary>
+/// <remarks>
+/// This is a bridge between <see cref="MainPanel"/> and
+/// <see cref="HelpViewer"/>.
+/// </remarks>
+internal sealed class HelpButton : DualUseButton {
+    internal HelpButton(HelpViewerSupplier supplier, IPanelSwitcher switcher)
+    {
+        (_supplier, _switcher) = (supplier, switcher);
+
+        Text = "Help";
+        AutoSize = true;
     }
+
+    private protected override string MainToolTip
+        => _helpPanel is null ? "View the full help in a new panel"
+                              : "Go to the panel with the full help";
+
+    private protected override string ModifiedToolTip
+        => "Open the full help in your web browser";
+
+    private protected override async void OnMainClick(EventArgs e)
+    {
+        if (_helpPanel is null)
+            await OpenHelp();
+        else
+            _switcher.Switch(_helpPanel);
+    }
+
+    private protected override void OnModifiedClick(EventArgs e)
+    {
+        var uri = Files.GetDocUrl(FileName);
+
+        if (!uri.SchemeIs(Uri.UriSchemeFile)) {
+            throw new InvalidOperationException(
+                    "Bug: Help URI isn't a file:/// URL");
+        }
+
+        Shell.Execute(uri.AbsoluteUri);
+    }
+
+    private const string Title = "Flood Fill Visualization - Help";
+
+    private const string FileName = "help.html";
+
+    private static void help_Navigating(object sender,
+                                        HelpViewerNavigatingEventArgs e)
+    {
+        // Open file:// URLs normally, inside the help browser.
+        if (e.Uri.SchemeIs(Uri.UriSchemeFile)) return;
+
+        // No other URLs shall be opened in the help browser panel.
+        e.Cancel = true;
+
+        // Open web links externally, in the default browser. [This check is
+        // also important for security, to make sure we are actually opening
+        // them in a web browser, i.e., a program (or COM object) registered as
+        // an appropriate protocol handler. We can't guarantee the user won't
+        // manage to navigate somewhere that offers up a hyperlink starting
+        // with something ShellExecuteExW would take as a Windows executable.]
+        if (e.Uri.SchemeIsAny(Uri.UriSchemeHttps, Uri.UriSchemeHttp))
+            Shell.Execute(e.Uri.AbsoluteUri);
+    }
+
+    private void helpPanel_PanelClosed(object? sender, EventArgs e)
+    {
+        _helpPanel = null;
+        UpdateToolTip();
+    }
+
+    private async Task OpenHelp()
+    {
+        Enabled = false;
+
+        var help = await _supplier();
+        help.Source = Files.GetDocUrl(FileName);
+        help.Navigating += help_Navigating;
+        _helpPanel = _switcher.DisplayForeground(help.WrappedControl, Title);
+        _helpPanel.PanelClosed += helpPanel_PanelClosed;
+        UpdateToolTip();
+
+        Enabled = true;
+    }
+
+    private readonly HelpViewerSupplier _supplier;
+
+    private readonly IPanelSwitcher _switcher;
+
+    private OutputPanel? _helpPanel = null;
+}
+
+/// <summary>
+/// A button with a primary (non-Shift) action and secondary (Shift) action,
+/// and a tooltip that changes accordingly.
+/// </summary>
+/// <remarks>
+/// Modifier keys are checked when the button is clicked, but the state can
+/// also be refreshed, so the tooltip text can change immediately, even when
+/// the control is not focused and the tooltip is currently visible.
+/// </remarks>
+internal abstract class DualUseButton : Button {
+    internal DualUseButton()
+    {
+        Margin = Padding.Empty;
+        _toolTip = new(_components) { ShowAlways = true };
+    }
+
+    internal void UpdateToolTip() => _toolTip.SetToolTip(this, CurrentToolTip);
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        UpdateToolTip();
+    }
+
+    protected override void OnClick(EventArgs e)
+    {
+        var doModified = GotKey.Shift;
+
+        base.OnClick(e);
+
+        if (doModified)
+            OnModifiedClick(e);
+        else
+            OnMainClick(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private protected abstract string MainToolTip { get; }
+
+    private protected abstract string ModifiedToolTip { get; }
+
+    private protected abstract void OnMainClick(EventArgs e);
+
+    private protected abstract void OnModifiedClick(EventArgs e);
+
+    private string CurrentToolTip
+        => GotKey.Shift ? ModifiedToolTip : MainToolTip;
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
 }
 
 /// <summary>
@@ -2579,7 +2818,9 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
-    internal static Charter StartNew(string name) => new(name);
+    internal static Charter
+    StartNew(string name, AlertBar alert, IPanelSwitcher switcher)
+        => new(name, alert, switcher);
 
     internal void Finish()
     {
@@ -2589,7 +2830,8 @@ internal sealed class Charter {
         CustomizeSeries(chart);
         CustomizeArea(chart);
         TryCustomizeToolTip(chart);
-        chart.Dump(_name);
+
+        DisplayChart(chart);
     }
 
     internal void Update() => _times.Add(_timer.Elapsed);
@@ -2600,7 +2842,8 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name) => _name = name;
+    private Charter(string name, AlertBar alert, IPanelSwitcher switcher)
+        => (_name, _alert, _switcher) = (name, alert, switcher);
 
     private static Font ChartTitleFont { get; } =
         new Font("Segoe UI Semibold", LabelFontSize);
@@ -2671,10 +2914,28 @@ internal sealed class Charter {
         toolTip.InitialDelay = toolTip.ReshowDelay = ToolTipDelay;
     }
 
+    private void DisplayChart(Chart chart)
+    {
+        var panel = _switcher.DisplayBackground(chart, _name);
+
+        _alert.Show($"{_name} has charted.", onClick: () => {
+            if (_switcher.TrySwitch(panel)) {
+                _alert.Hide();
+            } else {
+                _alert.Show($"{_name}{Ch.Rsquo}s chart was closed and"
+                            + $" can{Ch.Rsquo}t be shown.");
+            }
+        });
+    }
+
     private static void Warn(string message)
         => message.Dump($"Warning ({nameof(Charter)})");
 
     private readonly string _name;
+
+    private readonly AlertBar _alert;
+
+    private readonly IPanelSwitcher _switcher;
 
     private readonly Stopwatch _timer = Stopwatch.StartNew();
 
@@ -2769,6 +3030,18 @@ internal readonly ref struct LockedBits {
     private readonly Span<int> _argbs;
 }
 
+/// <summary>Convienice properties for polling modifier keys.</summary>
+internal static class GotKey {
+    internal static bool Shift => Control.ModifierKeys.HasFlag(Keys.Shift);
+
+    internal static bool Ctrl => Control.ModifierKeys.HasFlag(Keys.Control);
+
+    internal static bool Alt => Control.ModifierKeys.HasFlag(Keys.Alt);
+
+    internal static bool Super
+        => Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin);
+}
+
 /// <summary>Named aliases for some Unicode characters.</summary>
 internal static class Ch {
     /// <summary>No-break space.</summary>
@@ -2794,4 +3067,70 @@ internal static class Ch {
 
     /// <summary> Gear (emoji).</summary>
     internal const char Gear = '\u2699';
+}
+
+/// <summary>Access to the winbase.h/kernel32.dll Windows API.</summary>
+internal static class Kernel32 {
+    internal static void ThrowLastError()
+        => throw new Win32Exception(Marshal.GetLastWin32Error());
+}
+
+/// <summary>Access to the ntdll.dll Windows API.</summary>
+internal static class NtDll {
+    /// <remarks>
+    /// <see cref="NtQueryTimerResolution"/> returns times in units of 100 ns.
+    /// </remarks>
+    internal const double HundredNanosecondsPerMillisecond = 10_000.0;
+
+    [DllImport("ntdll")]
+    internal static extern int
+    NtQueryTimerResolution(out uint MinimumResolution,
+                           out uint MaximumResolution,
+                           out uint CurrentResolution);
+}
+
+/// <summary>Access to the shellapi.h/shell32.dll Windows API.</summary>
+internal static class Shell32 {
+    // TODO: Use a SafeHandle-based way instead. (See User32.DestroyIcon.)
+    internal static IntPtr ExtractIconOrThrow(IntPtr hInst,
+                                              string pszExeFileName,
+                                              uint nIconIndex)
+    {
+        var hIcon = ExtractIcon(hInst, pszExeFileName, nIconIndex);
+        if (hIcon == IntPtr.Zero) Kernel32.ThrowLastError();
+        return hIcon;
+    }
+
+    [DllImport("shell32", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr ExtractIcon(IntPtr hInst,
+                                             string pszExeFileName,
+                                             uint nIconIndex);
+}
+
+/// <summary>Access to the winuser.h/user32.dll Windows API.</summary>
+internal static class User32 {
+    // These are 16-bit values, but using a 64-bit type ensures that
+    // mistakenly casting from a Message.WParam that does not represent a
+    // virtual key code will not inadventently match something.
+    internal enum VK : ulong {
+        LWIN = 0x5B,
+        RWIN = 0x5C,
+    }
+
+    internal enum WM : uint {
+        KEYUP    = 0x0101,
+        SYSKEYUP = 0x0105,
+    }
+
+    [DllImport("user32")]
+    internal static extern bool HideCaret(IntPtr hWnd);
+
+    // TODO: Use a SafeHandle-based way instead. (See Shell32.ExtractIcon.)
+    internal static void DestroyIconOrThrow(IntPtr hIcon)
+    {
+        if (!DestroyIcon(hIcon)) Kernel32.ThrowLastError();
+    }
+
+    [DllImport("user32", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 }
