@@ -619,9 +619,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         base.OnVisibleChanged(e);
 
-        const string message =
-            "Low vertical space. Rearranging panels (Ctrl+F8) may help.";
-
         if (_shownBefore || !Visible) return;
 
         _shownBefore = true;
@@ -639,7 +636,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         await Task.Yield();
 
         if (VScroll) {
-            _alert.Show(message);
+            _alert.Show(
+                "Low vertical space. Rearranging panels (Ctrl+F8) may help.");
+
             VerticalScroll.Value = 0; // Also needed when the launcher is used.
         }
     }
@@ -662,6 +661,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                 // even in combination with other keystrokes.) Global shortcuts
                 // may even be best, as users are less likely to customize them
                 // with a macro program like AutoHotKey.
+                //
                 // TODO: Decide if this is really less bad than a manual hook.
                 SendKeys.Send(",");
             }
@@ -1044,7 +1044,9 @@ internal sealed class MainPanel : TableLayoutPanel {
             // Scrolling with Shift cycles substrategies, but there are none.
             _alert.Show(
                 $"{Ch.Ldquo}{_neighborEnumerationStrategies.Current}{Ch.Rdquo}"
-                + " strategy has no sub-strategies to scroll.");
+                    + " strategy has no sub-strategies to scroll.",
+                toolTip: "To select a different major strategy,"
+                       + " scroll without holding Shift.");
         } else if (GotKey.Ctrl) {
             // Scrolling with Ctrl+Shift cycles substrategies many at a time.
             if (scrollingDown)
@@ -1342,21 +1344,45 @@ internal sealed class MainPanel : TableLayoutPanel {
     private bool _suppressStartMenu = false;
 };
 
+/// <summary>
+/// A receipt given when showing an alert on an <see cref="AlertBar"/>, allowing
+/// the caller to check later if it is still the most recent alert shown.
+/// </summary>
+internal interface IAlertCookie {
+    /// <summary>Tells if this this is still the current alert.</summary>
+    /// <remarks>
+    /// An alert is no longer current when another alert has replaced it or the
+    /// <c>AlertBar</c> is disposed. But hiding the alert bar (even if by the
+    /// user dismissing the alert) does not cause it to no longer be current.
+    /// </remarks>
+    bool IsCurrent { get; }
+}
+
 /// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
 internal sealed class AlertBar : TableLayoutPanel {
     internal AlertBar()
     {
+        _toolTip = new(_components) { ShowAlways = true };
+        _toolTip.SetToolTip(_dismiss, "Hide this alert");
         InitializeAlertBar();
         SubscribePrivateHandlers();
     }
 
-    internal void Show(string message,
-                       Action? onClick = null,
-                       Action? onDismiss = null)
+    internal IAlertCookie Show(string message,
+                               string? toolTip = null,
+                               Action? onClick = null,
+                               Action? onDismiss = null)
     {
+        if (_disposed) {
+            throw new ObjectDisposedException(
+                    "Can't show new alert on disposed alert bar");
+        }
+
         (_content.Text, _onClick, _onDismiss) = (message, onClick, onDismiss);
+        _toolTip.SetToolTip(_content, toolTip);
         UpdateStyle();
         Show();
+        return _cookie = new Cookie(this);
     }
 
     protected override void OnSizeChanged(EventArgs e)
@@ -1373,18 +1399,33 @@ internal sealed class AlertBar : TableLayoutPanel {
         _content.BackColor = BackColor;
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && !_disposed) {
+            _disposed = true;
+            _components.Dispose();
+            _onClick = _onDismiss = null;
+
+            // Important so the recently returned cookie is no longer current.
+            _cookie = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private sealed class Cookie : IAlertCookie {
+        internal Cookie(AlertBar alertBar) => _alertBar = alertBar;
+
+        /// <inheritdoc/>
+        public bool IsCurrent => this == _alertBar._cookie;
+
+        private readonly AlertBar _alertBar;
+    }
+
     private sealed record Style(Font Font,
                                 Color Color,
                                 Cursor Cursor,
-                                bool TabStop) {
-        internal void ApplyTo(Control control)
-        {
-            control.Font = Font;
-            control.ForeColor = Color;
-            control.Cursor = Cursor;
-            control.TabStop = TabStop;
-        }
-    }
+                                bool TabStop);
 
     private const int FontSize = 10;
 
@@ -1441,23 +1482,29 @@ internal sealed class AlertBar : TableLayoutPanel {
 
     private void UpdateStyle()
     {
-        var style = (action: _onClick,
-                     hover: _content.HasMousePointer(),
-                     cue: ShouldSimulateFocusCue) switch {
+        ApplyContentStyle((action: _onClick,
+                           hover: _content.HasMousePointer(),
+                           cue: ShouldSimulateFocusCue) switch {
             (action: null, hover: _,     cue: _)     => StaticStyle,
             (action: _,    hover: false, cue: false) => LinkStyle,
             (action: _,    hover: false, cue: true)  => FocusedLinkStyle,
             (action: _,    hover: true,  cue: false) => LinkHoverStyle,
             (action: _,    hover: true,  cue: true)  => FocusedLinkHoverStyle,
-        };
-
-        style.ApplyTo(_content);
+        });
 
         HideContentCaret();
     }
 
     private bool ShouldSimulateFocusCue
         => _content.Focused && _content.SelectionLength == 0;
+
+    private void ApplyContentStyle(Style style)
+    {
+        _content.Font = style.Font;
+        _content.ForeColor = style.Color;
+        _content.Cursor = style.Cursor;
+        _content.TabStop = style.TabStop;
+    }
 
     private void HideContentCaret()
     {
@@ -1555,9 +1602,17 @@ internal sealed class AlertBar : TableLayoutPanel {
         Margin = Padding.Empty,
     };
 
-    Action? _onClick = null;
+    private readonly IContainer _components = new Container();
 
-    Action? _onDismiss = null;
+    private readonly ToolTip _toolTip;
+
+    private Action? _onClick = null;
+
+    private Action? _onDismiss = null;
+
+    private IAlertCookie? _cookie = null;
+
+    private bool _disposed = false;
 }
 
 /// <summary>
@@ -1579,6 +1634,7 @@ internal sealed class MagnifyButton : ApplicationButton {
         if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
             _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
                         + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        toolTip: "Open Magnifier Settings",
                         onClick: OpenMagnifierSettings,
                         onDismiss: () => _checkMagnifierSettings = false);
         }
@@ -2915,14 +2971,23 @@ internal sealed class Charter {
     {
         var panel = _switcher.DisplayBackground(chart, _name);
 
-        _alert.Show($"{_name} has charted.", onClick: () => {
-            if (_switcher.TrySwitch(panel)) {
-                _alert.Hide();
-            } else {
-                _alert.Show($"{_name}{Ch.Rsquo}s chart was closed and"
-                            + $" can{Ch.Rsquo}t be shown.");
-            }
-        });
+        var cookie = _alert.Show($"{_name} has charted.",
+                                 toolTip: "Switch to its chart panel",
+                                 onClick: () => SwitchToChartPanel(panel));
+
+        panel.PanelClosed += delegate {
+            if (cookie.IsCurrent) _alert.Hide();
+        };
+    }
+
+    private void SwitchToChartPanel(OutputPanel panel)
+    {
+        if (_switcher.TrySwitch(panel)) {
+            _alert.Hide();
+        } else {
+            _alert.Show($"{_name}{Ch.Rsquo}s chart was closed and"
+                        + $" can{Ch.Rsquo}t be shown.");
+        }
     }
 
     private static void Warn(string message)
