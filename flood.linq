@@ -467,7 +467,19 @@ internal sealed class MainPanel : TableLayoutPanel {
                 && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
                 && _suppressStartMenu) {
             _suppressStartMenu = false;
-            if (Focused) SendKeys.Send("+()"); // Simulate tapping Shift.
+
+            if (Focused) {
+                // Simulate concurrent input to prevent the Windows key from
+                // opening the Start Menu. Don't use anything this program
+                // treats specially. "Win+," is a global shortcut but it's only
+                // going into this program's message queue. (If it did somehow
+                // seep through, it would peek the desktop, which is innocuous
+                // even in combination with other keystrokes.) Global shortcuts
+                // may even be best, as users are less likely to customize them
+                // with a macro program like AutoHotKey.
+                // TODO: Decide if this is really less bad than a manual hook.
+                SendKeys.Send(",");
+            }
         }
 
         base.WndProc(ref m);
