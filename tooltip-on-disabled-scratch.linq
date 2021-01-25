@@ -4,9 +4,15 @@
   <Namespace>System.Windows.Forms</Namespace>
 </Query>
 
-var widget = new Widget {
+var button = new Button {
     Width = 100,
     Height = 30,
+    Text = "Click Me",
+};
+
+var buttonHost = new TippingHost(button, SizeTracking.ChildTracksHost) {
+    EnabledToolTip = "Click here for glory!",
+    DisabledToolTip = "This button is mean.",
 };
 
 var enabled = new CheckBox {
@@ -14,39 +20,46 @@ var enabled = new CheckBox {
     Checked = true,
 };
 enabled.CheckedChanged += delegate {
-    widget.ButtonEnabled = enabled.Checked;
+    button.Enabled = enabled.Checked;
 };
 
 var ui = new TableLayoutPanel();
-ui.Controls.Add(widget);
+ui.Controls.Add(buttonHost);
 ui.Controls.Add(enabled);
 ui.Dump();
 
-internal sealed class Widget : Control {
-    internal Widget()
+internal sealed class TippingHost : Control {
+    internal TippingHost(Control child, SizeTracking sizeTracking)
     {
+        (Child, SizeTracking) = (child, sizeTracking);
         _toolTip = new(_components) { ShowAlways = true };
-        _toolTip.SetToolTip(_button, "Click here for glory!");
-        _toolTip.SetToolTip(_viewfoil, "This button is mean.");
 
-        Controls.Add(_button);
-        Controls.Add(_viewfoil);
+        Controls.Add(Child);
+        Controls.Add(_cover);
+        _cover.BringToFront();
 
-        _button.EnabledChanged += delegate { SetZOrder(); };
+        Child.EnabledChanged += delegate { UpdateCover(); };
+        UpdateCover();
+        ResizeHostToChild();
+        RegisterSizeTracker(nameof(sizeTracking));
 
-        Size = _viewfoil.Size = _button.Size;
+        Child.Location = Point.Empty;
     }
 
-    internal bool ButtonEnabled
+    internal Control Child { get; }
+
+    internal SizeTracking SizeTracking { get; }
+
+    internal string EnabledToolTip
     {
-        get => _button.Enabled;
-        set => _button.Enabled = value;
+        get => _toolTip.GetToolTip(Child);
+        set => _toolTip.SetToolTip(Child, value);
     }
 
-    protected override void OnSizeChanged(EventArgs e)
+    internal string DisabledToolTip
     {
-        base.OnSizeChanged(e);
-        _viewfoil.Size = _button.Size = Size;
+        get => _toolTip.GetToolTip(_cover);
+        set => _toolTip.SetToolTip(_cover, value);
     }
 
     protected override void Dispose(bool disposing)
@@ -55,32 +68,48 @@ internal sealed class Widget : Control {
         base.Dispose(disposing);
     }
 
-    private void SetZOrder()
+    private void RegisterSizeTracker(string paramName)
     {
-        if (_button.Enabled)
-            _button.BringToFront();
-        else
-            _viewfoil.BringToFront();
+        switch (SizeTracking) {
+        case SizeTracking.ChildTracksHost:
+            SizeChanged += delegate { ResizeChildToHost(); };
+            break;
+
+        case SizeTracking.HostTracksChild:
+            Child.SizeChanged += delegate { ResizeHostToChild(); };
+            break;
+
+        default:
+            throw new ArgumentException(
+                    paramName: paramName,
+                    message: $"Unrecognized {nameof(SizeTracking)} constant.");
+        }
     }
+
+    private void UpdateCover() => _cover.Visible = !Child.Enabled;
+
+    private void ResizeChildToHost() =>  _cover.Size = Child.Size = Size;
+
+    private void ResizeHostToChild() => Size = _cover.Size = Child.Size;
 
     private readonly IContainer _components = new Container();
 
     private readonly ToolTip _toolTip;
 
-    private readonly Button _button = new() {
-        Text = "Click Me",
-        Location = Point.Empty,
-    };
-
-    private readonly Viewfoil _viewfoil = new();
+    private readonly ClearCover _cover = new();
 }
 
-internal sealed class Viewfoil : Control {
-    internal Viewfoil()
+internal enum SizeTracking {
+    ChildTracksHost,
+    HostTracksChild,
+}
+
+internal sealed class ClearCover : Control {
+    internal ClearCover()
     {
         Location = Point.Empty;
         TabStop = false;
-        SetStyle(ControlStyles.Opaque, true);
+        SetStyle(ControlStyles.Opaque, true); // Unintutiive, but intentional.
         UpdateStyles();
     }
 
