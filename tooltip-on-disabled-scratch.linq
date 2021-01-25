@@ -28,6 +28,9 @@ ui.Controls.Add(buttonHost);
 ui.Controls.Add(enabled);
 ui.Dump();
 
+/// <summary>
+/// Hosts and provides enabled and disabled tooltips to a single control.
+/// </summary>
 internal sealed class TippingHost : Control {
     internal TippingHost(Control child, SizeTracking sizeTracking)
     {
@@ -104,6 +107,15 @@ internal enum SizeTracking {
     HostTracksChild,
 }
 
+/// <summary>
+/// A transparent control, intended to be inert except for a tooltip.
+/// </summary>
+/// <remarks>
+/// Used by <see cref="TippingHost"/>. <c>ClearCover</c> (but not the broader
+/// design of <c>TippingHost</c>) is directly inspired by
+/// <c>TransparentSheet</c> in
+/// <a href="https://www.codeproject.com/Articles/32083/Displaying-a-ToolTip-when-the-Mouse-Hovers-Over-a">Displaying a ToolTip when the Mouse Hovers Over a Disabled Control</a>.
+/// </remarks>
 internal sealed class ClearCover : Control {
     internal ClearCover()
     {
