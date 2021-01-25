@@ -550,6 +550,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert);
         _stop = CreateStop();
+        _stopHost = CreateStopHost();
         _charting = CreateCharting();
         _infoBar = CreateInfoBar();
 
@@ -573,8 +574,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     internal bool StopButtonVisible
     {
-        get => _stop.Visible;
-        set => _stop.Visible = value;
+        get => _stopHost.Visible;
+        set => _stopHost.Visible = value;
     }
 
     internal bool ChartingButtonVisible
@@ -738,7 +739,12 @@ internal sealed class MainPanel : TableLayoutPanel {
     private Button CreateStop()
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
                             disabledBitmapFilename: "stop-faded.bmp",
-                            _showHideTips.Height) { Visible = false };
+                            _showHideTips.Height);
+
+    private TippingHost CreateStopHost() => new(_stop) {
+        EnabledToolTip = "Stop running fills",
+        Visible = false,
+    };
 
     private AnimatedBitmapCheckBox CreateCharting()
         => new(from i in Enumerable.Range(1, 6)
@@ -763,7 +769,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         infoBar.Height = _helpButtons.Height;
 
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
-        infoBar.Controls.Add(_stop, column: 1, row: 0);
+        infoBar.Controls.Add(_stopHost, column: 1, row: 0);
         infoBar.Controls.Add(_charting, column: 2, row: 0);
 
         return infoBar;
@@ -801,12 +807,11 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void UpdateStopButton()
     {
-        if (_jobs == 0) {
-            _stop.Enabled = false;
-            _toolTip.SetToolTip(_stop, "No running fills to stop");
-        } else {
+        if (_jobs != 0) {
             _stop.Enabled = true;
-            _toolTip.SetToolTip(_stop, "Stop running fills");
+        } else {
+            _stopHost.DisabledToolTip = "No running fills to stop";
+            _stop.Enabled = false;
         }
     }
 
@@ -921,6 +926,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas.MouseWheel += canvas_MouseWheel;
 
         _stop.Click += stop_Click;
+        _stop.LostFocus += stop_LostFocus;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
@@ -1063,8 +1069,21 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void stop_Click(object? sender, EventArgs e)
     {
         _stop.Enabled = false;
-        _toolTip.SetToolTip(_stop, "Stopping fills...");
+        _stopHost.DisabledToolTip = "Stopping fills...";
         StopAllFills();
+    }
+
+    private void stop_LostFocus(object? sender, EventArgs e)
+    {
+        // When the stop button is disabled while it has focus, avoid focusing
+        // the charting button, since users are likely to accidentally turn
+        // charting on or off in that situation. This is mostly important when
+        // the stop button is disabled due to the last fill completing, since
+        // the user could press Spacebar or Enter just a monent too late (and
+        // not notice that charting was affected). But I think focus shouldn't
+        // go to the charting button due to successfully using the stop button
+        // either.
+        if (!_stop.Enabled) Focus();
     }
 
     private void showHideTips_Click(object? sender, EventArgs e)
@@ -1289,6 +1308,8 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly TableLayoutPanel _helpButtons;
 
     private readonly DualUseButton _magnify;
+
+    private readonly TippingHost _stopHost;
 
     private readonly Button _stop;
 
@@ -2137,6 +2158,108 @@ internal abstract class DualUseButton : Button {
     private readonly IContainer _components = new Container();
 
     private readonly ToolTip _toolTip;
+}
+
+/// <summary>
+/// Hosts and provides enabled and disabled tooltips to a single control.
+/// </summary>
+internal sealed class TippingHost : Control {
+    internal TippingHost(Control child)
+    {
+        Child = child;
+        _toolTip = new(_components) { ShowAlways = true };
+
+        Controls.Add(Child);
+        Controls.Add(_cover);
+        _cover.BringToFront();
+
+        TabStop = false;
+        Margin = Padding.Empty;
+        Size = _cover.Size = Child.Size;
+        Resize += TippingHost_Resize;
+
+        Child.Location = Point.Empty;
+        Child.Resize += child_Resize;
+        Child.EnabledChanged += child_EnabledChanged;
+
+        UpdateCover();
+    }
+
+    internal Control Child { get; }
+
+    internal string EnabledToolTip
+    {
+        get => _toolTip.GetToolTip(Child);
+        set => _toolTip.SetToolTip(Child, value);
+    }
+
+    internal string DisabledToolTip
+    {
+        get => _toolTip.GetToolTip(_cover);
+        set => _toolTip.SetToolTip(_cover, value);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private static void TippingHost_Resize(object? sender, EventArgs e)
+        => throw new NotSupportedException(
+            $"{nameof(TippingHost)} doesn't support resizing.");
+
+    private static void child_Resize(object? sender, EventArgs e)
+        => throw new NotSupportedException(
+            $"Resizing a {nameof(TippingHost)} child is not supported.");
+
+    private void child_EnabledChanged(object? sender, EventArgs e)
+    {
+        if (IsHandleCreated) {
+            // If a disabled or enabled tooltip is showing and the state
+            // changes, that tooltip becomes wrong, so stop showing it.
+            _toolTip.Hide(Child);
+            _toolTip.Hide(_cover);
+        }
+
+        UpdateCover();
+    }
+
+    private void UpdateCover() => _cover.Visible = !Child.Enabled;
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
+
+    private readonly ClearOverlay _cover = new();
+}
+
+/// <summary>
+/// A transparent control that supports a tooltip.
+/// </summary>
+/// <remarks>
+/// Used by <see cref="TippingHost"/>. <c>ClearOverlay</c> (but not the broader
+/// design of <c>TippingHost</c>) is directly inspired by
+/// <c>TransparentSheet</c> in
+/// <a href="https://www.codeproject.com/Articles/32083/Displaying-a-ToolTip-when-the-Mouse-Hovers-Over-a">Displaying a ToolTip when the Mouse Hovers Over a Disabled Control</a>.
+/// </remarks>
+internal sealed class ClearOverlay : Control {
+    internal ClearOverlay()
+    {
+        Location = Point.Empty;
+        TabStop = false;
+        SetStyle(ControlStyles.Opaque, true); // Unintuitive, but intentional.
+        UpdateStyles();
+    }
+
+    protected override CreateParams CreateParams
+    {
+        get {
+            var value = base.CreateParams;
+            value.ExStyle |= (int)User32.WS_EX.TRANSPARENT;
+            return value;
+        }
+    }
 }
 
 /// <summary>
@@ -3181,6 +3304,10 @@ internal static class User32 {
     internal enum WM : uint {
         KEYUP    = 0x0101,
         SYSKEYUP = 0x0105,
+    }
+
+    internal enum WS_EX : uint {
+        TRANSPARENT = 0x00000020,
     }
 
     [DllImport("user32")]

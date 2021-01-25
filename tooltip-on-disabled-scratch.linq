@@ -121,7 +121,7 @@ internal sealed class ClearCover : Control {
     {
         Location = Point.Empty;
         TabStop = false;
-        SetStyle(ControlStyles.Opaque, true); // Unintutiive, but intentional.
+        SetStyle(ControlStyles.Opaque, true); // Unintuitive, but intentional.
         UpdateStyles();
     }
 
