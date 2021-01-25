@@ -14,8 +14,15 @@ h1 {
 }
 
 h2 {
-  margin-top: 1.1em;
+  border-top: 1px solid;
   letter-spacing: .1em;
+  margin-top: 1.1em;
+}
+
+h2.toc-heading {
+  border-top: none;
+  color: inherit;
+  letter-spacing: normal;
 }
 
 h2, h3 {
