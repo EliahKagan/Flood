@@ -546,9 +546,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
-        _help = new HelpButton(supplier, _switcher);
+        _help = new HelpButton(supplier, _switcher, _toolTip);
         _helpButtons = CreateHelpButtons();
-        _magnify = new MagnifyButton(_showHideTips.Height, _alert);
+        _magnify = new MagnifyButton(_showHideTips.Height, _alert, _toolTip);
         _stop = CreateStop();
         _stopHost = CreateStopHost();
         _charting = CreateCharting();
@@ -601,9 +601,9 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         // Update "Speed" in status from modifier keys, crisply when
         // reasonable. Unlike with an ordinary form, users can't readily see if
-        // a PluginForm is active (and it starts inactive) so update it, albeit
-        // slower, even when not. [These are two of the three cases. The other
-        // is when _tips is focused. See MainPanel.SubscribePrivateHandlers.]
+        // a PluginForm is active, and it starts inactive. So update it, albeit
+        // slower, even when not. (These are two of the three cases. The other
+        // is when _tips is focused. See MainPanel.SubscribePrivateHandlers.)
         pluginForm.KeyPreview = true;
         pluginForm.KeyDown += delegate { UpdateStatus(); };
         pluginForm.KeyUp += delegate { UpdateStatus(); };
@@ -714,7 +714,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = CanvasMargin,
     };
 
-    private AlertBar CreateAlertBar() => new() {
+    private AlertBar CreateAlertBar() => new(_toolTip) {
         Width = _rect.Width,
         Margin = CanvasMargin,
     };
@@ -741,7 +741,7 @@ internal sealed class MainPanel : TableLayoutPanel {
                             disabledBitmapFilename: "stop-faded.bmp",
                             _showHideTips.Height);
 
-    private TippingHost CreateStopHost() => new(_stop) {
+    private TippingHost CreateStopHost() => new(_stop, _toolTip) {
         EnabledToolTip = "Stop running fills",
         Visible = false,
     };
@@ -1377,9 +1377,9 @@ internal interface IAlertCookie {
 
 /// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
 internal sealed class AlertBar : TableLayoutPanel {
-    internal AlertBar()
+    internal AlertBar(ToolTip toolTip)
     {
-        _toolTip = new(_components) { ShowAlways = true };
+        _toolTip = toolTip;
         _toolTip.SetToolTip(_dismiss, "Hide this alert");
         InitializeAlertBar();
         SubscribePrivateHandlers();
@@ -1420,7 +1420,6 @@ internal sealed class AlertBar : TableLayoutPanel {
     {
         if (disposing && !_disposed) {
             _disposed = true;
-            _components.Dispose();
             _onClick = _onDismiss = null;
 
             // Important so the recently returned cookie is no longer current.
@@ -1619,8 +1618,6 @@ internal sealed class AlertBar : TableLayoutPanel {
         Margin = Padding.Empty,
     };
 
-    private readonly IContainer _components = new Container();
-
     private readonly ToolTip _toolTip;
 
     private Action? _onClick = null;
@@ -1636,10 +1633,9 @@ internal sealed class AlertBar : TableLayoutPanel {
 /// Hosts and provides enabled and disabled tooltips to a single control.
 /// </summary>
 internal sealed class TippingHost : Control {
-    internal TippingHost(Control child)
+    internal TippingHost(Control child, ToolTip toolTip)
     {
-        Child = child;
-        _toolTip = new(_components) { ShowAlways = true };
+        (Child, _toolTip) = (child, toolTip);
 
         Controls.Add(Child);
         Controls.Add(_cover);
@@ -1671,12 +1667,6 @@ internal sealed class TippingHost : Control {
         set => _toolTip.SetToolTip(_cover, value);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) _components.Dispose();
-        base.Dispose(disposing);
-    }
-
     private static void TippingHost_Resize(object? sender, EventArgs e)
         => throw new NotSupportedException(
             $"{nameof(TippingHost)} doesn't support resizing.");
@@ -1698,8 +1688,6 @@ internal sealed class TippingHost : Control {
     }
 
     private void UpdateCover() => _cover.Visible = !Child.Enabled;
-
-    private readonly IContainer _components = new Container();
 
     private readonly ToolTip _toolTip;
 
@@ -1921,10 +1909,10 @@ internal static class FrameSequence {
 /// the control is not focused and the tooltip is currently visible.
 /// </remarks>
 internal abstract class DualUseButton : Button {
-    internal DualUseButton()
+    internal DualUseButton(ToolTip toolTip)
     {
+        _toolTip = toolTip;
         Margin = Padding.Empty;
-        _toolTip = new(_components) { ShowAlways = true };
     }
 
     internal void UpdateToolTip() => _toolTip.SetToolTip(this, CurrentToolTip);
@@ -1947,12 +1935,6 @@ internal abstract class DualUseButton : Button {
             OnMainClick(e);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) _components.Dispose();
-        base.Dispose(disposing);
-    }
-
     private protected abstract string MainToolTip { get; }
 
     private protected abstract string ModifiedToolTip { get; }
@@ -1964,8 +1946,6 @@ internal abstract class DualUseButton : Button {
     private string CurrentToolTip
         => GotKey.Shift ? ModifiedToolTip : MainToolTip;
 
-    private readonly IContainer _components = new Container();
-
     private readonly ToolTip _toolTip;
 }
 
@@ -1976,7 +1956,9 @@ internal abstract class DualUseButton : Button {
 internal abstract class ApplicationButton : DualUseButton {
     internal ApplicationButton(string executablePath,
                                int sideLength,
+                               ToolTip toolTip,
                                string? fallbackDescription = null)
+        : base(toolTip)
     {
         Width = Height = sideLength;
         BackgroundImageLayout = ImageLayout.Stretch;
@@ -2031,9 +2013,10 @@ internal abstract class ApplicationButton : DualUseButton {
 /// A square button to launch the system Magnifier or configure it in Settings.
 /// </summary>
 internal sealed class MagnifyButton : ApplicationButton {
-    internal MagnifyButton(int sideLength, AlertBar alert)
+    internal MagnifyButton(int sideLength, AlertBar alert, ToolTip toolTip)
             : base(executablePath: Files.GetSystem32ExePath("magnify"),
                    sideLength: sideLength,
+                   toolTip: toolTip,
                    fallbackDescription: "Magnifier")
         => _alert = alert;
 
@@ -2154,7 +2137,10 @@ internal sealed class BitmapButton : Button {
 /// <see cref="HelpViewer"/>.
 /// </remarks>
 internal sealed class HelpButton : DualUseButton {
-    internal HelpButton(HelpViewerSupplier supplier, IPanelSwitcher switcher)
+    internal HelpButton(HelpViewerSupplier supplier,
+                        IPanelSwitcher switcher,
+                        ToolTip toolTip)
+        : base(toolTip)
     {
         (_supplier, _switcher) = (supplier, switcher);
 
