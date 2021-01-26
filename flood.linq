@@ -1296,7 +1296,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private Point _oldLocation = Point.Empty;
 
-    private readonly AlertBar _alert = new();
+    private readonly AlertBar _alert;
 
     private readonly TableLayoutPanel _infoBar;
 
