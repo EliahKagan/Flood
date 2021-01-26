@@ -1633,182 +1633,105 @@ internal sealed class AlertBar : TableLayoutPanel {
 }
 
 /// <summary>
-/// A square button to launch the system Magnifier or configure it in Settings.
+/// Hosts and provides enabled and disabled tooltips to a single control.
 /// </summary>
-internal sealed class MagnifyButton : ApplicationButton {
-    internal MagnifyButton(int sideLength, AlertBar alert)
-            : base(executablePath: Files.GetSystem32ExePath("magnify"),
-                   sideLength: sideLength,
-                   fallbackDescription: "Magnifier")
-        => _alert = alert;
-
-    private protected override string ModifiedToolTip => "Magnifier Settings";
-
-    private protected override void OnMainClick(EventArgs e)
+internal sealed class TippingHost : Control {
+    internal TippingHost(Control child)
     {
-        base.OnMainClick(e);
+        Child = child;
+        _toolTip = new(_components) { ShowAlways = true };
 
-        if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
-            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
-                        + $"Smooth edges of images and text{Ch.Rdquo}.",
-                        toolTip: "Open Magnifier Settings",
-                        onClick: OpenMagnifierSettings,
-                        onDismiss: () => _checkMagnifierSettings = false);
-        }
+        Controls.Add(Child);
+        Controls.Add(_cover);
+        _cover.BringToFront();
+
+        TabStop = false;
+        Margin = Padding.Empty;
+        Size = _cover.Size = Child.Size;
+        Resize += TippingHost_Resize;
+
+        Child.Location = Point.Empty;
+        Child.Resize += child_Resize;
+        Child.EnabledChanged += child_EnabledChanged;
+
+        UpdateCover();
     }
 
-    private protected override void OnModifiedClick(EventArgs e)
-        => OpenMagnifierSettings();
+    internal Control Child { get; }
 
-    private static bool HaveMagnifierSmoothing
+    internal string EnabledToolTip
+    {
+        get => _toolTip.GetToolTip(Child);
+        set => _toolTip.SetToolTip(Child, value);
+    }
+
+    internal string DisabledToolTip
+    {
+        get => _toolTip.GetToolTip(_cover);
+        set => _toolTip.SetToolTip(_cover, value);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private static void TippingHost_Resize(object? sender, EventArgs e)
+        => throw new NotSupportedException(
+            $"{nameof(TippingHost)} doesn't support resizing.");
+
+    private static void child_Resize(object? sender, EventArgs e)
+        => throw new NotSupportedException(
+            $"Resizing a {nameof(TippingHost)} child is not supported.");
+
+    private void child_EnabledChanged(object? sender, EventArgs e)
+    {
+        if (IsHandleCreated) {
+            // If a disabled or enabled tooltip is showing and the state
+            // changes, that tooltip becomes wrong, so stop showing it.
+            _toolTip.Hide(Child);
+            _toolTip.Hide(_cover);
+        }
+
+        UpdateCover();
+    }
+
+    private void UpdateCover() => _cover.Visible = !Child.Enabled;
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
+
+    private readonly ClearOverlay _cover = new();
+}
+
+/// <summary>
+/// A transparent control that supports a tooltip.
+/// </summary>
+/// <remarks>
+/// Used by <see cref="TippingHost"/>. <c>ClearOverlay</c> (but not the broader
+/// design of <c>TippingHost</c>) is directly inspired by
+/// <c>TransparentSheet</c> in
+/// <a href="https://www.codeproject.com/Articles/32083/Displaying-a-ToolTip-when-the-Mouse-Hovers-Over-a">Displaying a ToolTip when the Mouse Hovers Over a Disabled Control</a>.
+/// </remarks>
+internal sealed class ClearOverlay : Control {
+    internal ClearOverlay()
+    {
+        Location = Point.Empty;
+        TabStop = false;
+        SetStyle(ControlStyles.Opaque, true); // Unintuitive, but intentional.
+        UpdateStyles();
+    }
+
+    protected override CreateParams CreateParams
     {
         get {
-            const string key =
-                @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier";
-
-            try {
-                // Check if smoothing is on. If the Magnifier has never been
-                // configured, the key exists but not the value and the
-                // Magnifier's default behavior is to smooth, as with a
-                // truthy (nonzero) value.
-                switch (Registry.GetValue(keyName: key,
-                                          valueName: "UseBitmapSmoothing",
-                                          defaultValue: 1)) {
-                case 0:
-                    return false;
-
-                case int:
-                    return true;
-
-                default:
-                    Warn("Magnifier configuration not found.");
-                    return false;
-                }
-            } catch (SystemException ex) when (ex is SecurityException
-                                                  or IOException) {
-                Warn($"Magnifier configuration inaccessible.");
-                return false;
-            }
+            var value = base.CreateParams;
+            value.ExStyle |= (int)User32.WS_EX.TRANSPARENT;
+            return value;
         }
     }
-
-    private static void OpenMagnifierSettings()
-        => Shell.Execute("ms-settings:easeofaccess-magnifier");
-
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(MagnifyButton)})");
-
-    private readonly AlertBar _alert;
-
-    private bool _checkMagnifierSettings = true;
-}
-
-/// <summary>
-/// A square button to launch an application, showing an icon and (optionally)
-/// toolip obtained from the executable's metadata.
-/// </summary>
-internal abstract class ApplicationButton : DualUseButton {
-    internal ApplicationButton(string executablePath,
-                               int sideLength,
-                               string? fallbackDescription = null)
-    {
-        Width = Height = sideLength;
-        BackgroundImageLayout = ImageLayout.Stretch;
-
-        _path = executablePath;
-
-        MainToolTip = FileVersionInfo.GetVersionInfo(_path).FileDescription
-                        ?? fallbackDescription
-                        ?? string.Empty;
-
-        _bitmap = CreateBitmap(_path);
-        try {
-            BackgroundImage = _bitmap;
-        } catch {
-            _bitmap.Dispose();
-            throw;
-        }
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) _bitmap.Dispose();
-        base.Dispose(disposing);
-    }
-
-    private protected override string MainToolTip { get; }
-
-    private protected override void OnMainClick(EventArgs e)
-        => Shell.Execute(_path);
-
-    private static Bitmap CreateBitmap(string path)
-    {
-        // TODO: Degrade gracefully and use some generic icon on failure.
-        var hIcon =
-            Shell32.ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
-                                       path,
-                                       0);
-
-        try {
-            return Icon.FromHandle(hIcon).ToBitmap();
-        } finally {
-            User32.DestroyIconOrThrow(hIcon);
-        }
-    }
-
-    private readonly string _path;
-
-    private readonly Bitmap _bitmap;
-}
-
-/// <summary>
-/// A square button showing a bitmap that changes when enabled/disabled.
-/// </summary>
-internal sealed class BitmapButton : Button {
-    internal BitmapButton(string enabledBitmapFilename,
-                          string disabledBitmapFilename,
-                          int sideLength)
-    {
-        Width = Height = sideLength;
-        Margin = Padding.Empty;
-        BackgroundImageLayout = ImageLayout.Stretch;
-
-        (_enabledImage, _disabledImage) =
-            Files.OpenBitmapPair(enabledBitmapFilename,
-                                 disabledBitmapFilename);
-
-        try {
-            UpdateImage();
-        } catch {
-            DisposeImages();
-            throw;
-        }
-    }
-
-    protected override void OnEnabledChanged(EventArgs e)
-    {
-        base.OnEnabledChanged(e);
-        UpdateImage();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) DisposeImages();
-        base.Dispose(disposing);
-    }
-
-    private void DisposeImages()
-    {
-        _enabledImage.Dispose();
-        _disabledImage.Dispose();
-    }
-
-    private void UpdateImage()
-        => BackgroundImage = (Enabled ? _enabledImage : _disabledImage);
-
-    private readonly Image _enabledImage;
-
-    private readonly Image _disabledImage;
 }
 
 /// <summary>
@@ -1989,26 +1912,240 @@ internal static class FrameSequence {
 }
 
 /// <summary>
-/// Adds a <c>PreviewKeyUp</c> event to <see cref="Windows.Forms.WebBrowser"/>.
+/// A button with a primary (non-Shift) action and secondary (Shift) action,
+/// and a tooltip that changes accordingly.
 /// </summary>
 /// <remarks>
-/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
-/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown/> and
-/// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
-/// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
+/// Modifier keys are checked when the button is clicked, but the state can
+/// also be refreshed, so the tooltip text can change immediately, even when
+/// the control is not focused and the tooltip is currently visible.
 /// </remarks>
-internal sealed class MyWebBrowser : WebBrowser {
-    public override bool PreProcessMessage(ref Message msg)
+internal abstract class DualUseButton : Button {
+    internal DualUseButton()
     {
-        // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
-        // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
-        if ((User32.WM)msg.Msg is User32.WM.KEYUP or User32.WM.SYSKEYUP)
-            PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
-
-        return base.PreProcessMessage(ref msg);
+        Margin = Padding.Empty;
+        _toolTip = new(_components) { ShowAlways = true };
     }
 
-    internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
+    internal void UpdateToolTip() => _toolTip.SetToolTip(this, CurrentToolTip);
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        UpdateToolTip();
+    }
+
+    protected override void OnClick(EventArgs e)
+    {
+        var doModified = GotKey.Shift;
+
+        base.OnClick(e);
+
+        if (doModified)
+            OnModifiedClick(e);
+        else
+            OnMainClick(e);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _components.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private protected abstract string MainToolTip { get; }
+
+    private protected abstract string ModifiedToolTip { get; }
+
+    private protected abstract void OnMainClick(EventArgs e);
+
+    private protected abstract void OnModifiedClick(EventArgs e);
+
+    private string CurrentToolTip
+        => GotKey.Shift ? ModifiedToolTip : MainToolTip;
+
+    private readonly IContainer _components = new Container();
+
+    private readonly ToolTip _toolTip;
+}
+
+/// <summary>
+/// A square button to launch an application, showing an icon and (optionally)
+/// toolip obtained from the executable's metadata.
+/// </summary>
+internal abstract class ApplicationButton : DualUseButton {
+    internal ApplicationButton(string executablePath,
+                               int sideLength,
+                               string? fallbackDescription = null)
+    {
+        Width = Height = sideLength;
+        BackgroundImageLayout = ImageLayout.Stretch;
+
+        _path = executablePath;
+
+        MainToolTip = FileVersionInfo.GetVersionInfo(_path).FileDescription
+                        ?? fallbackDescription
+                        ?? string.Empty;
+
+        _bitmap = CreateBitmap(_path);
+        try {
+            BackgroundImage = _bitmap;
+        } catch {
+            _bitmap.Dispose();
+            throw;
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _bitmap.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private protected override string MainToolTip { get; }
+
+    private protected override void OnMainClick(EventArgs e)
+        => Shell.Execute(_path);
+
+    private static Bitmap CreateBitmap(string path)
+    {
+        // TODO: Degrade gracefully and use some generic icon on failure.
+        var hIcon =
+            Shell32.ExtractIconOrThrow(Process.GetCurrentProcess().Handle,
+                                       path,
+                                       0);
+
+        try {
+            return Icon.FromHandle(hIcon).ToBitmap();
+        } finally {
+            User32.DestroyIconOrThrow(hIcon);
+        }
+    }
+
+    private readonly string _path;
+
+    private readonly Bitmap _bitmap;
+}
+
+/// <summary>
+/// A square button to launch the system Magnifier or configure it in Settings.
+/// </summary>
+internal sealed class MagnifyButton : ApplicationButton {
+    internal MagnifyButton(int sideLength, AlertBar alert)
+            : base(executablePath: Files.GetSystem32ExePath("magnify"),
+                   sideLength: sideLength,
+                   fallbackDescription: "Magnifier")
+        => _alert = alert;
+
+    private protected override string ModifiedToolTip => "Magnifier Settings";
+
+    private protected override void OnMainClick(EventArgs e)
+    {
+        base.OnMainClick(e);
+
+        if (_checkMagnifierSettings && HaveMagnifierSmoothing) {
+            _alert.Show($"{Ch.Gear} You may want to turn off {Ch.Ldquo}"
+                        + $"Smooth edges of images and text{Ch.Rdquo}.",
+                        toolTip: "Open Magnifier Settings",
+                        onClick: OpenMagnifierSettings,
+                        onDismiss: () => _checkMagnifierSettings = false);
+        }
+    }
+
+    private protected override void OnModifiedClick(EventArgs e)
+        => OpenMagnifierSettings();
+
+    private static bool HaveMagnifierSmoothing
+    {
+        get {
+            const string key =
+                @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\ScreenMagnifier";
+
+            try {
+                // Check if smoothing is on. If the Magnifier has never been
+                // configured, the key exists but not the value and the
+                // Magnifier's default behavior is to smooth, as with a
+                // truthy (nonzero) value.
+                switch (Registry.GetValue(keyName: key,
+                                          valueName: "UseBitmapSmoothing",
+                                          defaultValue: 1)) {
+                case 0:
+                    return false;
+
+                case int:
+                    return true;
+
+                default:
+                    Warn("Magnifier configuration not found.");
+                    return false;
+                }
+            } catch (SystemException ex) when (ex is SecurityException
+                                                  or IOException) {
+                Warn($"Magnifier configuration inaccessible.");
+                return false;
+            }
+        }
+    }
+
+    private static void OpenMagnifierSettings()
+        => Shell.Execute("ms-settings:easeofaccess-magnifier");
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(MagnifyButton)})");
+
+    private readonly AlertBar _alert;
+
+    private bool _checkMagnifierSettings = true;
+}
+
+/// <summary>
+/// A square button showing a bitmap that changes when enabled/disabled.
+/// </summary>
+internal sealed class BitmapButton : Button {
+    internal BitmapButton(string enabledBitmapFilename,
+                          string disabledBitmapFilename,
+                          int sideLength)
+    {
+        Width = Height = sideLength;
+        Margin = Padding.Empty;
+        BackgroundImageLayout = ImageLayout.Stretch;
+
+        (_enabledImage, _disabledImage) =
+            Files.OpenBitmapPair(enabledBitmapFilename,
+                                 disabledBitmapFilename);
+
+        try {
+            UpdateImage();
+        } catch {
+            DisposeImages();
+            throw;
+        }
+    }
+
+    protected override void OnEnabledChanged(EventArgs e)
+    {
+        base.OnEnabledChanged(e);
+        UpdateImage();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) DisposeImages();
+        base.Dispose(disposing);
+    }
+
+    private void DisposeImages()
+    {
+        _enabledImage.Dispose();
+        _disabledImage.Dispose();
+    }
+
+    private void UpdateImage()
+        => BackgroundImage = (Enabled ? _enabledImage : _disabledImage);
+
+    private readonly Image _enabledImage;
+
+    private readonly Image _disabledImage;
 }
 
 /// <summary>Help launcher button.</summary>
@@ -2103,163 +2240,26 @@ internal sealed class HelpButton : DualUseButton {
 }
 
 /// <summary>
-/// A button with a primary (non-Shift) action and secondary (Shift) action,
-/// and a tooltip that changes accordingly.
+/// Adds a <c>PreviewKeyUp</c> event to <see cref="Windows.Forms.WebBrowser"/>.
 /// </summary>
 /// <remarks>
-/// Modifier keys are checked when the button is clicked, but the state can
-/// also be refreshed, so the tooltip text can change immediately, even when
-/// the control is not focused and the tooltip is currently visible.
+/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
+/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown/> and
+/// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
+/// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
 /// </remarks>
-internal abstract class DualUseButton : Button {
-    internal DualUseButton()
+internal sealed class MyWebBrowser : WebBrowser {
+    public override bool PreProcessMessage(ref Message msg)
     {
-        Margin = Padding.Empty;
-        _toolTip = new(_components) { ShowAlways = true };
+        // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
+        // https://github.com/dotnet/winforms/blob/v5.0.2/src/System.Windows.Forms/src/System/Windows/Forms/Control.cs#L8977
+        if ((User32.WM)msg.Msg is User32.WM.KEYUP or User32.WM.SYSKEYUP)
+            PreviewKeyUp?.Invoke(this, new((Keys)msg.WParam | ModifierKeys));
+
+        return base.PreProcessMessage(ref msg);
     }
 
-    internal void UpdateToolTip() => _toolTip.SetToolTip(this, CurrentToolTip);
-
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-        UpdateToolTip();
-    }
-
-    protected override void OnClick(EventArgs e)
-    {
-        var doModified = GotKey.Shift;
-
-        base.OnClick(e);
-
-        if (doModified)
-            OnModifiedClick(e);
-        else
-            OnMainClick(e);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) _components.Dispose();
-        base.Dispose(disposing);
-    }
-
-    private protected abstract string MainToolTip { get; }
-
-    private protected abstract string ModifiedToolTip { get; }
-
-    private protected abstract void OnMainClick(EventArgs e);
-
-    private protected abstract void OnModifiedClick(EventArgs e);
-
-    private string CurrentToolTip
-        => GotKey.Shift ? ModifiedToolTip : MainToolTip;
-
-    private readonly IContainer _components = new Container();
-
-    private readonly ToolTip _toolTip;
-}
-
-/// <summary>
-/// Hosts and provides enabled and disabled tooltips to a single control.
-/// </summary>
-internal sealed class TippingHost : Control {
-    internal TippingHost(Control child)
-    {
-        Child = child;
-        _toolTip = new(_components) { ShowAlways = true };
-
-        Controls.Add(Child);
-        Controls.Add(_cover);
-        _cover.BringToFront();
-
-        TabStop = false;
-        Margin = Padding.Empty;
-        Size = _cover.Size = Child.Size;
-        Resize += TippingHost_Resize;
-
-        Child.Location = Point.Empty;
-        Child.Resize += child_Resize;
-        Child.EnabledChanged += child_EnabledChanged;
-
-        UpdateCover();
-    }
-
-    internal Control Child { get; }
-
-    internal string EnabledToolTip
-    {
-        get => _toolTip.GetToolTip(Child);
-        set => _toolTip.SetToolTip(Child, value);
-    }
-
-    internal string DisabledToolTip
-    {
-        get => _toolTip.GetToolTip(_cover);
-        set => _toolTip.SetToolTip(_cover, value);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) _components.Dispose();
-        base.Dispose(disposing);
-    }
-
-    private static void TippingHost_Resize(object? sender, EventArgs e)
-        => throw new NotSupportedException(
-            $"{nameof(TippingHost)} doesn't support resizing.");
-
-    private static void child_Resize(object? sender, EventArgs e)
-        => throw new NotSupportedException(
-            $"Resizing a {nameof(TippingHost)} child is not supported.");
-
-    private void child_EnabledChanged(object? sender, EventArgs e)
-    {
-        if (IsHandleCreated) {
-            // If a disabled or enabled tooltip is showing and the state
-            // changes, that tooltip becomes wrong, so stop showing it.
-            _toolTip.Hide(Child);
-            _toolTip.Hide(_cover);
-        }
-
-        UpdateCover();
-    }
-
-    private void UpdateCover() => _cover.Visible = !Child.Enabled;
-
-    private readonly IContainer _components = new Container();
-
-    private readonly ToolTip _toolTip;
-
-    private readonly ClearOverlay _cover = new();
-}
-
-/// <summary>
-/// A transparent control that supports a tooltip.
-/// </summary>
-/// <remarks>
-/// Used by <see cref="TippingHost"/>. <c>ClearOverlay</c> (but not the broader
-/// design of <c>TippingHost</c>) is directly inspired by
-/// <c>TransparentSheet</c> in
-/// <a href="https://www.codeproject.com/Articles/32083/Displaying-a-ToolTip-when-the-Mouse-Hovers-Over-a">Displaying a ToolTip when the Mouse Hovers Over a Disabled Control</a>.
-/// </remarks>
-internal sealed class ClearOverlay : Control {
-    internal ClearOverlay()
-    {
-        Location = Point.Empty;
-        TabStop = false;
-        SetStyle(ControlStyles.Opaque, true); // Unintuitive, but intentional.
-        UpdateStyles();
-    }
-
-    protected override CreateParams CreateParams
-    {
-        get {
-            var value = base.CreateParams;
-            value.ExStyle |= (int)User32.WS_EX.TRANSPARENT;
-            return value;
-        }
-    }
+    internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
 }
 
 /// <summary>
