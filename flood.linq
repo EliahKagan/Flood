@@ -214,8 +214,8 @@ internal sealed class Launcher {
         => new(horizontal: false,
                _alertExpiration,
                _magnifier,
-               _charting,
-               _stopButton);
+               _stopButton,
+               _charting);
 
     private LC.Table MakeEmptyTable()
         => new(noBorders: true,
@@ -308,8 +308,8 @@ internal sealed class Launcher {
                    _useOldWebBrowser,
                    _alertExpiration,
                    _magnifier,
-                   _charting,
                    _stopButton,
+                   _charting,
                    _launch);
 
     // Timer for polling the system timer's timings. Not the system timer.
@@ -335,10 +335,10 @@ internal sealed class Launcher {
     private readonly LC.CheckBox _magnifier =
         new("Magnifier", isChecked: true);
 
-    private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
-
     private readonly LC.CheckBox _stopButton =
-        new("Stop button (experimental)");
+        new("Stop button", isChecked: true);
+
+    private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
 
     private readonly LC.Button _launch = new("Launch!");
 
@@ -561,7 +561,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert, _toolTip);
         _stop = CreateStop();
-        _stopHost = new(_stop, _toolTip) { Visible = false };
+        _stopHost = new(_stop, _toolTip);
         _charting = CreateCharting();
         _infoBar = CreateInfoBar();
 
