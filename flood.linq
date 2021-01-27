@@ -618,8 +618,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         // slower, even when not. (These are two of the three cases. The other
         // is when _tips is focused. See MainPanel.SubscribePrivateHandlers.)
         pluginForm.KeyPreview = true;
-        pluginForm.KeyDown += delegate { UpdateStatus(); };
-        pluginForm.KeyUp += delegate { UpdateStatus(); };
+        pluginForm.KeyDown += delegate { PropagateStatus(); };
+        pluginForm.KeyUp += delegate { PropagateStatus(); };
         pluginForm.Activated += Parent_Activated;
         pluginForm.Deactivate += Parent_Deactivate;
         _nonessentialTimer.Start();
@@ -811,10 +811,14 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         UpdateStopButtonState();
         UpdateCharting();
-        UpdateStatus();
+        PropagateStatus();
         UpdateShowHideTips();
     }
 
+    /// <remarks>
+    /// Separate from <see cref="PropagateStatus"/> so the tooltip does not
+    /// become incorrect if a lag spike occurs while stopping all fills.
+    /// </remarks>
     private void UpdateStopButtonState()
     {
         if (_jobs == 0) {
@@ -855,7 +859,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _toolTip.SetToolTip(_charting, report);
     }
 
-    private void UpdateStatus()
+    private void PropagateStatus()
     {
         var strategy = _neighborEnumerationStrategies.Current.ToString();
         var speed = DecideSpeed();
@@ -864,20 +868,32 @@ internal sealed class MainPanel : TableLayoutPanel {
                 && speed == _oldSpeed && _jobs == _oldJobs)
             return;
 
+        UpdateStopOffer();
+
         UpdateStatusText(strategy, speed, _jobs);
         UpdateStatusToolTip(strategy, speed, _jobs);
 
-        // TODO: These don't conceptually belong here, but they need to trigger
-        // under the same conditions that update the speed. Refactor so the
-        // code makes more sense, or avoid carrying over this confusion when
-        // splitting up and rewriting UpdateStatus--as will have to be done
-        // the status bar is converted from a label to a toolstrip or other
-        // collection of multiple controls.
         _magnify.UpdateToolTip();
         _stopHost.EnabledToolTip = EnabledStopButtonToolTip;
         _help.UpdateToolTip();
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
+    }
+
+    private void UpdateStopOffer()
+    {
+        if (_stopCookie is null || _jobs == _oldJobs) return;
+
+        if (_stopCookie.IsCurrent && _alert.Visible) {
+            if (_jobs != 0) {
+                OfferStopDetailed();
+                return;
+            }
+
+            _alert.Hide();
+        }
+
+        _stopCookie = null;
     }
 
     private void UpdateStatusText(string strategy, int speed, int jobs)
@@ -934,7 +950,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void SubscribePrivateHandlers()
     {
         Util.Cleanup += delegate { Dispose(); };
-        _nonessentialTimer.Tick += delegate { UpdateStatus(); };
+        _nonessentialTimer.Tick += delegate { PropagateStatus(); };
 
         _canvas.MouseMove += canvas_MouseMove;
         _canvas.MouseDown += canvas_MouseDown;
@@ -947,13 +963,13 @@ internal sealed class MainPanel : TableLayoutPanel {
         _showHideTips.Click += showHideTips_Click;
         _tips.DocumentCompleted += tips_DocumentCompleted;
 
-        // Update the status bar from modifier keys pressed or released while
-        // _tips has focus. This must be covered separately because keypresses
-        // sent to a WebBrowser control are not previewed by the containing
-        // form, notwithstanding KeyPreview. [This is one of three cases; see
-        // MainPanel.OnHandleCreated for the other two.]
-        _tips.PreviewKeyDown += delegate { UpdateStatus(); };
-        _tips.PreviewKeyUp += delegate { UpdateStatus(); };
+        // Update the UI (especially the status bar) from modifier keys pressed
+        // or released while _tips has focus. This must be covered separately
+        // because keypresses sent to a WebBrowser control are not previewed by
+        // the containing form, notwithstanding KeyPreview. (This is one of
+        // three cases; see MainPanel.OnHandleCreated for the other two.)
+        _tips.PreviewKeyDown += delegate { PropagateStatus(); };
+        _tips.PreviewKeyUp += delegate { PropagateStatus(); };
     }
 
     private void Parent_Activated(object? sender, EventArgs e)
@@ -1079,25 +1095,17 @@ internal sealed class MainPanel : TableLayoutPanel {
                 strategy.CyclePrevSubStrategy();
         }
 
-        UpdateStatus();
+        PropagateStatus();
     }
 
     private void stop_Click(object? sender, EventArgs e)
     {
-        if (StoppingIsImmediate) {
-            InteractiveStop();
-            return;
-        }
-
-        const string description =
-            "Click here to confirm you want to stop all running fills.";
-        const string comment =
-            "To not be prompted, you can Ctrl+click the Stop button.";
-
-        _alert.Show(
-            $"{Ch.StopSign} Do you really want to stop all running fills?",
-            toolTip: $"{description}{Environment.NewLine}({comment})",
-            onClick: InteractiveStop);
+        if (StoppingIsImmediate || _jobs < 2)
+            StopFromUI();
+        else if (ExpireAlerts)
+            OfferStopDetailed();
+        else
+            OfferStop();
     }
 
     private void stop_LostFocus(object? sender, EventArgs e)
@@ -1123,7 +1131,24 @@ internal sealed class MainPanel : TableLayoutPanel {
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
 
-    private void InteractiveStop()
+    private static string StopOfferToolTip { get; } =
+        "Click here to confirm you want to stop all running fills."
+            + Environment.NewLine
+            + "(To not be prompted, you can Ctrl+click the Stop button.)";
+
+    private void OfferStop()
+        => DoOfferStop("Do you really want to stop all running fills?");
+
+    private void OfferStopDetailed()
+        => _stopCookie = DoOfferStop(_jobs == 1 ? $"Stop {_jobs} fill?"
+                                                : $"Stop {_jobs} fills?");
+
+    private IAlertCookie DoOfferStop(string prompt)
+        => _alert.Show($"{Ch.StopSign} {prompt}",
+                       toolTip: StopOfferToolTip,
+                       onClick: StopFromUI);
+
+    private void StopFromUI()
     {
         if (_jobs == 0) {
             _alert.Show("There are no running fills to be stopped.");
@@ -1133,7 +1158,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop.Enabled = false;
         _stopHost.DisabledToolTip = "Stopping fills...";
 
-        // A few more pixels may draw, but this message is most intuitive.
+        // A few more pixels may draw, but this message is much more intuitive
+        // than "Told {_jobs} job(s) to stop."
         _alert.Show(_jobs == 1 ? $"Stopped {_jobs} job."
                                : $"Stopped {_jobs} jobs.");
 
@@ -1201,7 +1227,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         ++_jobs;
         ++_jobsEver;
         UpdateStopButtonState();
-        UpdateStatus();
+        PropagateStatus();
 
         if (!_charting.Checked) {
             return new(fromArgb,
@@ -1230,7 +1256,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         job.PostAction?.Invoke();
         if (--_jobs == 0) UpdateStopButtonState();
-        UpdateStatus();
+        PropagateStatus();
     }
 
     private async Task FloodFillAsync(IFringe<Point> fringe,
@@ -1382,6 +1408,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly Carousel<NeighborEnumerationStrategy>
     _neighborEnumerationStrategies;
+
+    private IAlertCookie? _stopCookie;
 
     // Store and compare to the old strategy's string representation, because
     // configurable strategies mutate to change sub-strategy, so comparing a
