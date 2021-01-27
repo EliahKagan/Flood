@@ -550,7 +550,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert, _toolTip);
         _stop = CreateStop();
-        _stopHost = CreateStopHost();
+        _stopHost = new(_stop, _toolTip) { Visible = false };
         _charting = CreateCharting();
         _infoBar = CreateInfoBar();
 
@@ -701,6 +701,8 @@ internal sealed class MainPanel : TableLayoutPanel {
             _                         =>  5
         };
 
+    private static bool StoppingIsImmediate => GotKey.Ctrl;
+
     private Graphics CreateCanvasGraphics()
     {
         var graphics = Graphics.FromImage(_bmp);
@@ -740,11 +742,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         => new BitmapButton(enabledBitmapFilename: "stop.bmp",
                             disabledBitmapFilename: "stop-faded.bmp",
                             _showHideTips.Height);
-
-    private TippingHost CreateStopHost() => new(_stop, _toolTip) {
-        EnabledToolTip = "Stop running fills",
-        Visible = false,
-    };
 
     private AnimatedBitmapCheckBox CreateCharting()
         => new(from i in Enumerable.Range(1, 6)
@@ -799,19 +796,19 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void PerformInitialUpdates()
     {
-        UpdateStopButton();
+        UpdateStopButtonState();
         UpdateCharting();
         UpdateStatus();
         UpdateShowHideTips();
     }
 
-    private void UpdateStopButton()
+    private void UpdateStopButtonState()
     {
-        if (_jobs != 0) {
-            _stop.Enabled = true;
-        } else {
+        if (_jobs == 0) {
             _stopHost.DisabledToolTip = "No running fills to stop";
             _stop.Enabled = false;
+        } else {
+            _stop.Enabled = true;
         }
     }
 
@@ -864,6 +861,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         // the status bar is converted from a label to a toolstrip or other
         // collection of multiple controls.
         _magnify.UpdateToolTip();
+        _stopHost.EnabledToolTip = EnabledStopButtonToolTip;
         _help.UpdateToolTip();
 
         (_oldStrategy, _oldSpeed, _oldJobs) = (strategy, speed, _jobs);
@@ -903,6 +901,11 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         _toolTip.SetToolTip(_status, details);
     }
+
+    private string EnabledStopButtonToolTip
+        => StoppingIsImmediate ? $"Stop running fills!{Environment.NewLine}"
+                                    + "(immediate, no confirmation)"
+                               : "Stop running fills";
 
     private void UpdateShowHideTips()
     {
@@ -1068,9 +1071,20 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private void stop_Click(object? sender, EventArgs e)
     {
-        _stop.Enabled = false;
-        _stopHost.DisabledToolTip = "Stopping fills...";
-        StopAllFills();
+        if (StoppingIsImmediate) {
+            InteractiveStop();
+            return;
+        }
+
+        const string description =
+            "Click here to confirm you want to stop all running fills.";
+        const string comment =
+            "To not be prompted, you can Ctrl+click the Stop button.";
+
+        _alert.Show(
+            $"{Ch.StopSign} Do you really want to stop all running fills?",
+            toolTip: $"{description}{Environment.NewLine}({comment})",
+            onClick: InteractiveStop);
     }
 
     private void stop_LostFocus(object? sender, EventArgs e)
@@ -1095,6 +1109,23 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
+
+    private void InteractiveStop()
+    {
+        if (_jobs == 0) {
+            _alert.Show("There are no running fills to be stopped.");
+            return;
+        }
+
+        _stop.Enabled = false;
+        _stopHost.DisabledToolTip = "Stopping fills...";
+
+        // A few more pixels may draw, but this message is most intuitive.
+        _alert.Show(_jobs == 1 ? $"Stopped {_jobs} job."
+                               : $"Stopped {_jobs} jobs.");
+
+        StopAllFills();
+    }
 
     private void StopAllFills()
     {
@@ -1156,7 +1187,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         ++_jobs;
         ++_jobsEver;
-        UpdateStopButton();
+        UpdateStopButtonState();
         UpdateStatus();
 
         if (!_charting.Checked) {
@@ -1185,7 +1216,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         if (IsDisposed) return;
 
         job.PostAction?.Invoke();
-        if (--_jobs == 0) UpdateStopButton();
+        if (--_jobs == 0) UpdateStopButtonState();
         UpdateStatus();
     }
 
@@ -3233,6 +3264,9 @@ internal static class Ch {
 
     /// <summary>Gear (emoji).</summary>
     internal const char Gear = '\u2699';
+
+    /// <summary>Stop sign (emoji).</summary>
+    internal const string StopSign = "\uD83D\uDED1";
 
     /// <summary>Stopwatch (emoji).</summary>
     internal const string Stopwatch = "\u23F1\uFE0F";
