@@ -85,6 +85,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
     var ui = new MainPanel(e.Size, supplier) {
         DelayInMilliseconds = sender.DelayInMilliseconds,
         ShowParentInTaskbar = sender.ShowPluginFormInTaskbar,
+        ExpireAlerts = sender.ExpireAlerts,
         MagnifierButtonVisible = sender.ShowMagnifierButton,
         StopButtonVisible = sender.ShowStopButton,
         ChartingButtonVisible = sender.ShowChartButton,
@@ -150,6 +151,8 @@ internal sealed class Launcher {
 
     internal bool ShowPluginFormInTaskbar => _showPluginFormInTaskbar.Checked;
 
+    internal bool ExpireAlerts => _alertExpiration.Checked;
+
     internal bool ShowMagnifierButton => _magnifier.Checked;
 
     internal bool ShowStopButton => _stopButton.Checked;
@@ -208,12 +211,16 @@ internal sealed class Launcher {
     }
 
     private LC.StackPanel CreateFeaturesPanel()
-        => new(horizontal: false, _magnifier, _charting, _stopButton);
+        => new(horizontal: false,
+               _alertExpiration,
+               _magnifier,
+               _charting,
+               _stopButton);
 
     private LC.Table MakeEmptyTable()
-        => new LC.Table(noBorders: true,
-                        cellPaddingStyle: ".3em .3em",
-                        cellVerticalAlign: "middle");
+        => new(noBorders: true,
+               cellPaddingStyle: ".3em .3em",
+               cellVerticalAlign: "middle");
 
     private void SubscribePrivateHandlers()
     {
@@ -299,6 +306,7 @@ internal sealed class Launcher {
                    _delayBox,
                    _showPluginFormInTaskbar,
                    _useOldWebBrowser,
+                   _alertExpiration,
                    _magnifier,
                    _charting,
                    _stopButton,
@@ -320,6 +328,9 @@ internal sealed class Launcher {
 
     private readonly LC.CheckBox _useOldWebBrowser =
         new("Use old WebBrowser control even if WebView2 is available");
+
+    private readonly LC.CheckBox _alertExpiration =
+        new("Amend/remove expired alerts", isChecked: true);
 
     private readonly LC.CheckBox _magnifier =
         new("Magnifier", isChecked: true);
@@ -565,6 +576,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         DefaultDelayInMilliseconds;
 
     internal bool ShowParentInTaskbar { get; init; } = false;
+
+    internal bool ExpireAlerts { get; init; } = true;
 
     internal bool MagnifierButtonVisible
     {
@@ -1201,7 +1214,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         AddChartingJob();
         var name = $"Job {_jobsEver} ({label} fill)";
-        var charter = Charter.StartNew(name, _alert, _switcher);
+        var charter = Charter.StartNew(name, _alert, ExpireAlerts, _switcher);
 
         return new(fromArgb,
                    speed,
@@ -3007,8 +3020,11 @@ internal static class FastEnumInfo<T> where T : struct, Enum {
 /// <summary>Times each step of a process and provides charting.</summary>
 internal sealed class Charter {
     internal static Charter
-    StartNew(string name, AlertBar alert, IPanelSwitcher switcher)
-        => new(name, alert, switcher);
+    StartNew(string name,
+             AlertBar alert,
+             bool expireAlerts,
+             IPanelSwitcher switcher)
+        => new(name, alert, expireAlerts, switcher);
 
     internal void Finish()
     {
@@ -3030,8 +3046,12 @@ internal sealed class Charter {
 
     private const int ToolTipDelay = 5;
 
-    private Charter(string name, AlertBar alert, IPanelSwitcher switcher)
-        => (_name, _alert, _switcher) = (name, alert, switcher);
+    private Charter(string name,
+                    AlertBar alert,
+                    bool expireAlerts,
+                    IPanelSwitcher switcher)
+        => (_name, _alert, _expireAlerts, _switcher) =
+            (name, alert, expireAlerts, switcher);
 
     private static Font ChartTitleFont { get; } =
         new Font("Segoe UI Semibold", LabelFontSize);
@@ -3110,9 +3130,11 @@ internal sealed class Charter {
                                  toolTip: "Switch to its chart panel",
                                  onClick: () => SwitchToChartPanel(panel));
 
-        panel.PanelClosed += delegate {
-            if (cookie.IsCurrent) _alert.Hide();
-        };
+        if (_expireAlerts) {
+            panel.PanelClosed += delegate {
+                if (cookie.IsCurrent) _alert.Hide();
+            };
+        }
     }
 
     private void SwitchToChartPanel(OutputPanel panel)
@@ -3131,6 +3153,8 @@ internal sealed class Charter {
     private readonly string _name;
 
     private readonly AlertBar _alert;
+
+    private readonly bool _expireAlerts;
 
     private readonly IPanelSwitcher _switcher;
 
