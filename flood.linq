@@ -706,6 +706,13 @@ internal sealed class MainPanel : TableLayoutPanel {
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
 
+    private static string StopOfferToolTip { get; } =
+        "Click here to confirm you want to stop all running fills."
+            + Environment.NewLine
+            + "(To not be prompted, you can Ctrl+click the Stop button.)";
+
+    private static bool StoppingIsImmediate => GotKey.Ctrl;
+
     private static int DecideSpeed()
         => (ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -713,8 +720,6 @@ internal sealed class MainPanel : TableLayoutPanel {
             Keys.Shift | Keys.Control => 10,
             _                         =>  5
         };
-
-    private static bool StoppingIsImmediate => GotKey.Ctrl;
 
     private Graphics CreateCanvasGraphics()
     {
@@ -1131,11 +1136,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     private void tips_DocumentCompleted(object sender,
                                         WebBrowserDocumentCompletedEventArgs e)
         => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
-
-    private static string StopOfferToolTip { get; } =
-        "Click here to confirm you want to stop all running fills."
-            + Environment.NewLine
-            + "(To not be prompted, you can Ctrl+click the Stop button.)";
 
     private void OfferStop()
         => DoOfferStop("Do you really want to stop all running fills?");
