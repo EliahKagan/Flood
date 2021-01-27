@@ -2133,8 +2133,7 @@ internal sealed class BitmapButton : Button {
 
 /// <summary>Help launcher button.</summary>
 /// <remarks>
-/// This is a bridge between <see cref="MainPanel"/> and
-/// <see cref="HelpViewer"/>.
+/// A bridge between <see cref="MainPanel"/> and <see cref="HelpViewer"/>.
 /// </remarks>
 internal sealed class HelpButton : DualUseButton {
     internal HelpButton(HelpViewerSupplier supplier,
