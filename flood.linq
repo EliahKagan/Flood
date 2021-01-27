@@ -932,9 +932,10 @@ internal sealed class MainPanel : TableLayoutPanel {
     }
 
     private string EnabledStopButtonToolTip
-        => StoppingIsImmediate ? $"Stop running fills!{Environment.NewLine}"
-                                    + "(immediate, no confirmation)"
-                               : "Stop running fills";
+        => StoppingIsImmediate
+            ? $"Stop running fills!{Environment.NewLine}"
+                + "(No confirmation, even for multiple fills.)"
+            : $"Stop running fills";
 
     private void UpdateShowHideTips()
     {
