@@ -664,16 +664,11 @@ internal sealed class MainPanel : TableLayoutPanel {
 
             if (Focused) {
                 // Simulate concurrent input to prevent the Windows key from
-                // opening the Start Menu. Don't use anything this program
-                // treats specially. "Win+," is a global shortcut but it's only
-                // going into this program's message queue. (If it did somehow
-                // seep through, it would peek the desktop, which is innocuous
-                // even in combination with other keystrokes.) Global shortcuts
-                // may even be best, as users are less likely to customize them
-                // with a macro program like AutoHotKey.
+                // opening the Start Menu. Don't use anything this program or
+                // LINQPad treats specially.
                 //
                 // TODO: Decide if this is really less bad than a manual hook.
-                SendKeys.Send(",");
+                SendKeys.Send(KeystrokeProbablyNotInShortcutsOrAccelerators);
             }
         }
 
@@ -705,6 +700,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
+
+    private static string
+    KeystrokeProbablyNotInShortcutsOrAccelerators { get; } =
+        Ch.UumlWedge.ToString();
 
     private static string StopOfferToolTip { get; } =
         "Click here to confirm you want to stop all running fills."
@@ -3314,6 +3313,9 @@ internal static class Ch {
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
+
+    /// <summary>Latin small letter u with diaresis and caron.</summary>
+    internal const char UumlWedge = '\u01DA';
 
     /// <summary>Gear (emoji).</summary>
     internal const char Gear = '\u2699';
