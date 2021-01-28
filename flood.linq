@@ -658,8 +658,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         // If the user pressed a Windows key (Super key) as a modifier for a
         // canvas command (successful or not), avoid activating the Start Menu.
         if ((User32.WM)m.Msg is User32.WM.KEYUP
-                && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
-                && _suppressStartMenu) {
+                    && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
+                    && _suppressStartMenu) {
             _suppressStartMenu = false;
 
             if (Focused) {
@@ -869,7 +869,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var speed = DecideSpeed();
 
         if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
-                && speed == _oldSpeed && _jobs == _oldJobs)
+                    && speed == _oldSpeed && _jobs == _oldJobs)
             return;
 
         UpdateStopOffer();
@@ -1270,8 +1270,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
 
-            if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
+            if (!_rect.Contains(src) || _bmp.GetPixelArgb(src) != job.FromArgb)
                 continue;
 
             if (area++ % job.Speed == 0) {
@@ -1296,8 +1295,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         async ValueTask FillFromAsync(Point src)
         {
-            if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
+            if (!_rect.Contains(src) || _bmp.GetPixelArgb(src) != job.FromArgb)
                 return;
 
             if (area++ % job.Speed == 0) {
@@ -2643,6 +2641,12 @@ internal enum Direction {
     Right,
     Up,
     Down,
+}
+
+/// <summary>Provides an extension method for inspecting a bitmap.</summary>
+internal static class BitmapExtensions {
+    internal static int GetPixelArgb(this Bitmap bitmap, Point point)
+        => bitmap.GetPixel(point.X, point.Y).ToArgb();
 }
 
 /// <summary>LINQ operators not found in Enumerable or MoreLinq.</summary>
