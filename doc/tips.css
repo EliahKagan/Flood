@@ -6,16 +6,20 @@ body {
   margin: 0;
 }
 
-td {
-  padding: 0 1px;
+table {
+  border-collapse: collapse;
 }
 
 td, th {
   white-space: nowrap;
 }
 
-th, thead, tfoot {
-  padding: 0;
+th, tr {
+  border: 1px solid white;
+}
+
+td {
+  border: 1px solid transparent;
 }
 
 thead {
@@ -34,7 +38,7 @@ kbd {
 }
 
 .item:hover {
-  background-color: aliceblue;
+  background-color: lightgoldenrodyellow;
 }
 
 .number-cell {
