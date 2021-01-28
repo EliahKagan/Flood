@@ -11,6 +11,7 @@ table {
 }
 
 td, th {
+  padding-bottom: 0;
   white-space: nowrap;
 }
 
@@ -29,6 +30,10 @@ thead {
 
 tfoot {
   text-align: center;
+}
+
+a {
+  cursor: help;
 }
 
 kbd {
@@ -53,5 +58,6 @@ kbd {
 
 .subheading {
   background-color: lightgray;
+  border-top-width: 2px;
   color: black;
 }
