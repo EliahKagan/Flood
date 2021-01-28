@@ -658,22 +658,17 @@ internal sealed class MainPanel : TableLayoutPanel {
         // If the user pressed a Windows key (Super key) as a modifier for a
         // canvas command (successful or not), avoid activating the Start Menu.
         if ((User32.WM)m.Msg is User32.WM.KEYUP
-                && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
-                && _suppressStartMenu) {
+                    && (User32.VK)m.WParam is User32.VK.LWIN or User32.VK.RWIN
+                    && _suppressStartMenu) {
             _suppressStartMenu = false;
 
             if (Focused) {
                 // Simulate concurrent input to prevent the Windows key from
-                // opening the Start Menu. Don't use anything this program
-                // treats specially. "Win+," is a global shortcut but it's only
-                // going into this program's message queue. (If it did somehow
-                // seep through, it would peek the desktop, which is innocuous
-                // even in combination with other keystrokes.) Global shortcuts
-                // may even be best, as users are less likely to customize them
-                // with a macro program like AutoHotKey.
+                // opening the Start Menu. Don't use anything this program or
+                // LINQPad treats specially.
                 //
                 // TODO: Decide if this is really less bad than a manual hook.
-                SendKeys.Send(",");
+                SendKeys.Send(KeystrokeProbablyNotInShortcutsOrAccelerators);
             }
         }
 
@@ -705,6 +700,10 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private static Padding CanvasMargin { get; } =
         new(left: Pad, top: Pad, right: 0, bottom: 0);
+
+    private static string
+    KeystrokeProbablyNotInShortcutsOrAccelerators { get; } =
+        Ch.UumlWedge.ToString();
 
     private static string StopOfferToolTip { get; } =
         "Click here to confirm you want to stop all running fills."
@@ -870,7 +869,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         var speed = DecideSpeed();
 
         if (strategy.Equals(_oldStrategy, StringComparison.Ordinal)
-                && speed == _oldSpeed && _jobs == _oldJobs)
+                    && speed == _oldSpeed && _jobs == _oldJobs)
             return;
 
         UpdateStopOffer();
@@ -1271,8 +1270,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         for (fringe.Insert(start); fringe.Count != 0; ) {
             var src = fringe.Extract();
 
-            if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
+            if (!_rect.Contains(src) || _bmp.GetPixelArgb(src) != job.FromArgb)
                 continue;
 
             if (area++ % job.Speed == 0) {
@@ -1297,8 +1295,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         async ValueTask FillFromAsync(Point src)
         {
-            if (!_rect.Contains(src)
-                    || _bmp.GetPixel(src.X, src.Y).ToArgb() != job.FromArgb)
+            if (!_rect.Contains(src) || _bmp.GetPixelArgb(src) != job.FromArgb)
                 return;
 
             if (area++ % job.Speed == 0) {
@@ -2646,6 +2643,12 @@ internal enum Direction {
     Down,
 }
 
+/// <summary>Provides an extension method for inspecting a bitmap.</summary>
+internal static class BitmapExtensions {
+    internal static int GetPixelArgb(this Bitmap bitmap, Point point)
+        => bitmap.GetPixel(point.X, point.Y).ToArgb();
+}
+
 /// <summary>LINQ operators not found in Enumerable or MoreLinq.</summary>
 internal static class EnumerableExtensions {
     internal static IEnumerable<TimeSpan>
@@ -3314,6 +3317,9 @@ internal static class Ch {
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
+
+    /// <summary>Latin small letter u with diaresis and caron.</summary>
+    internal const char UumlWedge = '\u01DA';
 
     /// <summary>Gear (emoji).</summary>
     internal const char Gear = '\u2699';
