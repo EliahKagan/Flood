@@ -574,10 +574,10 @@
         Each pixel in the image has an order in which neighbors are always
         enumerated, and each order is randomly determined separately. If the
         same pixel is reached multiple times, even in separate fills (whether
-        or not they overlap in time), the same order is chosen for each pixel.
-        Restarting the program generates a different order. Without looking
-        closely, you won&rsquo;t notice the difference between this and
-        <a href="#random-each-time">Random always</a>.
+        or not they overlap in time), its neighbors are enumerated in that
+        order each time. Restarting the program generates a different order.
+        Without looking closely, you won&rsquo;t notice the difference between
+        this and <a href="#random-each-time">Random always</a>.
       </dd>
     </dl>
   </body>
