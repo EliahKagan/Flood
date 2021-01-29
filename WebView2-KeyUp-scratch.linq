@@ -5,18 +5,32 @@
   <Namespace>System.Windows.Forms</Namespace>
 </Query>
 
-var webBrowser = new WebBrowser {
+var webBrowser = new MyWebBrowser {
     Url = new("https://en.wikipedia.org"),
 };
-webBrowser.PreviewKeyDown += delegate {
-    $"Got {nameof(webBrowser.PreviewKeyDown)}.".Dump(nameof(WebBrowser));
-};
-webBrowser.Dump(nameof(WebBrowser));
+webBrowser.Dump(nameof(MyWebBrowser));
 
-var webView2 = new WebView2 {
+var webView2 = new MyWebView2 {
     Source = new("https://en.wikipedia.org"),
 };
-webView2.PreviewKeyDown += delegate {
-    $"Got {nameof(webView2.PreviewKeyDown)}.".Dump(nameof(WebView2));
-};
-webView2.Dump(nameof(WebView2));
+webView2.Dump(nameof(MyWebView2));
+
+internal sealed class MyWebBrowser : WebBrowser {
+    public override bool PreProcessMessage(ref Message msg)
+    {
+        $"{nameof(MyWebBrowser)}: {_timer.Elapsed.TotalSeconds}: {msg}".Dump();
+        return base.PreProcessMessage(ref msg);
+    }
+
+    private readonly Stopwatch _timer = Stopwatch.StartNew();
+}
+
+internal sealed class MyWebView2 : WebView2 {
+    public override bool PreProcessMessage(ref Message msg)
+    {
+        $"{nameof(MyWebView2)}: {_timer.Elapsed.TotalSeconds}: {msg}".Dump();
+        return base.PreProcessMessage(ref msg);
+    }
+
+    private readonly Stopwatch _timer = Stopwatch.StartNew();
+}
