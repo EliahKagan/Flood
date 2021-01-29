@@ -1219,7 +1219,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         var speed = DecideSpeed(); // Don't miss hastily released key combos.
 
-        var fromArgb = _bmp.GetPixel(start.X, start.Y).ToArgb();
+        var fromArgb = _bmp.GetPixelArgb(start);
         if (fromArgb == toColor.ToArgb()) return null;
 
         var supplier = _neighborEnumerationStrategies.Current.GetSupplier();
