@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference>Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="1.0.705.50">Microsoft.Web.WebView2</NuGetReference>
   <Namespace>Microsoft.Web.WebView2.Core</Namespace>
   <Namespace>Microsoft.Web.WebView2.WinForms</Namespace>
   <Namespace>System.Windows.Forms</Namespace>
