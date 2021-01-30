@@ -28,7 +28,15 @@ td {
 }
 
 a {
+  color: inherit;
   cursor: help;
+  text-decoration: none;
+}
+
+a.fill-cell {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 kbd {

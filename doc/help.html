@@ -65,7 +65,7 @@
             <a href="#random-per-fill">Random per fill</a>
           </li>
           <li class="toc-subsection">
-            <a href="#random-each-time">Random always</a>
+            <a href="#random-always">Random always</a>
           </li>
           <li class="toc-subsection">
             <a href="#random-per-pixel">Random per pixel</a>
@@ -141,6 +141,10 @@
     </p>
     <p>
       Clicking without dragging draws a single pixel.
+    </p>
+    <p>
+      (This is to say that drawing works as it does in Microsoft Paint, the GNU
+      Image Manipulation Program, and other familiar raster graphics editors.)
     </p>
     <h2 id="fills">Fills</h2>
     <p>
@@ -474,20 +478,20 @@
       <a href="#stack">stack fill</a>, related to performance.)
     </p>
     <h2 id="speed-modifiers">Speed Modifiers</h2>
-    <p>
+    <p id="speed-default">
       By default, fills proceed at a rate of 5 pixels per frame. You can
       override that by pressing:
     </p>
     <ul>
-      <li class="proselike">
+      <li id="speed-shift" class="proselike">
         <span class="command"><kbd>Shift</kbd></span> to fill slowly (1 pixel
         per frame).
       </li>
-      <li class="proselike">
+      <li id="speed-ctrl" class="proselike">
         <span class="command"><kbd>Ctrl</kbd></span> to fill very fast (20
         pixels per frame).
       </li>
-      <li class="proselike">
+      <li id="speed-ctrl-shift" class="proselike">
         <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> to fill
         pretty fast (10 pixels per frame).
       </li>
@@ -496,7 +500,7 @@
       Modifiers affect the speed of <strong>newly started fills</strong>. That
       way, you can have concurrent fills proceeding at different speeds.
     </p>
-    <p>
+    <p id="running-fills-are-not-changed">
       The <em>speed</em> shown in the status bar (immediately below the canvas)
       is therefore <em>not</em> necessarily the speed of any of the currently
       running fills, but rather the speed a fill started now would use, so long
@@ -510,21 +514,23 @@
       enumerated, and some (<em>currently</em>, just one) are configurable by
       the selection of sub-strategies.
     </p>
-    <p>
+    <p id="use-the-wheel-luke">
       Use the scroll-wheel (with no modifier keys) to cycle between major
       neighbor-enumeration strategies.
     </p>
     <p>
-      Hold down <span class="command"><kbd>Shift</kbd></span> while using the scroll-wheel to cycle between
-      sub-strategies for the currently selected major strategy. To scroll
-      &ldquo;fast&rdquo; through them&mdash;the meaning of which is determined
-      per strategy&mdash;use
+      Hold down <span class="command"><kbd>Shift</kbd></span> while using the
+      scroll-wheel to cycle between sub-strategies for the currently selected
+      major strategy. To scroll &ldquo;fast&rdquo; through them&mdash;the
+      meaning of which is determined per strategy&mdash;use
       <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>.
     </p>
-    <p>
+    <p id="canvas-scroll">
       <strong>The mouse pointer must be over the canvas when
       scrolling.</strong> This is to avoid accidentally changing the neighbor
-      enumeration strategy when attempting to scroll something else.
+      enumeration strategy when attempting to scroll something else. In
+      particular, the entire UI becomes scrollable if it is too small to show
+      everything.
     </p>
     <p>
       The available neighbor enumeration strategies (with their sub-strategies)
@@ -537,16 +543,16 @@
         determines which order that is. There are 24 sub-strategies, since
         that&rsquo;s how many permutations of Left, Right, Up, and Down there
         are.
-        <ul>
-        <li>
-          Scrolling with <span class="command"><kbd>Shift</kbd></span> goes to
-          the next or previous permutation.
-        </li>
-        <li>
-          Scrolling with
-          <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
-          either direction) goes to the reverse of the current permutation.
-        </li>
+        <ul id="uniform-modifiers">
+          <li>
+            Scrolling with <span class="command"><kbd>Shift</kbd></span> goes
+            to the next or previous permutation.
+          </li>
+          <li>
+            Scrolling with
+            <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
+            either direction) goes to the reverse of the current permutation.
+          </li>
         </ul>
         Sub-strategies are abbreviated by the first letters of each
         direction, in the order in which neighbors are enumerated. The default
@@ -561,7 +567,7 @@
         <a href="#uniform">Uniform</a> strategy and choosing a sub-strategy
         randomly before every fill.
       </dd>
-      <dt id="random-each-time">Random always</dt>
+      <dt id="random-always">Random always</dt>
       <dd>
         Each time neighbors are enumerated, even within the same fill, the
         order is randomly selected. If the same pixel is reached multiple
@@ -577,7 +583,7 @@
         or not they overlap in time), its neighbors are enumerated in that
         order each time. Restarting the program generates a different order.
         Without looking closely, you won&rsquo;t notice the difference between
-        this and <a href="#random-each-time">Random always</a>.
+        this and <a href="#random-always">Random always</a>.
       </dd>
     </dl>
   </body>

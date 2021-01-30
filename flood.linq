@@ -557,7 +557,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _canvas = CreateCanvas();
 
         _alert = CreateAlertBar();
-        _help = new HelpButton(supplier, _switcher, _toolTip);
+        _help = new(supplier, _switcher, _toolTip);
         _helpButtons = CreateHelpButtons();
         _magnify = new MagnifyButton(_showHideTips.Height, _alert, _toolTip);
         _stop = CreateStop();
@@ -974,6 +974,8 @@ internal sealed class MainPanel : TableLayoutPanel {
         // three cases; see MainPanel.OnHandleCreated for the other two.)
         _tips.PreviewKeyDown += delegate { PropagateStatus(); };
         _tips.PreviewKeyUp += delegate { PropagateStatus(); };
+
+        _tips.HelpRequest += tips_HelpRequest;
     }
 
     private void Parent_Activated(object? sender, EventArgs e)
@@ -1130,6 +1132,10 @@ internal sealed class MainPanel : TableLayoutPanel {
         _tips.Visible = !_tips.Visible;
         UpdateShowHideTips();
     }
+
+    private async void tips_HelpRequest(object sender,
+                                        WebBrowserNavigatingEventArgs e)
+        => await _help.OpenOrNavigateAsync(e.Url);
 
     private void OfferStop()
         => DoOfferStop("Do you really want to stop all running fills?");
@@ -1387,9 +1393,9 @@ internal sealed class MainPanel : TableLayoutPanel {
         Margin = new(left: 0, top: 0, right: Pad, bottom: 0),
     };
 
-    private readonly DualUseButton _help;
+    private readonly HelpButton _help;
 
-    private readonly MyWebBrowser _tips = new TipsBrowser();
+    private readonly TipsViewer _tips = new();
 
     private readonly Func<int, int> _generator =
         Permutations.CreateRandomGenerator();
@@ -2207,6 +2213,17 @@ internal sealed class HelpButton : DualUseButton {
         AutoSize = true;
     }
 
+    internal async Task OpenOrNavigateAsync(Uri source)
+    {
+        if (_helpPanel is null) {
+            await OpenHelpAsync(source);
+        } else {
+            Debug.Assert(_help is not null);
+            _help.Source = source;
+            _switcher.Switch(_helpPanel);
+        }
+    }
+
     private protected override string MainToolTip
         => _helpPanel is null ? "View the full help in a new panel"
                               : "Go to the panel with the full help";
@@ -2217,7 +2234,7 @@ internal sealed class HelpButton : DualUseButton {
     private protected override async void OnMainClick(EventArgs e)
     {
         if (_helpPanel is null)
-            await OpenHelp();
+            await OpenHelpAsync(Files.GetDocUrl(FileName));
         else
             _switcher.Switch(_helpPanel);
     }
@@ -2260,17 +2277,20 @@ internal sealed class HelpButton : DualUseButton {
     private void helpPanel_PanelClosed(object? sender, EventArgs e)
     {
         _helpPanel = null;
+        _help = null;
         UpdateToolTip();
     }
 
-    private async Task OpenHelp()
+    private async Task OpenHelpAsync(Uri source)
     {
+        if (!Enabled) return;
+
         Enabled = false;
 
-        var help = await _supplier();
-        help.Source = Files.GetDocUrl(FileName);
-        help.Navigating += help_Navigating;
-        _helpPanel = _switcher.DisplayForeground(help.WrappedControl, Title);
+        _help = await _supplier();
+        _help.Source = source;
+        _help.Navigating += help_Navigating;
+        _helpPanel = _switcher.DisplayForeground(_help.WrappedControl, Title);
         _helpPanel.PanelClosed += helpPanel_PanelClosed;
         UpdateToolTip();
 
@@ -2280,6 +2300,8 @@ internal sealed class HelpButton : DualUseButton {
     private readonly HelpViewerSupplier _supplier;
 
     private readonly IPanelSwitcher _switcher;
+
+    private HelpViewer? _help = null;
 
     private OutputPanel? _helpPanel = null;
 }
@@ -2308,14 +2330,16 @@ internal class MyWebBrowser : WebBrowser {
 }
 
 /// <summary>Customized WebBrowser for showing tips (brief help).</summary>
-internal sealed class TipsBrowser : MyWebBrowser {
-    internal TipsBrowser()
+internal sealed class TipsViewer : MyWebBrowser {
+    internal TipsViewer()
     {
         Visible = false;
         AutoSize = true;
         ScrollBarsEnabled = false;
-        Url = Files.GetDocUrl("tips.html");
+        Url = _home;
     }
+
+    internal event WebBrowserNavigatingEventHandler? HelpRequest = null;
 
     protected override void
     OnDocumentCompleted(WebBrowserDocumentCompletedEventArgs e)
@@ -2323,6 +2347,22 @@ internal sealed class TipsBrowser : MyWebBrowser {
         base.OnDocumentCompleted(e);
         Size = Document.Body.ScrollRectangle.Size;
     }
+
+    protected override void OnNavigating(WebBrowserNavigatingEventArgs e)
+    {
+        base.OnNavigating(e);
+
+        // Home page loads (and already-cancelled navigation) proceed normally.
+        if (e.Cancel || e.Url.Equals(_home)) return;
+
+        // No other pages will ever be opened in the tips browser.
+        e.Cancel = true;
+
+        // But if it's a file:// URL, treat it as a request for detailed help.
+        if (e.Url.SchemeIs(Uri.UriSchemeFile)) HelpRequest?.Invoke(this, e);
+    }
+
+    private readonly Uri _home = Files.GetDocUrl("tips.html");
 }
 
 /// <summary>
