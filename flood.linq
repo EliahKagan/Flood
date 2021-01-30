@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference Version="1.0.664.37">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="1.0.705.50">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
@@ -72,7 +72,7 @@ static async Task<HelpViewer> GetBestHelpViewerAsync()
 {
     try {
         return await WebView2HelpViewer.CreateAsync();
-    } catch (EdgeNotFoundException) {
+    } catch (WebView2RuntimeNotFoundException) {
         return WebBrowserHelpViewer.Create();
     }
 }
