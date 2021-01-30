@@ -966,7 +966,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop.LostFocus += stop_LostFocus;
         _charting.CheckedChanged += delegate { UpdateCharting(); };
         _showHideTips.Click += showHideTips_Click;
-        _tips.DocumentCompleted += tips_DocumentCompleted;
 
         // Update the UI (especially the status bar) from modifier keys pressed
         // or released while _tips has focus. This must be covered separately
@@ -1131,10 +1130,6 @@ internal sealed class MainPanel : TableLayoutPanel {
         _tips.Visible = !_tips.Visible;
         UpdateShowHideTips();
     }
-
-    private void tips_DocumentCompleted(object sender,
-                                        WebBrowserDocumentCompletedEventArgs e)
-        => _tips.Size = _tips.Document.Body.ScrollRectangle.Size;
 
     private void OfferStop()
         => DoOfferStop("Do you really want to stop all running fills?");
@@ -1394,12 +1389,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private readonly DualUseButton _help;
 
-    private readonly MyWebBrowser _tips = new() {
-        Visible = false,
-        AutoSize = true,
-        ScrollBarsEnabled = false,
-        Url = Files.GetDocUrl("tips.html"),
-    };
+    private readonly MyWebBrowser _tips = new TipsBrowser();
 
     private readonly Func<int, int> _generator =
         Permutations.CreateRandomGenerator();
@@ -2303,7 +2293,7 @@ internal sealed class HelpButton : DualUseButton {
 /// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
 /// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
 /// </remarks>
-internal sealed class MyWebBrowser : WebBrowser {
+internal class MyWebBrowser : WebBrowser {
     public override bool PreProcessMessage(ref Message msg)
     {
         // Give PreviewKeyUp the same information PreviewKeyDown gets. Compare:
@@ -2315,6 +2305,24 @@ internal sealed class MyWebBrowser : WebBrowser {
     }
 
     internal event PreviewKeyDownEventHandler? PreviewKeyUp = null;
+}
+
+/// <summary>Customized WebBrowser for showing tips (brief help).</summary>
+internal sealed class TipsBrowser : MyWebBrowser {
+    internal TipsBrowser()
+    {
+        Visible = false;
+        AutoSize = true;
+        ScrollBarsEnabled = false;
+        Url = Files.GetDocUrl("tips.html");
+    }
+
+    protected override void
+    OnDocumentCompleted(WebBrowserDocumentCompletedEventArgs e)
+    {
+        base.OnDocumentCompleted(e);
+        Size = Document.Body.ScrollRectangle.Size;
+    }
 }
 
 /// <summary>
