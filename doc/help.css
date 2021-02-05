@@ -125,16 +125,6 @@ a.external::after {
   text-decoration: none;
 }
 
-.anchor>a {
-  background-color: inherit;
-  color: dimgray;
-  text-decoration: inherit;
-}
-
-.anchor>a:hover {
-  color: inherit;
-}
-
 abbr {
   background-color: #ffc;
 }
