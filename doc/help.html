@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans&family=Noto+Sans&family=Source+Serif+Pro:wght@400;600;700&family=Source+Code+Pro&family=Ubuntu:wght@300&display=swap">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="help.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.3.0/anchor.min.js"></script>
+    <script src="anchors.js"></script>
   </head>
   <body>
     <h1>Flood-Fill Visualization</h1>
@@ -74,7 +76,7 @@
         </ol>
       </li>
     </ol>
-    <h2 id="introduction">Introduction</h2>
+    <h2 id="introduction" class="anchor">Introduction</h2>
     <p>
       A
       <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
@@ -132,7 +134,7 @@
       without a mouse (or limited mousing) than popular raster graphics
       editors. This also only runs on Windows, which is not ideal.
     </p>
-    <h2 id="drawing">Drawing</h2>
+    <h2 id="drawing" class="anchor">Drawing</h2>
     <p>
       To draw in <span class="box box-black"></span>&#8239;black on the canvas,
       click and drag with the left mouse button.
@@ -147,7 +149,7 @@
       (This is to say that drawing works as it does in Microsoft Paint, the GNU
       Image Manipulation Program, and other familiar raster graphics editors.)
     </p>
-    <h2 id="fills">Fills</h2>
+    <h2 id="fills" class="anchor">Fills</h2>
     <p>
       Most of the different fills&mdash;<a href="#stack">stack</a>,
       <a href="#queue">queue</a>, <a href="#random">random</a>, and
@@ -170,7 +172,7 @@
       immediately (rather than animating over time) so it doesn&rsquo;t matter
       (for using the program) how it is implemented.
     </p>
-    <h3 id="stack">Stack (LIFO)</h3>
+    <h3 id="stack" class="anchor">Stack (LIFO)</h3>
     <p>
       Use <b class="command">right click</b> to flood-fill with a
       <a class="external"
@@ -199,7 +201,7 @@
       way), to push each node&rsquo;s right child to the fringe (which is a
       stack) before its left child. See <a href="#recursive">Recursive</a>.
     </p>
-    <h3 id="queue">Queue (FIFO)</h3>
+    <h3 id="queue" class="anchor">Queue (FIFO)</h3>
     <p>
       Use <b class="command">middle click</b> to flood-fill with a
       <a class="external"
@@ -242,7 +244,7 @@
          title="Depth-first search - Wikipedia">depth-first</a>
       traversals.
     </p>
-    <h3 id="random">Random</h3>
+    <h3 id="random" class="anchor">Random</h3>
     <p>
       Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;right-click</b> to
       flood-fill with a random extraction queue. Extraction selects any element
@@ -251,7 +253,7 @@
     <p>
       Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
     </p>
-    <h3 id="deque">Deque</h3>
+    <h3 id="deque" class="anchor">Deque</h3>
     <p>
       Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b> to
       flood-fill with a
@@ -271,7 +273,7 @@
       used here as the fringe is not, strictly speaking, a deque, but rather is
       implemented, in a straightforward way, <em>in terms of</em> a deque.
     </p>
-    <h3 id="recursive">Recursive</h3>
+    <h3 id="recursive" class="anchor">Recursive</h3>
     <p>
       Use <b class="command"><kbd>&#8862;Win</kbd>+right-click</b> to
       flood-fill
@@ -312,7 +314,7 @@
       recursive fill will sometimes even visit most of the remaining region to
       be filled before it gets back to the next neighbor.
     </p>
-    <h4 id="why-no-crash">
+    <h4 id="why-no-crash" class="anchor">
       But shouldn&rsquo;t this overflow the call stack and crash?
     </h4>
     <p>
@@ -445,7 +447,7 @@
       here is deliberately to run slowly, to visualize the incremental work
       done by the fill.
     </p>
-    <h3 id="instant">Instant</h3>
+    <h3 id="instant" class="anchor">Instant</h3>
     <p>
       Use
       <b class="command"><kbd>&#8862;Win</kbd>&hairsp;+&hairsp;left-click</b>
@@ -478,7 +480,7 @@
       order. (But there are other differences between this and
       <a href="#stack">stack fill</a>, related to performance.)
     </p>
-    <h2 id="speed-modifiers">Speed Modifiers</h2>
+    <h2 id="speed-modifiers" class="anchor">Speed Modifiers</h2>
     <p id="speed-default">
       By default, fills proceed at a rate of 5 pixels per frame. You can
       override that by pressing:
@@ -507,7 +509,7 @@
       running fills, but rather the speed a fill started now would use, so long
       as you&rsquo;re still pressing the same modifier keys.
     </p>
-    <h2 id="neighbor-enumeration-strategies">
+    <h2 id="neighbor-enumeration-strategies" class="anchor">
       Neighbor Enumeration Strategies
     </h2>
     <p>
@@ -538,7 +540,7 @@
       are:
     </p>
     <dl>
-      <dt id="uniform">Uniform</dt>
+      <dt id="uniform" class="anchor">Uniform</dt>
       <dd>
         Neighbors are always enumerated in the same order. The sub-strategy
         determines which order that is. There are 24 sub-strategies, since
@@ -560,7 +562,7 @@
         sub-strategy is
         <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
       </dd>
-      <dt id="random-per-fill">Random per fill</dt>
+      <dt id="random-per-fill" class="anchor">Random per fill</dt>
       <dd>
         Neighbors are enumerated in an order that is uniform in each fill, but
         different&mdash;and randomly chosen&mdash;each time a fill is
@@ -568,7 +570,7 @@
         <a href="#uniform">Uniform</a> strategy and choosing a sub-strategy
         randomly before every fill.
       </dd>
-      <dt id="random-always">Random always</dt>
+      <dt id="random-always" class="anchor">Random always</dt>
       <dd>
         Each time neighbors are enumerated, even within the same fill, the
         order is randomly selected. If the same pixel is reached multiple
@@ -576,7 +578,7 @@
         concurrent <em>physically nested</em> fills interfering with each
         other), a different order may be chosen.
       </dd>
-      <dt id="random-per-pixel">Random per pixel</dt>
+      <dt id="random-per-pixel" class="anchor">Random per pixel</dt>
       <dd>
         Each pixel in the image has an order in which neighbors are always
         enumerated, and each order is randomly determined separately. If the

@@ -2443,7 +2443,6 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         var settings = webView2.CoreWebView2.Settings;
         settings.AreHostObjectsAllowed = false;
         settings.IsWebMessageEnabled = false;
-        settings.IsScriptEnabled = false;
         settings.AreDefaultScriptDialogsEnabled = false;
 
         return new WebView2HelpViewer(webView2);
