@@ -125,13 +125,29 @@ a.external::after {
   text-decoration: none;
 }
 
+a.navlink {
+  background-color: transparent;
+  color: #949494;
+  display: inline-block;
+  font-family: 'Ubuntu', sans-serif;
+  font-size: .75em;
+  font-weight: 300;
+  padding-left: .375em;
+  text-decoration: none;
+  vertical-align: 10%;
+}
+
+a.navlink:hover {
+  color: black;
+}
+
 abbr {
   background-color: #ffc;
 }
 
 b {
   font-style: normal;
-  font-weight: 600; /* semi-bold */
+  font-weight: 600;
 }
 
 code {

@@ -74,7 +74,12 @@
         </ol>
       </li>
     </ol>
-    <h2 id="introduction">Introduction</h2>
+    <h2 id="introduction">
+      Introduction
+      <a class="navlink" href="#introduction" title="Link to this section">
+        &sect;
+      </a>
+    </h2>
     <p>
       A
       <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
@@ -132,7 +137,12 @@
       without a mouse (or limited mousing) than popular raster graphics
       editors. This also only runs on Windows, which is not ideal.
     </p>
-    <h2 id="drawing">Drawing</h2>
+    <h2 id="drawing">
+      Drawing
+      <a class="navlink" href="#drawing" title="Link to this section">
+        &sect;
+      </a>
+    </h2>
     <p>
       To draw in <span class="box box-black"></span>&#8239;black on the canvas,
       click and drag with the left mouse button.
@@ -147,7 +157,10 @@
       (This is to say that drawing works as it does in Microsoft Paint, the GNU
       Image Manipulation Program, and other familiar raster graphics editors.)
     </p>
-    <h2 id="fills">Fills</h2>
+    <h2 id="fills">
+      Fills
+      <a class="navlink" href="#fills" title="Link to this section">&sect;</a>
+    </h2>
     <p>
       Most of the different fills&mdash;<a href="#stack">stack</a>,
       <a href="#queue">queue</a>, <a href="#random">random</a>, and
@@ -170,7 +183,12 @@
       immediately (rather than animating over time) so it doesn&rsquo;t matter
       (for using the program) how it is implemented.
     </p>
-    <h3 id="stack">Stack (LIFO)</h3>
+    <h3 id="stack">
+      Stack (LIFO)
+      <a class="navlink" href="#stack" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use <b class="command">right click</b> to flood-fill with a
       <a class="external"
@@ -199,7 +217,12 @@
       way), to push each node&rsquo;s right child to the fringe (which is a
       stack) before its left child. See <a href="#recursive">Recursive</a>.
     </p>
-    <h3 id="queue">Queue (FIFO)</h3>
+    <h3 id="queue">
+      Queue (FIFO)
+      <a class="navlink" href="#queue" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use <b class="command">middle click</b> to flood-fill with a
       <a class="external"
@@ -242,7 +265,12 @@
          title="Depth-first search - Wikipedia">depth-first</a>
       traversals.
     </p>
-    <h3 id="random">Random</h3>
+    <h3 id="random">
+      Random
+      <a class="navlink" href="#random" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;right-click</b> to
       flood-fill with a random extraction queue. Extraction selects any element
@@ -251,7 +279,12 @@
     <p>
       Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
     </p>
-    <h3 id="deque">Deque</h3>
+    <h3 id="deque">
+      Deque
+      <a class="navlink" href="#deque" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b> to
       flood-fill with a
@@ -271,7 +304,12 @@
       used here as the fringe is not, strictly speaking, a deque, but rather is
       implemented, in a straightforward way, <em>in terms of</em> a deque.
     </p>
-    <h3 id="recursive">Recursive</h3>
+    <h3 id="recursive">
+      Recursive
+      <a class="navlink" href="#recursive" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use <b class="command"><kbd>&#8862;Win</kbd>+right-click</b> to
       flood-fill
@@ -314,6 +352,7 @@
     </p>
     <h4 id="why-no-crash">
       But shouldn&rsquo;t this overflow the call stack and crash?
+      <a class="navlink" href="#why-no-crash" title="Link to here">&sect;</a>
     </h4>
     <p>
       The most interesting thing about recursive fill, in this program, is that
@@ -445,7 +484,12 @@
       here is deliberately to run slowly, to visualize the incremental work
       done by the fill.
     </p>
-    <h3 id="instant">Instant</h3>
+    <h3 id="instant">
+      Instant
+      <a class="navlink" href="#instant" title="Link to this subsection">
+        &sect;
+      </a>
+    </h3>
     <p>
       Use
       <b class="command"><kbd>&#8862;Win</kbd>&hairsp;+&hairsp;left-click</b>
@@ -478,7 +522,12 @@
       order. (But there are other differences between this and
       <a href="#stack">stack fill</a>, related to performance.)
     </p>
-    <h2 id="speed-modifiers">Speed Modifiers</h2>
+    <h2 id="speed-modifiers">
+      Speed Modifiers
+      <a class="navlink" href="#speed-modifiers" title="Link to this section">
+        &sect;
+      </a>
+    </h2>
     <p id="speed-default">
       By default, fills proceed at a rate of 5 pixels per frame. You can
       override that by pressing:
@@ -509,6 +558,9 @@
     </p>
     <h2 id="neighbor-enumeration-strategies">
       Neighbor Enumeration Strategies
+      <a class="navlink" href="#neighbor-enumeration-strategies" title="Link to this section">
+        &sect;
+      </a>
     </h2>
     <p>
       There are several major strategies for the order in which neighbors are
@@ -538,7 +590,12 @@
       are:
     </p>
     <dl>
-      <dt id="uniform">Uniform</dt>
+      <dt id="uniform">
+        Uniform
+        <a class="navlink" href="#uniform" title="Link to this subsection">
+          &sect;
+        </a>
+      </dt>
       <dd>
         Neighbors are always enumerated in the same order. The sub-strategy
         determines which order that is. There are 24 sub-strategies, since
@@ -560,7 +617,12 @@
         sub-strategy is
         <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
       </dd>
-      <dt id="random-per-fill">Random per fill</dt>
+      <dt id="random-per-fill">
+        Random per fill
+        <a class="navlink" href="#random-per-fill" title="Link to this subsection">
+          &sect;
+        </a>
+      </dt>
       <dd>
         Neighbors are enumerated in an order that is uniform in each fill, but
         different&mdash;and randomly chosen&mdash;each time a fill is
@@ -568,7 +630,12 @@
         <a href="#uniform">Uniform</a> strategy and choosing a sub-strategy
         randomly before every fill.
       </dd>
-      <dt id="random-always">Random always</dt>
+      <dt id="random-always">
+        Random always
+        <a class="navlink" href="#random-always" title="Link to this subsection">
+          &sect;
+        </a>
+      </dt>
       <dd>
         Each time neighbors are enumerated, even within the same fill, the
         order is randomly selected. If the same pixel is reached multiple
@@ -576,7 +643,12 @@
         concurrent <em>physically nested</em> fills interfering with each
         other), a different order may be chosen.
       </dd>
-      <dt id="random-per-pixel">Random per pixel</dt>
+      <dt id="random-per-pixel">
+        Random per pixel
+        <a class="navlink" href="#random-per-pixel" title="Link to this subsection">
+          &sect;
+        </a>
+      </dt>
       <dd>
         Each pixel in the image has an order in which neighbors are always
         enumerated, and each order is randomly determined separately. If the
