@@ -29,651 +29,718 @@
         &#11839;
       </a>
     </h1>
-    <h2 id="toc" class="toc-heading">Table of Contents</h2>
-    <ol type="I">
-      <li class="toc-section">
-        <a href="#introduction">Introduction</a>
-      </li>
-      <li class="toc-section">
-        <a href="#drawing">Drawing</a>
-      </li>
-      <li class="toc-section">
-        <a href="#fills">Fills</a>
-        <ol type="1">
-          <li class="toc-subsection">
-            <a href="#stack">Stack (LIFO)</a>
+    <nav>
+      <h2 id="toc" class="toc-heading">Table of Contents</h2>
+      <ol type="I">
+        <li class="toc-section">
+          <a href="#introduction">Introduction</a>
+        </li>
+        <li class="toc-section">
+          <a href="#drawing">Drawing</a>
+        </li>
+        <li class="toc-section">
+          <a href="#fills">Fills</a>
+          <ol type="1">
+            <li class="toc-subsection">
+              <a href="#stack">Stack (LIFO)</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#queue">Queue (FIFO)</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#random">Random</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#deque">Deque</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#recursive">Recursive</a>
+              <ul>
+                <li>
+                  <a href="#why-no-crash">
+                    But shouldn&rsquo;t this overflow the call stack and crash?
+                  </a>
+                </li>
+              </ul>
+            </li>
+            <li class="toc-subsection">
+              <a href="#instant">Instant</a>
+            </li>
+          </ol>
+        </li>
+        <li class="toc-section">
+          <a href="#speed-modifiers">Speed Modifiers</a>
+        </li>
+        <li class="toc-section">
+          <a href="#neighbor-enumeration-strategies">
+            Neighbor Enumeration Strategies
+          </a>
+          <ol type="1">
+            <li class="toc-subsection">
+              <a href="#uniform">Uniform</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#random-per-fill">Random per fill</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#random-always">Random always</a>
+            </li>
+            <li class="toc-subsection">
+              <a href="#random-per-pixel">Random per pixel</a>
+            </li>
+          </ol>
+        </li>
+      </ol>
+    </nav>
+    <main>
+      <section id="introduction-content">
+        <h2 id="introduction">
+          Introduction
+          <a class="navlink" href="#introduction" title="Link to this section">
+            &sect;
+          </a>
+        </h2>
+        <p>
+          A
+          <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
+             title="Flood fill - Wikipedia">flood fill</a>
+          is a sparse-graph
+          <a class="external"
+             href="https://en.wikipedia.org/wiki/Graph_traversal"
+             title="Graph traversal - Wikipedia">traversal</a>
+          in which both adjacency and visitation information are implicit in
+          the image being read and written. When a flood fill is performed
+          atomically (no other changes to the image while the fill is
+          happening), all variations produce the same results. But the order in
+          which pixels are found and filled depends on:
+        </p>
+        <ul>
+          <li class="proselike">
+            The data structure used for the <dfn>fringe</dfn>&hairsp;: the
+            collection of
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+               title="Vertex (graph theory) - Wikipedia">nodes</a>
+            (pixel locations) that have been discovered but are
+            not yet filled. This is most often a
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+               title="Stack (abstract data type) - Wikipedia">stack</a>
+            (last-in, first-out) or
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+               title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>
+            (first-in, first-out), but any kind of generalized queue will work.
+            <b>See <a href="#fills">Fills</a>.</b>
           </li>
-          <li class="toc-subsection">
-            <a href="#queue">Queue (FIFO)</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#random">Random</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#deque">Deque</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#recursive">Recursive</a>
-            <ul>
-              <li>
-                <a href="#why-no-crash">
-                  But shouldn&rsquo;t this overflow the call stack and crash?
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="toc-subsection">
-            <a href="#instant">Instant</a>
-          </li>
-        </ol>
-      </li>
-      <li class="toc-section">
-        <a href="#speed-modifiers">Speed Modifiers</a>
-      </li>
-      <li class="toc-section">
-        <a href="#neighbor-enumeration-strategies">
-          Neighbor Enumeration Strategies
-        </a>
-        <ol type="1">
-          <li class="toc-subsection">
-            <a href="#uniform">Uniform</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#random-per-fill">Random per fill</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#random-always">Random always</a>
-          </li>
-          <li class="toc-subsection">
-            <a href="#random-per-pixel">Random per pixel</a>
-          </li>
-        </ol>
-      </li>
-    </ol>
-    <h2 id="introduction">
-      Introduction
-      <a class="navlink" href="#introduction" title="Link to this section">
-        &sect;
-      </a>
-    </h2>
-    <p>
-      A
-      <a class="external" href="https://en.wikipedia.org/wiki/Flood_fill"
-         title="Flood fill - Wikipedia">flood fill</a>
-      is a sparse-graph
-      <a class="external" href="https://en.wikipedia.org/wiki/Graph_traversal"
-         title="Graph traversal - Wikipedia">traversal</a>
-      in which both adjacency and visitation information are implicit in the
-      image being read and written. When a flood fill is performed atomically
-      (no other changes to the image while the fill is happening), all
-      variations produce the same results. But the order in which pixels are
-      found and filled depends on:
-    </p>
-    <ul>
-      <li class="proselike">
-        The data structure used for the <dfn>fringe</dfn>&#8202;: the
-        collection of
-        <a class="external"
-           href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
-           title="Vertex (graph theory) - Wikipedia">nodes</a>
-        (pixel locations) that have been discovered but are
-        not yet filled. This is most often a
-        <a class="external"
-           href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
-           title="Stack (abstract data type) - Wikipedia">stack</a>
-        (last-in, first-out) or
-        <a class="external"
-           href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
-           title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>
-        (first-in, first-out), but any kind of generalized queue will work.
-        <b>See <a href="#fills">Fills</a>.</b>
-      </li>
-      <li class="proselike">
-        The order in which neighboring
-        <a class="external"
-           href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
-           title="Vertex (graph theory) - Wikipedia">nodes</a>
-        (pixel locations) that may need to be filled are checked and added to
-        the fringe. This is especially significant when a
-        <a class="external"
-           href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
-           title="Stack (abstract data type) - Wikipedia">stack</a>
-        is used for the fringe, because with a stack, many steps often progress
-        between when a node (pixel location) is added to the fringe and when it
-        is actually colored. <b>See
-        <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
-        Strategies</a>.</b>
-      </li>
-    </ul>
-    <p>
-      This is an early version, perhaps even a prototype for a different
-      design. Fill type and configuration can only be specified through
-      shortcuts, not menus. Besides fixing that, other accessibility
-      improvements should be made: at minimum, it should be no harder to use
-      without a mouse (or limited mousing) than popular raster graphics
-      editors. This also only runs on Windows, which is not ideal.
-    </p>
-    <h2 id="drawing">
-      Drawing
-      <a class="navlink" href="#drawing" title="Link to this section">
-        &sect;
-      </a>
-    </h2>
-    <p>
-      To draw in <span class="box box-black"></span>&#8239;black on the canvas,
-      click and drag with the left mouse button.
-    </p>
-    <p>
-      The breadth of the curve drawn is 1 pixel.
-    </p>
-    <p>
-      Clicking without dragging draws a single pixel.
-    </p>
-    <p>
-      (This is to say that drawing works as it does in Microsoft Paint, the GNU
-      Image Manipulation Program, and other familiar raster graphics editors.)
-    </p>
-    <h2 id="fills">
-      Fills
-      <a class="navlink" href="#fills" title="Link to this section">&sect;</a>
-    </h2>
-    <p>
-      Most of the different fills&mdash;<a href="#stack">stack</a>,
-      <a href="#queue">queue</a>, <a href="#random">random</a>, and
-      <a href="#deque">deque</a> fill&mdash;are implemented the same way in
-      terms of an abstract <em>fringe</em> data type, and the difference
-      between them is how that type is implemented. Specifically, the
-      difference is due to the behavior of the extraction operation, which
-      determines the order in which
-      <a class="external"
-          href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
-          title="Vertex (graph theory) - Wikipedia">nodes</a>
-      (pixel locations) are <em>taken out</em> of the fringe. For the order in
-      which they are put in, see
-      <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
-      Strategies</a>.
-    </p>
-    <p>
-      However, <a href="#recursive">recursive fill</a> does not use an explicit
-      fringe data structure, and <a href="#instant">instant fill</a> completes
-      immediately (rather than animating over time) so it doesn&rsquo;t matter
-      (for using the program) how it is implemented.
-    </p>
-    <h3 id="stack">
-      Stack (LIFO)
-      <a class="navlink" href="#stack" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use <b class="command">right click</b> to flood-fill with a
-      <a class="external"
-          href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
-          title="Stack (abstract data type) - Wikipedia">stack</a>.
-      This data structure is last-in first-out (LIFO). The filled area expands
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Depth-first_search"
-         title="Depth-first search - Wikipedia">depth-first</a>.
-    </p>
-    <p>
-      Stack fill uses <span class="box box-red"></span>&#8239;red.
-    </p>
-    <p>
-      For consecutively inserted locations, extraction is in reverse order of
-      insertion. This produces visible behavior that some people find
-      unintuitive: since the <a href="#neighbor-enumeration-strategies">order
-      in which neighbors are enumerated</a> is the reverse of the order in
-      which they are visited,
-      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
-      goes down and up (when it can) before it goes right and left.
-    </p>
-    <p>
-      This corresponds to the need, when converting a recursive left-to-right
-      depth-first binary-tree traversal to use iteration instead (in the usual
-      way), to push each node&rsquo;s right child to the fringe (which is a
-      stack) before its left child. See <a href="#recursive">Recursive</a>.
-    </p>
-    <h3 id="queue">
-      Queue (FIFO)
-      <a class="navlink" href="#queue" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use <b class="command">middle click</b> to flood-fill with a
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
-         title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>.
-      This data structure is first-in first-out (FIFO). The filled area expands
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Breadth-first_search"
-         title="Breadth-first search - Wikipedia">breadth-first</a>.
-    </p>
-    <p>
-      Queue fill uses <span class="box box-blue"></span>&#8239;blue.
-    </p>
-    <p>
-      The word &ldquo;queue&rdquo; has two common meanings. In the broad sense,
-      a queue is any data structure that supports insertion as well as
-      extraction of inserted elements. (It is in this sense that a
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Priority_queue"
-         title="Priority queue - Wikipedia">priority queue</a>
-      is a queue.) In that sense, all the data types used as fringes, in this
-      program or any program, are queues.
-    </p>
-    <p>
-      Here I mean &ldquo;queue&rdquo; in the narrow sense: a
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
-         title="Queue (abstract data type) - Wikipedia">FIFO queue</a>,
-      which supports
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Breadth-first_search"
-         title="Breadth-first search - Wikipedia">breadth-first</a>
-      traversals in a manner analogous to how
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
-         title="Stack (abstract data type) - Wikipedia">stacks</a>
-      (&ldquo;LIFO queues&rdquo;) support
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Depth-first_search"
-         title="Depth-first search - Wikipedia">depth-first</a>
-      traversals.
-    </p>
-    <h3 id="random">
-      Random
-      <a class="navlink" href="#random" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;right-click</b> to
-      flood-fill with a random extraction queue. Extraction selects any element
-      with equal probability.
-    </p>
-    <p>
-      Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
-    </p>
-    <h3 id="deque">
-      Deque
-      <a class="navlink" href="#deque" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b> to
-      flood-fill with a
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Double-ended_queue"
-         title="Double-ended queue - Wikipedia">deque</a>,
-      where extraction randomly selects the front or back, each with 50%
-      probability.
-    </p>
-    <p>
-      Deque fill uses <span class="box box-purple"></span>&#8239;purple.
-    </p>
-    <p>
-      Picking randomly between the front and back of a deque is, of course,
-      <em>not</em> an operation provided by deques. Deques (double-ended
-      queues) provide two extraction operations. So the data structure being
-      used here as the fringe is not, strictly speaking, a deque, but rather is
-      implemented, in a straightforward way, <em>in terms of</em> a deque.
-    </p>
-    <h3 id="recursive">
-      Recursive
-      <a class="navlink" href="#recursive" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use <b class="command"><kbd>&#8862;Win</kbd>+right-click</b> to
-      flood-fill
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Recursion_(computer_science)"
-         title="Recursion (computer science) - Wikipedia">recursively</a>.
-      This is
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Depth-first_search"
-         title="Depth-first search - Wikipedia">depth-first</a>,
-      as with a stack.
-    </p>
-    <p>
-      Recursive fill uses <span class="box box-orange"></span>&#8239;orange.
-    </p>
-    <p>
-      The visible difference between recursive fill and
-      <a href="#stack">stack fill</a> is that recursive fill visits each
-      location&rsquo;s neighbors in the order in which the neighbors are
-      enumerated, whereas stack fill visits them in the opposite order (since
-      they are inserted into the fringe in the order they are enumerated, and
-      thus extracted in the opposite order since the fringe is a stack).
-    </p>
-    <p>
-      Thus a recursive fill taking neighbors in (for example)
-      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
-      order has the same observable behavior as a stack fill taking neighbors
-      in
-      <abbr title="&#129095; &#129093; &#129094; &#129092; (down, up, right, left)">DURL</abbr>
-      order.
-    </p>
-    <p>
-      Although <a href="#queue">queue fill</a> also visits neighbors in the
-      order they are enumerated, its behavior is not similar to recursive fill
-      (or to stack fill). In recursive fill, arbitrarily many other locations
-      are visited between the neighbors. For each neighbor, a recursive
-      function call is made. Like a stack fill (but not a queue fill), a
-      recursive fill will sometimes even visit most of the remaining region to
-      be filled before it gets back to the next neighbor.
-    </p>
-    <h4 id="why-no-crash">
-      But shouldn&rsquo;t this overflow the call stack and crash?
-      <a class="navlink" href="#why-no-crash" title="Link to here">&sect;</a>
-    </h4>
-    <p>
-      The most interesting thing about recursive fill, in this program, is that
-      it does not crash.
-    </p>
-    <p>
-      In the common use case of a 1080p screen, this program creates a
-      600&times;600 canvas. (At higher resolutions, the canvas is larger.)
-    </p>
-    <p>
-      With most languages and implementations/environments, unbounded recursion
-      risks overflowing the
-      <a class="external" href="https://en.wikipedia.org/wiki/Call_stack"
-         title="Call stack - Wikipedia">call stack</a>
-      and crashing (if you&rsquo;re lucky) or otherwise behaving erratically,
-      and this is a major source of security vulnerabilities. So while
-      recursion has many good practical uses, including in some graph traversal
-      problems, recursive flood fill is mostly good only for demonstration and
-      some testing purposes. Common image sizes are too large for recursive
-      flood fills to work, except when the region being filled happens to be
-      small.
-    </p>
-    <p>
-      This program is written in C# and targets
-      <a class="external"
-         href="https://en.wikipedia.org/w/index.php?title=.NET_5"
-         title=".NET Core - Wikipedia
-[redirect from &ldquo;.NET 5&rdquo;]">.NET 5</a>.
-      C# (with that or other
-      framework implementations) is no exception to this: the call stack is
-      strictly limited and non-expanding at runtime. The runtime can usually
-      detect the stack overflow and throw a
-      <a class="external"
-         href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0"
-         title="StackOverflowException Class (System) | Microsoft Docs"><code>StackOverflowException</code></a>,
-      which terminates the application
-      abnormally, i.e., crashes it. (An exception handler
-      <a class="external wide"
-         href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0#remarks"
-         title="StackOverflowException Class (System) | Microsoft Docs #Remarks">cannot actually catch</a>
-      exceptions of that type, nor would such an ability enable a fill written
-      this way to complete.)
-    </p>
-    <p>
-      <a class="external wide"
-         href="https://en.wikipedia.org/w/index.php?title=Tail-call_elimination"
-         title="Tail call - Wikipedia
-[redirect from &ldquo;Tail-call elimination&rdquo;]">Tail-call elimination</a>
-      is not a solution, since even in languages that
-      guarantee it in all eligible cases, it can only apply to the the call
-      that visits the last neighbor enumerated. (C# never guarantees it
-      anyway.)
-    </p>
-    <p>
-      Some environments allow the call-stack size to be increased for a
-      program, either before the program is run or while it is running. This
-      may be a valuable solution for some non-trivial cases, but it is not a
-      general solution if very large images must be supported. It is also not
-      the solution used here.
-    </p>
-    <p>
-      The reason recursive fill doesn&rsquo;t crash this program is a
-      consequence (or accident) of the
-      <a class="external"
-         href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/"
-         title="Asynchronous programming in C# | Microsoft Docs">asynchronous</a>
-      mechanism through which
-      concurrently running fills have their work broken up into pieces, which
-      are performed with intervening delays so you can see the fills being
-      gradually applied, and which are interleaved with one another (and other
-      operations that maintain UI responsiveness).
-    </p>
-    <p>
-      The recursive fill is coded recursively, in
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Direct_style"
-         title="Continuation-passing style - Wikipedia
-[redirect from &ldquo;Direct style&rdquo;]">direct style</a>.
-      Like the other fills described above, it is an asynchronous method. After
-      some number of pixels (see
-      <a href="#speed-modifiers">Speed Modifiers</a>) are colored
-      synchronously, it awaits a
-      <a class="external wide"
-         href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.task.delay?view=net-5.0"
-         title="Task.Delay Method (System.Threading.Tasks) | Microsoft Docs">delay task</a>
-      and is scheduled to continue, on the same thread (the
-      <a class="external wide"
-         href="https://devblogs.microsoft.com/pfxteam/await-and-ui-and-deadlocks-oh-my/"
-         title="Await, and UI, and deadlocks! Oh my! | .NET Parallel Programming">UI thread</a>),
-      when the delay has completed.
-    </p>
-    <p>
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Roslyn_(compiler)"
-         title="Roslyn (compiler) - Wikipedia">Roslyn</a>,
-      the C# compiler, achieves this by converting the code written in direct
-      style, representing an entire fill operation with interleaved delays,
-      into corresponding code in
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Continuation-passing_style"
-         title="Continuation-passing style - Wikipedia">continuation-passing style</a>,
-      representing the work to do from when the task is resumed (or first
-      started) to when it is suspended (or finishes), as well as the
-      transformation from a description of the work that must be done before
-      one synchronous sequence of operations to a description of whatever work
-      <em>still</em> needs to be done.
-    </p>
-    <p>
-      A recursive algorithm implemented in continuation-passing style (unless
-      all its recursive calls are tail calls) carries data corresponding to a
-      call stack if it were implemented in direct style. The continuation
-      comprises this structure together with information about what step to
-      resume at (the &ldquo;state&rdquo; of the
-      <a class="external wide"
-         href="https://en.wikipedia.org/wiki/Finite-state_machine"
-         title="Finite-state machine - Wikipedia">state machine</a>).
-    </p>
-    <p>
-      In this program, those data exist, in part, as a chain of
-      <a class="external wide"
-         href="https://docs.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap"
-         title="Task-based Asynchronous Pattern (TAP) | Microsoft Docs">asynchronous tasks</a>
-      linked by
-      <a class="external"
-         href="https://en.wikipedia.org/wiki/Continuation#Programming_language_support"
-         title="Continuation - Wikipedia #Programming language support">continuations</a>.
-      If the goal were to do a fill as quickly and efficiently as possible (see
-      <a href="#instant">Instant</a>), this would be unsuitable. But the goal
-      here is deliberately to run slowly, to visualize the incremental work
-      done by the fill.
-    </p>
-    <h3 id="instant">
-      Instant
-      <a class="navlink" href="#instant" title="Link to this subsection">
-        &sect;
-      </a>
-    </h3>
-    <p>
-      Use
-      <b class="command"><kbd>&#8862;Win</kbd>&hairsp;+&hairsp;left-click</b>
-      to flood-fill instantly: the algorithm runs very quickly, rather than
-      being broken up into pieces separated by delays, and the canvas is not
-      updated between the beginning and the end of the fill.
-    </p>
-    <p>
-      Instant fill uses <span class="box box-black"></span>&#8239;black.
-    </p>
-    <p>
-      This is quite different from the other fills. It should be really be
-      viewed as a drawing command, since it does not visualize the behavior of
-      a fill. It has the same behavior as the bucket tool in a raster graphics
-      editor: a connected region of one color is immediately changed to have
-      another color.
-    </p>
-    <p>
-      This is really <em>atomic</em> rather than <em>instant</em>, but it
-      should appear to complete immediately. No other changes happen to the
-      canvas between when it starts and ends. The intermediate state is not
-      even observed during it.
-    </p>
-    <p>
-      The choice of algorithm, data structure, and neighbor enumeration order
-      is thus an implementation detail that does not affect any observable
-      behavior. As of this writing, it happens to be a flood fill with a stack,
-      enumerating neighbors in
-      <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
-      order. (But there are other differences between this and
-      <a href="#stack">stack fill</a>, related to performance.)
-    </p>
-    <h2 id="speed-modifiers">
-      Speed Modifiers
-      <a class="navlink" href="#speed-modifiers" title="Link to this section">
-        &sect;
-      </a>
-    </h2>
-    <p id="speed-default">
-      By default, fills proceed at a rate of 5 pixels per frame. You can
-      override that by pressing:
-    </p>
-    <ul>
-      <li id="speed-shift" class="proselike">
-        <span class="command"><kbd>Shift</kbd></span> to fill slowly (1 pixel
-        per frame).
-      </li>
-      <li id="speed-ctrl" class="proselike">
-        <span class="command"><kbd>Ctrl</kbd></span> to fill very fast (20
-        pixels per frame).
-      </li>
-      <li id="speed-ctrl-shift" class="proselike">
-        <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> to fill
-        pretty fast (10 pixels per frame).
-      </li>
-    </ul>
-    <p>
-      Modifiers affect the speed of <strong>newly started fills</strong>. That
-      way, you can have concurrent fills proceeding at different speeds.
-    </p>
-    <p id="running-fills-are-not-changed">
-      The <em>speed</em> shown in the status bar (immediately below the canvas)
-      is therefore <em>not</em> necessarily the speed of any of the currently
-      running fills, but rather the speed a fill started now would use, so long
-      as you&rsquo;re still pressing the same modifier keys.
-    </p>
-    <h2 id="neighbor-enumeration-strategies">
-      Neighbor Enumeration Strategies
-      <a class="navlink" href="#neighbor-enumeration-strategies" title="Link to this section">
-        &sect;
-      </a>
-    </h2>
-    <p>
-      There are several major strategies for the order in which neighbors are
-      enumerated, and some (<em>currently</em>, just one) are configurable by
-      the selection of sub-strategies.
-    </p>
-    <p id="use-the-wheel-luke">
-      Use the scroll-wheel (with no modifier keys) to cycle between major
-      neighbor-enumeration strategies.
-    </p>
-    <p>
-      Hold down <span class="command"><kbd>Shift</kbd></span> while using the
-      scroll-wheel to cycle between sub-strategies for the currently selected
-      major strategy. To scroll &ldquo;fast&rdquo; through them&mdash;the
-      meaning of which is determined per strategy&mdash;use
-      <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>.
-    </p>
-    <p id="canvas-scroll">
-      <strong>The mouse pointer must be over the canvas when
-      scrolling.</strong> This is to avoid accidentally changing the neighbor
-      enumeration strategy when attempting to scroll something else. In
-      particular, the entire UI becomes scrollable if it is too small to show
-      everything.
-    </p>
-    <p>
-      The available neighbor enumeration strategies (with their sub-strategies)
-      are:
-    </p>
-    <dl>
-      <dt id="uniform">
-        Uniform
-        <a class="navlink" href="#uniform" title="Link to this subsection">
-          &sect;
-        </a>
-      </dt>
-      <dd>
-        Neighbors are always enumerated in the same order. The sub-strategy
-        determines which order that is. There are 24 sub-strategies, since
-        that&rsquo;s how many permutations of Left, Right, Up, and Down there
-        are.
-        <ul id="uniform-modifiers">
-          <li>
-            Scrolling with <span class="command"><kbd>Shift</kbd></span> goes
-            to the next or previous permutation.
-          </li>
-          <li>
-            Scrolling with
-            <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
-            either direction) goes to the reverse of the current permutation.
+          <li class="proselike">
+            The order in which neighboring
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+               title="Vertex (graph theory) - Wikipedia">nodes</a>
+            (pixel locations) that may need to be filled are checked and added
+            to the fringe. This is especially significant when a
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+               title="Stack (abstract data type) - Wikipedia">stack</a>
+            is used for the fringe, because with a stack, many steps often
+            progress between when a node (pixel location) is added to the
+            fringe and when it is actually colored. <b>See
+            <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
+            Strategies</a>.</b>
           </li>
         </ul>
-        Sub-strategies are abbreviated by the first letters of each
-        direction, in the order in which neighbors are enumerated. The default
-        sub-strategy is
-        <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
-      </dd>
-      <dt id="random-per-fill">
-        Random per fill
-        <a class="navlink" href="#random-per-fill" title="Link to this subsection">
-          &sect;
-        </a>
-      </dt>
-      <dd>
-        Neighbors are enumerated in an order that is uniform in each fill, but
-        different&mdash;and randomly chosen&mdash;each time a fill is
-        performed. This is thus the same as using the
-        <a href="#uniform">Uniform</a> strategy and choosing a sub-strategy
-        randomly before every fill.
-      </dd>
-      <dt id="random-always">
-        Random always
-        <a class="navlink" href="#random-always" title="Link to this subsection">
-          &sect;
-        </a>
-      </dt>
-      <dd>
-        Each time neighbors are enumerated, even within the same fill, the
-        order is randomly selected. If the same pixel is reached multiple
-        times, even in the same fill (which is possible in the case of
-        concurrent <em>physically nested</em> fills interfering with each
-        other), a different order may be chosen.
-      </dd>
-      <dt id="random-per-pixel">
-        Random per pixel
-        <a class="navlink" href="#random-per-pixel" title="Link to this subsection">
-          &sect;
-        </a>
-      </dt>
-      <dd>
-        Each pixel in the image has an order in which neighbors are always
-        enumerated, and each order is randomly determined separately. If the
-        same pixel is reached multiple times, even in separate fills (whether
-        or not they overlap in time), its neighbors are enumerated in that
-        order each time. Restarting the program generates a different order.
-        Without looking closely, you won&rsquo;t notice the difference between
-        this and <a href="#random-always">Random always</a>.
-      </dd>
-    </dl>
+        <p>
+          This is an early version, perhaps even a prototype for a different
+          design. Fill type and configuration can only be specified through
+          shortcuts, not menus. Besides fixing that, other accessibility
+          improvements should be made: at minimum, it should be no harder to
+          use without a mouse (or limited mousing) than popular raster graphics
+          editors. This also only runs on Windows, which is not ideal.
+        </p>
+      </section>
+      <section id="drawing-content">
+        <h2 id="drawing">
+          Drawing
+          <a class="navlink" href="#drawing" title="Link to this section">
+            &sect;
+          </a>
+        </h2>
+        <p>
+          To draw in <span class="box box-black"></span>&#8239;black on the
+          canvas, click and drag with the left mouse button.
+        </p>
+        <p>
+          The breadth of the curve drawn is 1 pixel.
+        </p>
+        <p>
+          Clicking without dragging draws a single pixel.
+        </p>
+        <p>
+          (This is to say that drawing works as it does in Microsoft Paint, the
+          GNU Image Manipulation Program, and other familiar raster graphics
+          editors.)
+        </p>
+      </section>
+      <section id="fills-content">
+        <h2 id="fills">
+          Fills
+          <a class="navlink" href="#fills" title="Link to this section">
+            &sect;
+          </a>
+        </h2>
+        <p>
+          Most of the different fills&mdash;<a href="#stack">stack</a>,
+          <a href="#queue">queue</a>, <a href="#random">random</a>, and
+          <a href="#deque">deque</a> fill&mdash;are implemented the same way in
+          terms of an abstract <em>fringe</em> data type, and the difference
+          between them is how that type is implemented. Specifically, the
+          difference is due to the behavior of the extraction operation, which
+          determines the order in which
+          <a class="external"
+             href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
+             title="Vertex (graph theory) - Wikipedia">nodes</a>
+          (pixel locations) are <em>taken out</em> of the fringe. For the order
+          in which they are put in, see
+          <a href="#neighbor-enumeration-strategies">Neighbor Enumeration
+          Strategies</a>.
+        </p>
+        <p>
+          However, <a href="#recursive">recursive fill</a> does not use an
+          explicit fringe data structure, and <a href="#instant">instant
+          fill</a> completes immediately (rather than animating over time) so
+          it doesn&rsquo;t matter (for using the program) how it is
+          implemented.
+        </p>
+        <section id="stack-content">
+          <h3 id="stack">
+            Stack (LIFO)
+            <a class="navlink" href="#stack" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use <b class="command">right click</b> to flood-fill with a
+            <a class="external"
+                href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+                title="Stack (abstract data type) - Wikipedia">stack</a>.
+            This data structure is last-in first-out (LIFO). The filled area
+            expands
+            <a class="external"
+              href="https://en.wikipedia.org/wiki/Depth-first_search"
+              title="Depth-first search - Wikipedia">depth-first</a>.
+          </p>
+          <p>
+            Stack fill uses <span class="box box-red"></span>&#8239;red.
+          </p>
+          <p>
+            For consecutively inserted locations, extraction is in reverse
+            order of insertion. This produces visible behavior that some people
+            find unintuitive: since the
+            <a href="#neighbor-enumeration-strategies">order in which neighbors
+            are enumerated</a> is the reverse of the order in which they are
+            visited,
+            <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+            goes down and up (when it can) before it goes right and left.
+          </p>
+          <p>
+            This corresponds to the need, when converting a recursive
+            left-to-right depth-first binary-tree traversal to use iteration
+            instead (in the usual way), to push each node&rsquo;s right child
+            to the fringe (which is a stack) before its left child. See
+            <a href="#recursive">Recursive</a>.
+          </p>
+        </section>
+        <section id="queue-content">
+          <h3 id="queue">
+            Queue (FIFO)
+            <a class="navlink" href="#queue" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use <b class="command">middle click</b> to flood-fill with a
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+               title="Queue (abstract data type) - Wikipedia">&ldquo;queue&rdquo;</a>.
+            This data structure is first-in first-out (FIFO). The filled area
+            expands
+            <a class="external wide"
+               href="https://en.wikipedia.org/wiki/Breadth-first_search"
+               title="Breadth-first search - Wikipedia">breadth-first</a>.
+          </p>
+          <p>
+            Queue fill uses <span class="box box-blue"></span>&#8239;blue.
+          </p>
+          <p>
+            The word &ldquo;queue&rdquo; has two common meanings. In the broad
+            sense, a queue is any data structure that supports insertion as
+            well as extraction of inserted elements. (It is in this sense that
+            a
+            <a class="external wide"
+               href="https://en.wikipedia.org/wiki/Priority_queue"
+               title="Priority queue - Wikipedia">priority queue</a>
+            is a queue.) In that sense, all the data types used as fringes, in
+            this program or any program, are queues.
+          </p>
+          <p>
+            Here I mean &ldquo;queue&rdquo; in the narrow sense: a
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)"
+               title="Queue (abstract data type) - Wikipedia">FIFO queue</a>,
+            which supports
+            <a class="external wide"
+               href="https://en.wikipedia.org/wiki/Breadth-first_search"
+               title="Breadth-first search - Wikipedia">breadth-first</a>
+            traversals in a manner analogous to how
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)"
+               title="Stack (abstract data type) - Wikipedia">stacks</a>
+            (&ldquo;LIFO queues&rdquo;) support
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Depth-first_search"
+               title="Depth-first search - Wikipedia">depth-first</a>
+            traversals.
+          </p>
+        </section>
+        <section id="random-content">
+          <h3 id="random">
+            Random
+            <a class="navlink" href="#random" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use
+            <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;right-click</b>
+            to flood-fill with a random extraction queue. Extraction selects
+            any element with equal probability.
+          </p>
+          <p>
+            Random fill uses <span class="box box-yellow"></span>&#8239;yellow.
+          </p>
+        </section>
+        <section id="deque-content">
+          <h3 id="deque">
+            Deque
+            <a class="navlink" href="#deque" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use
+            <b class="command"><kbd>Alt</kbd>&hairsp;+&hairsp;middle-click</b>
+            to flood-fill with a
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Double-ended_queue"
+               title="Double-ended queue - Wikipedia">deque</a>,
+            where extraction randomly selects the front or back, each with 50%
+            probability.
+          </p>
+          <p>
+            Deque fill uses <span class="box box-purple"></span>&#8239;purple.
+          </p>
+          <p>
+            Picking randomly between the front and back of a deque is, of
+            course, <em>not</em> an operation provided by deques. Deques
+            (double-ended queues) provide two extraction operations. So the
+            data structure being used here as the fringe is not, strictly
+            speaking, a deque, but rather is implemented, in a straightforward
+            way, <em>in terms of</em> a deque.
+          </p>
+        </section>
+        <section id="recursive-content">
+          <h3 id="recursive">
+            Recursive
+            <a class="navlink" href="#recursive"
+               title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use <b class="command"><kbd>&#8862;Win</kbd>+right-click</b> to
+            flood-fill
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Recursion_(computer_science)"
+               title="Recursion (computer science) - Wikipedia">recursively</a>.
+            This is
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Depth-first_search"
+               title="Depth-first search - Wikipedia">depth-first</a>,
+            as with a stack.
+          </p>
+          <p>
+            Recursive fill uses
+            <span class="box box-orange"></span>&#8239;orange.
+          </p>
+          <p>
+            The visible difference between recursive fill and
+            <a href="#stack">stack fill</a> is that recursive fill visits each
+            location&rsquo;s neighbors in the order in which the neighbors are
+            enumerated, whereas stack fill visits them in the opposite order
+            (since they are inserted into the fringe in the order they are
+            enumerated, and thus extracted in the opposite order since the
+            fringe is a stack).
+          </p>
+          <p>
+            Thus a recursive fill taking neighbors in (for example)
+            <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+            order has the same observable behavior as a stack fill taking
+            neighbors in
+            <abbr title="&#129095; &#129093; &#129094; &#129092; (down, up, right, left)">DURL</abbr>
+            order.
+          </p>
+          <p>
+            Although <a href="#queue">queue fill</a> also visits neighbors in
+            the order they are enumerated, its behavior is not similar to
+            recursive fill (or to stack fill). In recursive fill, arbitrarily
+            many other locations are visited between the neighbors. For each
+            neighbor, a recursive function call is made. Like a stack fill (but
+            not a queue fill), a recursive fill will sometimes even visit most
+            of the remaining region to be filled before it gets back to the
+            next neighbor.
+          </p>
+          <h4 id="why-no-crash">
+            But shouldn&rsquo;t this overflow the call stack and crash?
+            <a class="navlink" href="#why-no-crash" title="Link to here">
+              &sect;
+            </a>
+          </h4>
+          <p>
+            The most interesting thing about recursive fill, in this program,
+            is that it does not crash.
+          </p>
+          <p>
+            In the common use case of a 1080p screen, this program creates a
+            600&times;600 canvas. (At higher resolutions, the canvas is
+            larger.)
+          </p>
+          <p>
+            With most languages and implementations/environments, unbounded
+            recursion risks overflowing the
+            <a class="external" href="https://en.wikipedia.org/wiki/Call_stack"
+               title="Call stack - Wikipedia">call stack</a>
+            and crashing (if you&rsquo;re lucky) or otherwise behaving
+            erratically, and this is a major source of security
+            vulnerabilities. So while recursion has many good practical uses,
+            including in some graph traversal problems, recursive flood fill is
+            mostly good only for demonstration and some testing purposes.
+            Common image sizes are too large for recursive flood fills to work,
+            except when the region being filled happens to be small.
+          </p>
+          <p>
+            This program is written in C# and targets
+            <a class="external"
+               href="https://en.wikipedia.org/w/index.php?title=.NET_5"
+               title=".NET Core - Wikipedia
+[redirect from &ldquo;.NET 5&rdquo;]">.NET 5</a>.
+            C# (with that or other framework implementations) is no exception
+            to this: the call stack is strictly limited and non-expanding at
+            runtime. The runtime can usually detect the stack overflow and
+            throw a
+            <a class="external"
+              href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0"
+               title="StackOverflowException Class (System) | Microsoft Docs"><code>StackOverflowException</code></a>,
+            which terminates the application abnormally, i.e., crashes it. (An
+            exception handler
+            <a class="external wide"
+               href="https://docs.microsoft.com/en-us/dotnet/api/system.stackoverflowexception?view=net-5.0#remarks"
+               title="StackOverflowException Class (System) | Microsoft Docs #Remarks">cannot actually catch</a>
+            exceptions of that type, nor would such an ability enable a fill
+            written this way to complete.)
+          </p>
+          <p>
+            <a class="external wide"
+               href="https://en.wikipedia.org/w/index.php?title=Tail-call_elimination"
+               title="Tail call - Wikipedia
+[redirect from &ldquo;Tail-call elimination&rdquo;]">Tail-call elimination</a>
+            is not a solution, since even in languages that guarantee it in all
+            eligible cases, it can only apply to the the call that visits the
+            last neighbor enumerated. (C# never guarantees it anyway.)
+          </p>
+          <p>
+            Some environments allow the call-stack size to be increased for a
+            program, either before the program is run or while it is running.
+            This may be a valuable solution for some non-trivial cases, but it
+            is not a general solution if very large images must be supported.
+            It is also not the solution used here.
+          </p>
+          <p>
+            The reason recursive fill doesn&rsquo;t crash this program is a
+            consequence (or accident) of the
+            <a class="external"
+               href="https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/"
+               title="Asynchronous programming in C# | Microsoft Docs">asynchronous</a>
+            mechanism through which concurrently running fills have their work
+            broken up into pieces, which are performed with intervening delays
+            so you can see the fills being gradually applied, and which are
+            interleaved with one another (and other operations that maintain UI
+            responsiveness).
+          </p>
+          <p>
+            The recursive fill is coded recursively, in
+            <a class="external wide"
+              href="https://en.wikipedia.org/wiki/Direct_style"
+              title="Continuation-passing style - Wikipedia
+[redirect from &ldquo;Direct style&rdquo;]">direct style</a>.
+            Like the other fills described above, it is an asynchronous method.
+            After some number of pixels (see
+            <a href="#speed-modifiers">Speed Modifiers</a>) are colored
+            synchronously, it awaits a
+            <a class="external wide"
+               href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.task.delay?view=net-5.0"
+               title="Task.Delay Method (System.Threading.Tasks) | Microsoft Docs">delay task</a>
+            and is scheduled to continue, on the same thread (the
+            <a class="external wide"
+               href="https://devblogs.microsoft.com/pfxteam/await-and-ui-and-deadlocks-oh-my/"
+               title="Await, and UI, and deadlocks! Oh my! | .NET Parallel Programming">UI thread</a>),
+            when the delay has completed.
+          </p>
+          <p>
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Roslyn_(compiler)"
+               title="Roslyn (compiler) - Wikipedia">Roslyn</a>,
+            the C# compiler, achieves this by converting the code written in
+            direct style, representing an entire fill operation with
+            interleaved delays, into corresponding code in
+            <a class="external wide"
+               href="https://en.wikipedia.org/wiki/Continuation-passing_style"
+               title="Continuation-passing style - Wikipedia">continuation-passing style</a>,
+            representing the work to do from when the task is resumed (or first
+            started) to when it is suspended (or finishes), as well as the
+            transformation from a description of the work that must be done
+            before one synchronous sequence of operations to a description of
+            whatever work <em>still</em> needs to be done.
+          </p>
+          <p>
+            A recursive algorithm implemented in continuation-passing style
+            (unless all its recursive calls are tail calls) carries data
+            corresponding to a call stack if it were implemented in direct
+            style. The continuation comprises this structure together with
+            information about what step to resume at (the &ldquo;state&rdquo;
+            of the
+            <a class="external wide"
+               href="https://en.wikipedia.org/wiki/Finite-state_machine"
+               title="Finite-state machine - Wikipedia">state machine</a>).
+          </p>
+          <p>
+            In this program, those data exist, in part, as a chain of
+            <a class="external wide"
+               href="https://docs.microsoft.com/en-us/dotnet/standard/asynchronous-programming-patterns/task-based-asynchronous-pattern-tap"
+               title="Task-based Asynchronous Pattern (TAP) | Microsoft Docs">asynchronous tasks</a>
+            linked by
+            <a class="external"
+               href="https://en.wikipedia.org/wiki/Continuation#Programming_language_support"
+               title="Continuation - Wikipedia #Programming language support">continuations</a>.
+            If the goal were to do a fill as quickly and efficiently as
+            possible (see <a href="#instant">Instant</a>), this would be
+            unsuitable. But the goal here is deliberately to run slowly, to
+            visualize the incremental work done by the fill.
+          </p>
+        </section>
+        <section id="instant-content">
+          <h3 id="instant">
+            Instant
+            <a class="navlink" href="#instant" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Use
+            <b class="command"><kbd>&#8862;Win</kbd>&hairsp;+&hairsp;left-click</b>
+            to flood-fill instantly: the algorithm runs very quickly, rather
+            than being broken up into pieces separated by delays, and the
+            canvas is not updated between the beginning and the end of the
+            fill.
+          </p>
+          <p>
+            Instant fill uses <span class="box box-black"></span>&#8239;black.
+          </p>
+          <p>
+            This is quite different from the other fills. It should be really
+            be viewed as a drawing command, since it does not visualize the
+            behavior of a fill. It has the same behavior as the bucket tool in
+            a raster graphics editor: a connected region of one color is
+            immediately changed to have another color.
+          </p>
+          <p>
+            This is really <em>atomic</em> rather than <em>instant</em>, but it
+            should appear to complete immediately. No other changes happen to
+            the canvas between when it starts and ends. The intermediate state
+            is not even observed during it.
+          </p>
+          <p>
+            The choice of algorithm, data structure, and neighbor enumeration
+            order is thus an implementation detail that does not affect any
+            observable behavior. As of this writing, it happens to be a flood
+            fill with a stack, enumerating neighbors in
+            <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>
+            order. (But there are other differences between this and
+            <a href="#stack">stack fill</a>, related to performance.)
+          </p>
+        </section>
+      </section>
+      <section id="speed-modifiers-content">
+        <h2 id="speed-modifiers">
+          Speed Modifiers
+          <a class="navlink" href="#speed-modifiers"
+             title="Link to this section">
+            &sect;
+          </a>
+        </h2>
+        <p id="speed-default">
+          By default, fills proceed at a rate of 5 pixels per frame. You can
+          override that by pressing:
+        </p>
+        <ul>
+          <li id="speed-shift" class="proselike">
+            <span class="command"><kbd>Shift</kbd></span> to fill slowly (1
+            pixel per frame).
+          </li>
+          <li id="speed-ctrl" class="proselike">
+            <span class="command"><kbd>Ctrl</kbd></span> to fill very fast (20
+            pixels per frame).
+          </li>
+          <li id="speed-ctrl-shift" class="proselike">
+            <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> to
+            fill pretty fast (10 pixels per frame).
+          </li>
+        </ul>
+        <p>
+          Modifiers affect the speed of <strong>newly started fills</strong>.
+          That way, you can have concurrent fills proceeding at different
+          speeds.
+        </p>
+        <p id="running-fills-are-not-changed">
+          The <em>speed</em> shown in the status bar (immediately below the
+          canvas) is therefore <em>not</em> necessarily the speed of any of the
+          currently running fills, but rather the speed a fill started now
+          would use, so long as you&rsquo;re still pressing the same modifier
+          keys.
+        </p>
+      </section>
+      <section id="neighbor-enumeration-strategies-content">
+        <h2 id="neighbor-enumeration-strategies">
+          Neighbor Enumeration Strategies
+          <a class="navlink" href="#neighbor-enumeration-strategies"
+             title="Link to this section">
+            &sect;
+          </a>
+        </h2>
+        <p>
+          There are four major strategies for the order in which neighbors can
+          be enumerated. Some (<em>currently</em>, just one) of these are
+          configurable by the selection of sub-strategies.
+        </p>
+        <p id="use-the-wheel-luke">
+          Use the scroll-wheel (with no modifier keys) to cycle between major
+          neighbor-enumeration strategies.
+        </p>
+        <p>
+          Hold down <span class="command"><kbd>Shift</kbd></span> while using
+          the scroll-wheel to cycle between sub-strategies for the currently
+          selected major strategy. To scroll &ldquo;fast&rdquo; through
+          them&mdash;the meaning of which is determined per strategy&mdash;use
+          <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>.
+        </p>
+        <p id="canvas-scroll">
+          <strong>The mouse pointer must be over the canvas when
+          scrolling.</strong> This is to avoid accidentally changing the
+          neighbor enumeration strategy when attempting to scroll something
+          else. In particular, the entire UI becomes scrollable if it is too
+          small to show everything.
+        </p>
+        <p>
+          The available neighbor enumeration
+          strategies&mdash;<b><a href="#uniform">Uniform</a></b>,
+          <b><a href="#random-per-fill">Random per fill</a></b>,
+          <b><a href="#random-always">Random always</a></b>, and
+          <b><a href="#random-per-pixel">Random per pixel</a></b>&mdash;are
+          detailed below.
+        </p>
+        <section id="uniform-content">
+          <h3 id="uniform">
+            Uniform
+            <a class="navlink" href="#uniform" title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Neighbors are always enumerated in the same order. The sub-strategy
+            determines which order that is. There are 24 sub-strategies, since
+            that&rsquo;s how many permutations of Left, Right, Up, and Down
+            there are.
+          </p>
+          <ul id="uniform-modifiers">
+            <li class="proselike">
+              Scrolling with <span class="command"><kbd>Shift</kbd></span> goes
+              to the next or previous permutation.
+            </li>
+            <li class="proselike">
+              Scrolling with
+              <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
+              either direction) goes to the reverse of the current permutation.
+            </li>
+          </ul>
+          <p>
+            Sub-strategies are abbreviated by the first letters of each
+            direction, in the order in which neighbors are enumerated. The
+            default sub-strategy is
+            <abbr title="&#129092; &#129094; &#129093; &#129095; (left, right, up, down)">LRUD</abbr>.
+          </p>
+        </section>
+        <section id="random-per-fill-content">
+          <h3 id="random-per-fill">
+            Random per fill
+            <a class="navlink" href="#random-per-fill"
+               title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Neighbors are enumerated in an order that is uniform in each fill,
+            but different&mdash;and randomly chosen&mdash;each time a fill is
+            performed. This is thus the same as using the
+            <a href="#uniform">Uniform</a> strategy and choosing a sub-strategy
+            randomly before every fill.
+          </p>
+        </section>
+        <section id="random-always-content">
+          <h3 id="random-always">
+            Random always
+            <a class="navlink" href="#random-always"
+               title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Each time neighbors are enumerated, even within the same fill, the
+            order is randomly selected. If the same pixel is reached multiple
+            times, even in the same fill (which is possible in the case of
+            concurrent <em>physically nested</em> fills interfering with each
+            other), a different order may be chosen.
+          </p>
+        </section>
+        <section id="random-per-pixel-content">
+          <h3 id="random-per-pixel">
+            Random per pixel
+            <a class="navlink" href="#random-per-pixel"
+               title="Link to this subsection">
+              &sect;
+            </a>
+          </h3>
+          <p>
+            Each pixel in the image has an order in which neighbors are always
+            enumerated, and each order is randomly determined separately. If
+            the same pixel is reached multiple times, even in separate fills
+            (whether or not they overlap in time), its neighbors are enumerated
+            in that order each time. Restarting the program generates a
+            different order. Without looking closely, you won&rsquo;t notice
+            the difference between this and <a href="#random-always">Random
+            always</a>.
+          </p>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

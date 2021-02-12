@@ -3,7 +3,7 @@ body {
   font-size: 1.3em;
   margin: 0 auto;
   max-width: 32.75em;
-  padding: 0 5px;
+  padding: 0 13px;
   text-rendering: optimizeLegibility;
 }
 
@@ -34,7 +34,7 @@ h3 {
   margin-top: 1.4em;
 }
 
-h3, h4, dt {
+h3, h4 {
   letter-spacing: .07em;
 }
 
@@ -43,14 +43,9 @@ h4 {
   margin-top: 1.4em;
 }
 
-h4, dt {
+h4 {
   font-family: 'DM Sans', sans-serif;
   font-feature-settings: 'liga' off;
-}
-
-dt {
-  font-weight: bold;
-  margin-top: .5em;
 }
 
 p {
@@ -58,16 +53,12 @@ p {
   margin-top: .85em;
 }
 
-p, li, dd {
+p, li {
   font-family: 'Source Serif Pro', serif;
   font-feature-settings: 'liga' on;
   hyphens: auto;
   -ms-hyphenate-limit-chars: 7 2 2;
   -ms-hyphens: auto;
-}
-
-dd>ul, dd>ol, dd>ul>li, dd>ol>li {
-  margin: 3px;
 }
 
 a, abbr, kbd, .command {
@@ -172,4 +163,10 @@ kbd:hover {
 
 .toc-subsection {
   margin: 3px 0;
+}
+
+.marked {
+  border-left: 8px solid royalblue;
+  margin-left: -13px;
+  padding-left: 5px;
 }
