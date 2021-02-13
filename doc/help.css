@@ -165,8 +165,18 @@ kbd:hover {
   margin: 3px 0;
 }
 
+ul.markable-item-list, ul.markable-item-list>li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul.markable-item-list>li ul>li {
+  list-style-type: disc;
+}
+
 .marked {
-  border-left: 8px solid royalblue;
+  border-left: 8px solid #e86100;
   margin-left: -13px;
   padding-left: 5px;
 }

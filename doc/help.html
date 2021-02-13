@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans&family=Noto+Sans&family=Source+Serif+Pro:wght@400;600;700&family=Source+Code+Pro&family=Ubuntu:wght@300&display=swap">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="help.css">
+    <script src="https://unpkg.com/@ungap/url-search-params"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.2.201711092/classList.min.js"></script>
+    <script src="help.js"></script>
   </head>
   <body>
     <h1>
@@ -592,18 +595,42 @@
           By default, fills proceed at a rate of 5 pixels per frame. You can
           override that by pressing:
         </p>
-        <ul>
-          <li id="speed-shift" class="proselike">
-            <span class="command"><kbd>Shift</kbd></span> to fill slowly (1
-            pixel per frame).
+        <!-- TODO
+          This ugly div-wrapping hack makes ?highlight= work for list items,
+          but in this case I think it's bad for accessibility. Even though
+          everything is wrapped in an outer list, screen readers may still
+          present the inner lists as such. Find a better way.
+        -->
+        <ul class="markable-item-list">
+          <li>
+            <div id="speed-shift">
+              <ul class="proselike">
+                <li>
+                  <span class="command"><kbd>Shift</kbd></span> to fill slowly
+                  (1 pixel per frame).
+                </li>
+              </ul>
+            </div>
           </li>
-          <li id="speed-ctrl" class="proselike">
-            <span class="command"><kbd>Ctrl</kbd></span> to fill very fast (20
-            pixels per frame).
+          <li>
+            <div id="speed-ctrl">
+              <ul class="proselike">
+                <li>
+                  <span class="command"><kbd>Ctrl</kbd></span> to fill very
+                  fast (20 pixels per frame).
+                </li>
+              </ul>
+            </div>
           </li>
-          <li id="speed-ctrl-shift" class="proselike">
-            <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> to
-            fill pretty fast (10 pixels per frame).
+          <li>
+            <div id="speed-ctrl-shift">
+              <ul class="proselike">
+                <li>
+                  <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>
+                  to fill pretty fast (10 pixels per frame).
+                </li>
+              </ul>
+            </div>
           </li>
         </ul>
         <p>
@@ -671,17 +698,25 @@
             that&rsquo;s how many permutations of Left, Right, Up, and Down
             there are.
           </p>
-          <ul id="uniform-modifiers">
-            <li class="proselike">
-              Scrolling with <span class="command"><kbd>Shift</kbd></span> goes
-              to the next or previous permutation.
-            </li>
-            <li class="proselike">
-              Scrolling with
-              <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> (in
-              either direction) goes to the reverse of the current permutation.
-            </li>
-          </ul>
+          <!--
+            Here, the div-wrapping hack makes ?highlight= work for the whole
+            list. Unlike the version above for ?highlight= on individual list
+            items, I don't anticipate any problems here.
+          -->
+          <div id="uniform-modifiers">
+            <ul>
+              <li class="proselike">
+                Scrolling with <span class="command"><kbd>Shift</kbd></span>
+                goes to the next or previous permutation.
+              </li>
+              <li class="proselike">
+                Scrolling with
+                <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>
+                (in either direction) goes to the reverse of the current
+                permutation.
+              </li>
+            </ul>
+          </div>
           <p>
             Sub-strategies are abbreviated by the first letters of each
             direction, in the order in which neighbors are enumerated. The
@@ -730,14 +765,14 @@
             </a>
           </h3>
           <p>
-            Each pixel in the image has an order in which neighbors are always
-            enumerated, and each order is randomly determined separately. If
-            the same pixel is reached multiple times, even in separate fills
-            (whether or not they overlap in time), its neighbors are enumerated
-            in that order each time. Restarting the program generates a
-            different order. Without looking closely, you won&rsquo;t notice
-            the difference between this and <a href="#random-always">Random
-            always</a>.
+            Each pixel in the image has an order in which its neighbors are
+            always enumerated, and each order is randomly determined
+            separately. If the same pixel is reached multiple times, even in
+            separate fills (whether or not they overlap in time), its neighbors
+            are enumerated in that order each time. Restarting the program
+            generates a different order. Without looking closely, you
+            won&rsquo;t notice the difference between this and <a
+            href="#random-always">Random always</a>.
           </p>
         </section>
       </section>

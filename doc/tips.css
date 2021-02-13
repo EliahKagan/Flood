@@ -68,13 +68,13 @@ kbd {
   background-color: lightgoldenrodyellow;
 }
 
-.standalone {
+.standalone, .standalone-bifurcated {
   background-color: #eef;
   color: black;
   text-align: center;
 }
 
-.standalone:hover {
+.standalone:hover, .standalone-bifurcated a:hover {
   background-color: #d8d8ec;
 }
 
