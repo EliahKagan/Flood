@@ -1,6 +1,10 @@
 (function () {
     'use strict';
 
+    window.tryReshowFragment = function () {
+        document.querySelector(window.location.hash).scrollIntoView(true);
+    };
+
     function applyHighlighting() {
         const params = new URLSearchParams(window.location.search);
         const idToMark = params.get('highlight');
