@@ -27,9 +27,12 @@ td {
   border: 1px solid transparent;
 }
 
+a, .made-clickable {
+  cursor: help;
+}
+
 a {
   color: inherit;
-  cursor: help;
   text-decoration: none;
 }
 
