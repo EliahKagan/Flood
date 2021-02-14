@@ -2460,8 +2460,8 @@ internal sealed class WebView2HelpViewer : HelpViewer {
             //
             // A nicer way might be to run JavaScript code like
             //
-            //      document.getElementById(window.location.hash)
-            //              .scrollIntoViewIfNeeded(true);
+            //      document.querySelector(window.location.hash)
+            //              .scrollIntoView(true);
             //
             // to avoid unnecessarily reloading parts of the page. Such
             // reloading happens quite often anyway in this application, since
