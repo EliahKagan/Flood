@@ -14,38 +14,29 @@ h1 {
 }
 
 h2 {
+  font-family: 'Noto Sans', sans-serif;
+  margin-top: 1.1em;
+}
+
+main h2 {
   border-top: 1px solid;
   letter-spacing: .1em;
   margin-top: 1.1em;
 }
 
-h2.toc-heading {
-  border-top: none;
-  color: inherit;
-  letter-spacing: normal;
-}
-
-h2, h3 {
-  font-family: 'Noto Sans', sans-serif;
-}
-
 h3 {
+  font-family: 'Noto Sans', sans-serif;
   font-size: 1em;
-  margin-top: 1.4em;
-}
-
-h3, h4 {
   letter-spacing: .07em;
-}
-
-h4 {
-  font-weight: normal;
   margin-top: 1.4em;
 }
 
 h4 {
   font-family: 'DM Sans', sans-serif;
   font-feature-settings: 'liga' off;
+  font-weight: normal;
+  letter-spacing: .07em;
+  margin-top: 1.4em;
 }
 
 p {
@@ -59,6 +50,28 @@ p, li {
   hyphens: auto;
   -ms-hyphenate-limit-chars: 7 2 2;
   -ms-hyphens: auto;
+}
+
+nav>ol>li {
+  margin: 8px 0;
+}
+
+nav>ol>li>ol>li {
+  margin: 3px 0;
+}
+
+main ul, main li {
+  margin: 10px 0;
+}
+
+main ul.markable-item-list, main ul.markable-item-list>li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+main ul.markable-item-list>li ul>li {
+  list-style-type: disc;
 }
 
 a, abbr, kbd, .command {
@@ -97,12 +110,14 @@ a:visited, a.external:hover:visited {
   color: #800080;
 }
 
-/* Set text decoration before later removing it, so IE/WebBrowser applies the
- * removal. For other browsers, setting inline-block, as below, makes it work.
- * For IE, this hack does it, with or without inline-block. I don't know why.
- * See https://stackoverflow.com/a/31330454 (answer to "Stop link's :before
- * content from being underlined by rule applied to the link" on Stack Overflow
- * by https://stackoverflow.com/users/5100822/user5100822). */
+/*
+  Set text decoration before later removing it, so IE/WebBrowser applies the
+  removal. For other browsers, setting inline-block, as below, makes it work.
+  For IE, this hack does it, with or without inline-block. I don't know why.
+  See https://stackoverflow.com/a/31330454 (answer to "Stop link's :before
+  content from being underlined by rule applied to the link" on Stack Overflow
+  by https://stackoverflow.com/users/5100822/user5100822).
+*/
 a.external:after {
   text-decoration: underline;
 }
@@ -151,28 +166,6 @@ kbd, .command {
 
 kbd:hover {
   background-color: #e2e2ff;
-}
-
-.proselike {
-  margin: 10px 0;
-}
-
-.toc-section {
-  margin: 8px 0;
-}
-
-.toc-subsection {
-  margin: 3px 0;
-}
-
-ul.markable-item-list, ul.markable-item-list>li {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-ul.markable-item-list>li ul>li {
-  list-style-type: disc;
 }
 
 .marked {

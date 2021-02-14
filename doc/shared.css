@@ -1,7 +1,8 @@
-/* Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
- * but simplified and also modified so elements take up a little less space.
- */
 kbd {
+  /*
+    Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd
+    but simplified and also modified so elements take up a little less space.
+  */
   background-color: #eeeeee;
   border: 1px solid #b4b4b4;
   border-radius: 3px;

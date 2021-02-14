@@ -33,30 +33,18 @@
       </a>
     </h1>
     <nav>
-      <h2 id="toc" class="toc-heading">Table of Contents</h2>
+      <h2 id="toc">Table of Contents</h2>
       <ol type="I">
-        <li class="toc-section">
-          <a href="#introduction">Introduction</a>
-        </li>
-        <li class="toc-section">
-          <a href="#drawing">Drawing</a>
-        </li>
-        <li class="toc-section">
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#drawing">Drawing</a></li>
+        <li>
           <a href="#fills">Fills</a>
           <ol type="1">
-            <li class="toc-subsection">
-              <a href="#stack">Stack (LIFO)</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#queue">Queue (FIFO)</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#random">Random</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#deque">Deque</a>
-            </li>
-            <li class="toc-subsection">
+            <li><a href="#stack">Stack (LIFO)</a></li>
+            <li><a href="#queue">Queue (FIFO)</a></li>
+            <li><a href="#random">Random</a></li>
+            <li><a href="#deque">Deque</a></li>
+            <li>
               <a href="#recursive">Recursive</a>
               <ul>
                 <li>
@@ -66,31 +54,19 @@
                 </li>
               </ul>
             </li>
-            <li class="toc-subsection">
-              <a href="#instant">Instant</a>
-            </li>
+            <li><a href="#instant">Instant</a></li>
           </ol>
         </li>
-        <li class="toc-section">
-          <a href="#speed-modifiers">Speed Modifiers</a>
-        </li>
-        <li class="toc-section">
+        <li><a href="#speed-modifiers">Speed Modifiers</a></li>
+        <li>
           <a href="#neighbor-enumeration-strategies">
             Neighbor Enumeration Strategies
           </a>
           <ol type="1">
-            <li class="toc-subsection">
-              <a href="#uniform">Uniform</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#random-per-fill">Random per fill</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#random-always">Random always</a>
-            </li>
-            <li class="toc-subsection">
-              <a href="#random-per-pixel">Random per pixel</a>
-            </li>
+            <li><a href="#uniform">Uniform</a></li>
+            <li><a href="#random-per-fill">Random per fill</a></li>
+            <li><a href="#random-always">Random always</a></li>
+            <li><a href="#random-per-pixel">Random per pixel</a></li>
           </ol>
         </li>
       </ol>
@@ -118,7 +94,7 @@
           which pixels are found and filled depends on:
         </p>
         <ul>
-          <li class="proselike">
+          <li>
             The data structure used for the <dfn>fringe</dfn>&hairsp;: the
             collection of
             <a class="external"
@@ -136,7 +112,7 @@
             (first-in, first-out), but any kind of generalized queue will work.
             <b>See <a href="#fills">Fills</a>.</b>
           </li>
-          <li class="proselike">
+          <li>
             The order in which neighboring
             <a class="external"
                href="https://en.wikipedia.org/wiki/Vertex_(graph_theory)"
@@ -604,7 +580,7 @@
         <ul class="markable-item-list">
           <li>
             <div id="speed-shift">
-              <ul class="proselike">
+              <ul>
                 <li>
                   <span class="command"><kbd>Shift</kbd></span> to fill slowly
                   (1 pixel per frame).
@@ -614,7 +590,7 @@
           </li>
           <li>
             <div id="speed-ctrl">
-              <ul class="proselike">
+              <ul>
                 <li>
                   <span class="command"><kbd>Ctrl</kbd></span> to fill very
                   fast (20 pixels per frame).
@@ -624,7 +600,7 @@
           </li>
           <li>
             <div id="speed-ctrl-shift">
-              <ul class="proselike">
+              <ul>
                 <li>
                   <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>
                   to fill pretty fast (10 pixels per frame).
@@ -705,11 +681,11 @@
           -->
           <div id="uniform-modifiers">
             <ul>
-              <li class="proselike">
+              <li>
                 Scrolling with <span class="command"><kbd>Shift</kbd></span>
                 goes to the next or previous permutation.
               </li>
-              <li class="proselike">
+              <li>
                 Scrolling with
                 <span class="command"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span>
                 (in either direction) goes to the reverse of the current
