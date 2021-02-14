@@ -122,7 +122,7 @@ a.external:after {
   text-decoration: underline;
 }
 
-a.external::after {
+a.external:after {
   color: #00bcf2;
   content: "\02060\01F4A7"; /* word-joiner, water drop emoji */
   display: inline-block;
