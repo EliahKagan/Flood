@@ -2457,19 +2457,24 @@ internal sealed class WebView2HelpViewer : HelpViewer {
             // don't scroll back to the current fragment when told to navigate
             // to the URL they're already at. Telling the browser to navigate
             // somewhere else first, even with no delay, works around this.
+            // This can be done without reloading anything, with JavaScript,
+            // but it's hardly worthwhile since asset reloads happen in so many
+            // other common situations, due to URLs differing by query strings.
             //
-            // A nicer way might be to run JavaScript code like
+            // It may be worthwhile to eliminate *all* the extra reloads by
+            // exposing a highlighting API from help.js. It would use that API
+            // to apply highlighting form URL queries (there are advantages to
+            // keeping this way usable, and even available from the launcher).
+            // Then HelpButton.help_Navigating (or whatever does its work, if
+            // also refactoring) would be enhanced to strip the queries and
+            // call that API to apply the highlighting.
             //
-            //      document.querySelector(window.location.hash)
-            //              .scrollIntoView(true);
-            //
-            // to avoid unnecessarily reloading parts of the page. Such
-            // reloading happens quite often anyway in this application, since
-            // URL query syntax is used to specify left-side highlighting,
-            // causing the URL (even without the fragment) to differ between
-            // navigations from any two *different* tips links.
+            // TODO: If that is done, then the API should also have a function
+            // to scroll to current fragment, and help_Navigating could take
+            // care of that, too. (This might involve adding an abstract
+            // IsChromiumBased property to HelpViewer.)
             if (_webView2.Source.EqualsWithFragment(value)
-                    && !string.IsNullOrEmpty(value.Fragment))
+                        && !string.IsNullOrEmpty(value.Fragment))
                 _webView2.Source = new("about:blank");
 
             _webView2.Source = value;
