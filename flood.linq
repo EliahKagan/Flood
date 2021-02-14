@@ -2451,7 +2451,29 @@ internal sealed class WebView2HelpViewer : HelpViewer {
     /// <inheritdoc/>
     internal override Uri Source {
         get => _webView2.Source;
-        set => _webView2.Source = value;
+
+        set {
+            // Chromium-based browsers (including Edge, which WebView2 embeds)
+            // don't scroll back to the current fragment when told to navigate
+            // to the URL they're already at. Telling the browser to navigate
+            // somewhere else first, even with no delay, works around this.
+            //
+            // A nicer way might be to run JavaScript code like
+            //
+            //      document.getElementById(window.location.hash)
+            //              .scrollIntoViewIfNeeded(true);
+            //
+            // to avoid unnecessarily reloading parts of the page. Such
+            // reloading happens quite often anyway in this application, since
+            // URL query syntax is used to specify left-side highlighting,
+            // causing the URL (even without the fragment) to differ between
+            // navigations from any two *different* tips links.
+            if (_webView2.Source.EqualsWithFragment(value)
+                    && !string.IsNullOrEmpty(value.Fragment))
+                _webView2.Source = new("about:blank");
+
+            _webView2.Source = value;
+        }
     }
 
     /// <inheritdoc/>
@@ -2791,11 +2813,12 @@ internal static class SizeExtensions {
         => (width, height) = (size.Width, size.Height);
 }
 
-/// <summary>
-/// Provides an extension method for checking a URI's scheme case-insensitively
-/// against one or more other schemes.
-/// </summary>
+/// <summary>Provides extension methods for testing parts of a URI.</summary>
 internal static class UriExtensions {
+    public static bool EqualsWithFragment(this Uri self, Uri other)
+        => self.Equals(other)
+            && self.Fragment.Equals(other.Fragment, StringComparison.Ordinal);
+
     public static bool SchemeIs(this Uri uri, string scheme)
         => uri.Scheme.Equals(scheme, StringComparison.Ordinal);
 
