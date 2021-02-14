@@ -2455,16 +2455,22 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         set {
             // Chromium-based browsers (including Edge, which WebView2 embeds)
             // don't scroll back to the current fragment when told to navigate
-            // to the URL they're already at. This works around that.
+            // to the URL they're already at. Telling the browser to navigate
+            // somewhere else first, even with no delay, works around this.
+            //
+            // A nicer way might be to run JavaScript code like
+            //
+            //      document.querySelector(window.location.hash)
+            //              .scrollIntoView(true);
+            //
+            // to avoid unnecessarily reloading parts of the page. Such
+            // reloading happens quite often anyway in this application, since
+            // URL query syntax is used to specify left-side highlighting,
+            // causing the URL (even without the fragment) to differ between
+            // navigations from any two *different* tips links.
             if (_webView2.Source.EqualsWithFragment(value)
-                    && !string.IsNullOrEmpty(value.Fragment)) {
-                // FIXME: Just for testing. Very bad. Should be awaited.
-                _webView2.ExecuteScriptAsync("window?.tryReshowFragment();");
-                // As a deeper issue, WebView2HelpViewer should really not be
-                // coupled to the page's implementation. If this is to be done,
-                // it should happen in HelpButton.help_Navigating (or whatever
-                // does that work, if refactoring moves it elsewhere).
-            }
+                    && !string.IsNullOrEmpty(value.Fragment))
+                _webView2.Source = new("about:blank");
 
             _webView2.Source = value;
         }
