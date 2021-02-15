@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference Prerelease="true" Version="1.0.790-prerelease">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="1.0.790-prerelease" Prerelease="true">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
@@ -2437,8 +2437,13 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 internal sealed class WebView2HelpViewer : HelpViewer {
     internal async static Task<HelpViewer> CreateAsync()
     {
+        var userDataFolder = Files.GenerateTempDirName();
+        userDataFolder.Dump(nameof(userDataFolder)); // FIXME: remove
+        var env = await CoreWebView2Environment
+                            .CreateAsync(userDataFolder: userDataFolder);
+
         var webView2 = new WebView2();
-        await webView2.EnsureCoreWebView2Async();
+        await webView2.EnsureCoreWebView2Async(env);
 
         var settings = webView2.CoreWebView2.Settings;
         settings.AreHostObjectsAllowed = false;
@@ -2512,6 +2517,9 @@ internal delegate Task<HelpViewer> HelpViewerSupplier();
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
+    internal static string GenerateTempDirName()
+        => Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
     internal static Uri GetDocUrl(string filename)
         => new(Path.Combine(QueryDirectory, "doc", filename));
 
