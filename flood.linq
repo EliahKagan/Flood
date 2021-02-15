@@ -2437,10 +2437,10 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 internal sealed class WebView2HelpViewer : HelpViewer {
     internal async static Task<HelpViewer> CreateAsync()
     {
-        var userDataFolder = Files.GenerateTempDirName();
-        userDataFolder.Dump(nameof(userDataFolder)); // FIXME: remove
-        var env = await CoreWebView2Environment
-                            .CreateAsync(userDataFolder: userDataFolder);
+        var dir = Files.GenerateTempDirName();
+        dir.Dump(nameof(dir)); // FIXME: Remove after debugging.
+        var env =
+            await CoreWebView2Environment.CreateAsync(userDataFolder: dir);
 
         var webView2 = new WebView2();
         await webView2.EnsureCoreWebView2Async(env);
@@ -2449,6 +2449,20 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         settings.AreHostObjectsAllowed = false;
         settings.IsWebMessageEnabled = false;
         settings.AreDefaultScriptDialogsEnabled = false;
+
+        var pid = (int)webView2.CoreWebView2.BrowserProcessId;
+        var process = Process.GetProcessById(pid);
+        process.EnableRaisingEvents = true;
+        process.Exited += delegate {
+            try {
+                Directory.Delete(dir, recursive: true);
+            } catch (SystemException ex)
+                        when (ex is IOException
+                                 or UnauthorizedAccessException) {
+                Warn("Couldn't delete temporary user data directory.");
+                ex.Dump(); // FIXME: Remove after debugging.
+            }
+        };
 
         return new WebView2HelpViewer(webView2);
     }
@@ -2488,6 +2502,9 @@ internal sealed class WebView2HelpViewer : HelpViewer {
 
     /// <inheritdoc/>
     internal override Control WrappedControl => _webView2;
+
+    private static void Warn(string message)
+        => message.Dump($"Warning ({nameof(WebView2HelpViewer)})");
 
     private WebView2HelpViewer(WebView2 webView2)
     {
