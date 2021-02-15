@@ -2,7 +2,7 @@
     'use strict';
 
     function applyHighlighting() {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(location.search);
         const idToMark = params.get('highlight');
         if (idToMark === null) return;
 

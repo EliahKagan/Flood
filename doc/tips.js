@@ -9,7 +9,7 @@
         const row = wholeRowItems[i];
         const url = row.querySelector('a').getAttribute('href');
         row.addEventListener('click', function () {
-            window.location.href = url;
+            location.href = url;
         });
         row.classList.add('made-clickable');
     }
