@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference Version="1.0.705.50">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Prerelease="true" Version="1.0.790-prerelease">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference>morelinq</NuGetReference>
   <NuGetReference>Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
@@ -2437,7 +2437,7 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 internal sealed class WebView2HelpViewer : HelpViewer {
     internal async static Task<HelpViewer> CreateAsync()
     {
-        var webView2 = new MyWebView2();
+        var webView2 = new WebView2();
         await webView2.EnsureCoreWebView2Async();
 
         var settings = webView2.CoreWebView2.Settings;
@@ -2506,19 +2506,6 @@ internal sealed class WebView2HelpViewer : HelpViewer {
 /// Encapsulates a method that supplies a <see cref="HelpViewer"/>.
 /// </summary>
 internal delegate Task<HelpViewer> HelpViewerSupplier();
-
-/// <summary>
-/// Hack to work around <a href="https://github.com/MicrosoftEdge/WebView2Feedback/issues/442">System.NullReferenceException upon WebView2.Dispose</a>.
-/// </summary>
-/// <remarks>
-/// Remove and replace all uses with <c>WebView2</c> when the bug is fixed.
-/// </remarks>
-internal sealed class MyWebView2 : WebView2 {
-    protected override void OnVisibleChanged(EventArgs e)
-    {
-        if (CoreWebView2 is not null) base.OnVisibleChanged(e);
-    }
-}
 
 /// <summary>
 /// Convenience methods for getting information about files and directories
