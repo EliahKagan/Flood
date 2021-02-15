@@ -2453,7 +2453,8 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         var pid = (int)webView2.CoreWebView2.BrowserProcessId;
         var process = Process.GetProcessById(pid);
         process.EnableRaisingEvents = true;
-        process.Exited += delegate {
+        process.Exited += async delegate {
+            await Task.Delay(1000).ConfigureAwait(false);
             try {
                 Directory.Delete(dir, recursive: true);
             } catch (SystemException ex)
