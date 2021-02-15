@@ -6,7 +6,7 @@
         const idToMark = params.get('highlight');
         if (idToMark === null) return;
 
-        document.getElementById(idToMark).classList.add('marked');
+        document.getElementById(idToMark).classList.add('highlighted');
         const pagelink = document.getElementById('pagelink');
         pagelink.title = 'Clear highlighting\u2009/\u2009' + pagelink.title;
     }

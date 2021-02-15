@@ -168,7 +168,7 @@ kbd:hover {
   background-color: #e2e2ff;
 }
 
-.marked {
+.highlighted {
   border-left: 8px solid #e86100;
   margin-left: -13px;
   padding-left: 5px;
