@@ -2277,11 +2277,7 @@ internal sealed class HelpButton : DualUseButton {
     private void helpPanel_PanelClosed(object? sender, EventArgs e)
     {
         _helpPanel = null;
-
-        Debug.Assert(_help is not null);
-        _help.Dispose();
         _help = null;
-
         UpdateToolTip();
     }
 
@@ -2391,7 +2387,7 @@ HelpViewerNavigatingEventHandler(HelpViewer sender,
 /// <summary>
 /// Wrapper allowing a choice of web-browsing controls as a help browser.
 /// </summary>
-internal abstract class HelpViewer : IDisposable {
+internal abstract class HelpViewer {
     /// <summary>The URL of the current top-level document.</summary>
     internal abstract Uri Source { get; set; }
 
@@ -2404,16 +2400,6 @@ internal abstract class HelpViewer : IDisposable {
     /// <summary>Invokes the <see cref="Navigating"/> event.</summary>
     private protected void OnNavigating(HelpViewerNavigatingEventArgs e)
         => Navigating?.Invoke(this, e);
-
-    /// <summary>Tries to clean up browser resources.</summary>
-    /// <remarks>
-    /// The base implemetation is a noop. Derived classes may override.
-    /// </remarks>
-    private protected virtual void Dispose(bool disposing) { }
-
-    public void Dispose() => Dispose(true);
-
-    ~HelpViewer() => Dispose(false);
 }
 
 /// <summary>
@@ -2464,7 +2450,7 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         settings.IsWebMessageEnabled = false;
         settings.AreDefaultScriptDialogsEnabled = false;
 
-        return new WebView2HelpViewer(webView2, userDataFolder);
+        return new WebView2HelpViewer(webView2);
     }
 
     /// <inheritdoc/>
@@ -2503,32 +2489,9 @@ internal sealed class WebView2HelpViewer : HelpViewer {
     /// <inheritdoc/>
     internal override Control WrappedControl => _webView2;
 
-    /// <summary>Tries to delete the temporary user data folder.</summary>
-    private protected override void Dispose(bool disposing)
+    private WebView2HelpViewer(WebView2 webView2)
     {
-        if (_disposed) return;
-
-        try {
-            Directory.Delete(_userDataFolder, recursive: true);
-        } catch (SystemException ex) when (ex is IOException
-                                              or UnauthorizedAccessException) {
-            // Warn except when called from a finalizer.
-            if (disposing) {
-                Warn("Couldn't delete temporary user data directory.");
-                ex.Dump(); // FIXME: Remove this after debugging.
-            }
-        }
-
-        _disposed = true;
-        base.Dispose(disposing);
-    }
-
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(WebView2HelpViewer)})");
-
-    private WebView2HelpViewer(WebView2 webView2, string userDataFolder)
-    {
-        (_webView2, _userDataFolder) = (webView2, userDataFolder);
+        _webView2 = webView2;
         _webView2.NavigationStarting += webView2_NavigationStarting;
     }
 
@@ -2542,10 +2505,6 @@ internal sealed class WebView2HelpViewer : HelpViewer {
     }
 
     private readonly WebView2 _webView2;
-
-    private readonly string _userDataFolder;
-
-    private bool _disposed = false;
 }
 
 /// <summary>
