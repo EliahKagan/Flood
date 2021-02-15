@@ -2437,10 +2437,15 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 internal sealed class WebView2HelpViewer : HelpViewer {
     internal async static Task<HelpViewer> CreateAsync()
     {
-        var dir = Files.GenerateTempDirName();
-        dir.Dump(nameof(dir)); // FIXME: Remove after debugging.
+        var oldDirs = Files.EnumerateTempDirs().ToList();
+        oldDirs.Dump(nameof(oldDirs)); // FIXME: Remove after debugging.
+        _ = Task.Run(() => oldDirs.ForEach(Files.TryDeleteDir));
+
+        var dataDir = Files.GenerateTempDirName();
+        dataDir.Dump(nameof(dataDir)); // FIXME: Remove after debugging.
+
         var env =
-            await CoreWebView2Environment.CreateAsync(userDataFolder: dir);
+            await CoreWebView2Environment.CreateAsync(userDataFolder: dataDir);
 
         var webView2 = new WebView2();
         await webView2.EnsureCoreWebView2Async(env);
@@ -2455,14 +2460,7 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         process.EnableRaisingEvents = true;
         process.Exited += async delegate {
             await Task.Delay(1000).ConfigureAwait(false);
-            try {
-                Directory.Delete(dir, recursive: true);
-            } catch (SystemException ex)
-                        when (ex is IOException
-                                 or UnauthorizedAccessException) {
-                Warn("Couldn't delete temporary user data directory.");
-                ex.Dump(); // FIXME: Remove after debugging.
-            }
+            Files.TryDeleteDir(dataDir);
         };
 
         return new WebView2HelpViewer(webView2);
@@ -2535,9 +2533,6 @@ internal delegate Task<HelpViewer> HelpViewerSupplier();
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
-    internal static string GenerateTempDirName()
-        => Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
     internal static Uri GetDocUrl(string filename)
         => new(Path.Combine(QueryDirectory, "doc", filename));
 
@@ -2562,6 +2557,41 @@ internal static class Files {
 
         return (firstBitmap, secondBitmap);
     }
+
+    internal static IEnumerable<string> EnumerateTempDirs()
+        => Directory.EnumerateDirectories(path: Path.GetTempPath(),
+                                          searchPattern: TempDirPrefix + "*");
+
+    internal static string GenerateTempDirName()
+        => Path.Combine(Path.GetTempPath(),
+                        TempDirPrefix + Path.GetRandomFileName());
+
+    /// <summary>
+    /// Semi-transactionally deletes a directory, by renaming it first.
+    /// </summary>
+    /// <remarks>
+    /// Cancels if any operation fails. Usually, this is the initial rename.
+    /// </remarks>
+    internal static void TryDeleteDir(string path)
+    {
+        const string suffix = ".deleting";
+
+        try {
+            if (!path.EndsWith(suffix)) {
+                var newPath = path + suffix;
+                Directory.Move(path, newPath);
+                path = newPath;
+            }
+
+            Directory.Delete(path, recursive: true);
+        } catch (SystemException ex)
+                    when (ex is IOException or UnauthorizedAccessException) {
+            // Swallow the exception, since this a best-effort deletion.
+        }
+    }
+
+    private const string TempDirPrefix =
+        "51d078fc-5e65-4b85-9983-a697b7f7a300-"; // The trailing - is intended.
 
     private static Bitmap OpenBitmap(string filename)
     {
