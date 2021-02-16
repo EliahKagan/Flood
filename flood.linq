@@ -2252,7 +2252,8 @@ internal sealed class HelpButton : DualUseButton {
         Shell.Execute(uri.AbsoluteUri);
     }
 
-    private const string Title = "Flood Fill Visualization - Help";
+    private static string Title { get; } =
+        $"Flood Fill Visualization {Ch.Ndash} Help";
 
     private const string FileName = "help.html";
 
