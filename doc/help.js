@@ -24,9 +24,9 @@
             // doesn't work, on initial page load in IE. It seems some task is
             // interfering with it, but I don't know what. Waiting until the
             // next cycle of the event loop seems to work. (Raising an alert,
-            // either before *or* after the scrollIntoView call, also works.
-            // The unwanted alert makes that unsuitable as a solution, but this
-            // information may be relevant to future debugging.)
+            // before *or* after the scrollIntoView call, is also sufficient.
+            // The unwanted alert makes that unsuitable as a solution, but the
+            // fact that it also works may be relevant to future debugging.)
             setTimeout(function() {
                 document.querySelector(location.hash).scrollIntoView(true);
             });
