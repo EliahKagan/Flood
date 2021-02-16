@@ -17,7 +17,26 @@
 
     function scrollToFragment() {
         if (location.hash.length > 1) {
-            document.querySelector(location.hash).scrollIntoView(true);
+            // document.querySelector(location.hash).scrollIntoView({
+            //     behavior: 'smooth',
+            //     block: 'start'
+            // });
+
+            setTimeout(function() {
+                document.querySelector(location.hash).scrollIntoView(true);
+            });
+
+            //document.querySelector(location.hash).scrollIntoView(true);
+
+            // const fragment = document.querySelector(location.hash);
+            // scroll(0, fragment.getBoundingClientRect().top);
+
+            //console.log(location.hash);
+
+            //alert(location.hash);
+
+            // document.getElementById(location.hash.slice(1))
+            //         .scrollIntoView(true);
         }
     }
 
