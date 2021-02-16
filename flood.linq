@@ -2447,7 +2447,7 @@ internal sealed class WebView2HelpViewer : HelpViewer {
             // all dependencies, except those provided by NuGet, locally. (I'll
             // either use Git submodules or include them in this repository.)
             // When I do that, the current kind of CORS problems should go
-            // go away. But I'd like to be able to maintain a CDN-using branch.
+            // away. But I'd like to be able to maintain a CDN-using branch.
             // The current workaround isn't great for security. I should both:
             //
             // (1) Find a better workaround to be used until dependencies
