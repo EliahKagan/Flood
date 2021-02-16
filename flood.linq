@@ -2440,8 +2440,12 @@ internal sealed class WebView2HelpViewer : HelpViewer {
     {
         Files.DeleteOldTempDirs();
         var dataDir = Files.GenerateTempDirName();
-        var env = await CoreWebView2Environment
-                            .CreateAsync(userDataFolder: dataDir);
+        var options = new CoreWebView2EnvironmentOptions {
+            AdditionalBrowserArguments = "--disable-web-security",
+        };
+        var env = await CoreWebView2Environment.CreateAsync(
+            userDataFolder: dataDir,
+            options: options);
         var webView2 = new WebView2();
         await webView2.EnsureCoreWebView2Async(env);
 
