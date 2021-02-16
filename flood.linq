@@ -2438,16 +2438,10 @@ internal sealed class WebBrowserHelpViewer : HelpViewer {
 internal sealed class WebView2HelpViewer : HelpViewer {
     internal async static Task<HelpViewer> CreateAsync()
     {
-        var oldDirs = Files.EnumerateTempDirs().ToList();
-        oldDirs.Dump(nameof(oldDirs)); // FIXME: Remove after debugging.
-        _ = Task.Run(() => oldDirs.ForEach(Files.TryDeleteDir));
-
+        Files.DeleteOldTempDirs();
         var dataDir = Files.GenerateTempDirName();
-        dataDir.Dump(nameof(dataDir)); // FIXME: Remove after debugging.
-
-        var env =
-            await CoreWebView2Environment.CreateAsync(userDataFolder: dataDir);
-
+        var env = await CoreWebView2Environment
+                            .CreateAsync(userDataFolder: dataDir);
         var webView2 = new WebView2();
         await webView2.EnsureCoreWebView2Async(env);
 
@@ -2559,19 +2553,38 @@ internal static class Files {
         return (firstBitmap, secondBitmap);
     }
 
-    internal static IEnumerable<string> EnumerateTempDirs()
-        => Directory.EnumerateDirectories(path: Path.GetTempPath(),
-                                          searchPattern: TempDirPrefix + "*");
-
     internal static string GenerateTempDirName()
         => Path.Combine(Path.GetTempPath(),
                         TempDirPrefix + Path.GetRandomFileName());
 
     /// <summary>
-    /// Semi-transactionally deletes a directory, by renaming it first.
+    /// Deletes temporary directories this program created that are not in use.
+    /// </summary>
+    /// <remarks>
+    /// This returns before any deletions are performed. The deletions are done
+    /// on a worker thread, concurrently with the caller. To be deleted, a
+    /// directory must've existed when the method was called, and it must not
+    /// be in use (i.e., no program is keeping anything in it from being
+    /// deleted) when the worker reaches it. Each recursive directory removal
+    /// is quasi-transactional (via <see cref="TryDeleteDir"/>): directories
+    /// not named with a ".deleting" suffix are renamed to have one before the
+    /// recursive deletion operation starts. This avoids deleting any files
+    /// residing in directories that contain other files that are still in use
+    /// (since the renaming operation will fail when any file in the directory
+    /// is open).
+    /// </remarks>
+    internal static void DeleteOldTempDirs()
+    {
+        var dirs = EnumerateTempDirs().ToList();
+        if (dirs.Count != 0) Task.Run(() => dirs.ForEach(TryDeleteDir));
+    }
+
+    /// <summary>
+    /// Quasi-transactionally deletes a directory, by renaming it first.
     /// </summary>
     /// <remarks>
     /// Cancels if any operation fails. Usually, this is the initial rename.
+    /// See also <seealso cref="DeleteOldTempDirs"/>.
     /// </remarks>
     internal static void TryDeleteDir(string path)
     {
@@ -2612,6 +2625,10 @@ internal static class Files {
         => Environment.GetEnvironmentVariable("windir")
             ?? throw new InvalidOperationException(
                     "Can't find Windows directory.");
+
+    private static IEnumerable<string> EnumerateTempDirs()
+        => Directory.EnumerateDirectories(path: Path.GetTempPath(),
+                                          searchPattern: TempDirPrefix + "*");
 }
 
 /// <summary>
