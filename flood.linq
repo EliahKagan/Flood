@@ -1,7 +1,7 @@
 <Query Kind="Statements">
   <NuGetReference Version="1.0.790-prerelease" Prerelease="true">Microsoft.Web.WebView2</NuGetReference>
-  <NuGetReference>morelinq</NuGetReference>
-  <NuGetReference>Nito.Collections.Deque</NuGetReference>
+  <NuGetReference Version="3.3.2">morelinq</NuGetReference>
+  <NuGetReference Version="1.1.0">Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
