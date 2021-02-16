@@ -2,12 +2,12 @@
 
 var Hyphenopoly = {
     require: {
-        "en-us": "Supercalifragilisticexpialidocious"
+        'en-us': 'Pseudopseudohypoparathyroidism'
     },
     setup: {
         selectors: {
-            "p": {},
-            "li": {}
+            'p': {},
+            'li': {}
         }
     }
 };
