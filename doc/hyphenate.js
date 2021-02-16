@@ -6,8 +6,9 @@ var Hyphenopoly = {
     },
     setup: {
         selectors: {
-            'p': {},
-            'li': {}
+            'p, li': {
+                'orphanControl': '1'
+            }
         }
     }
 };
