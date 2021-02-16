@@ -2441,6 +2441,19 @@ internal sealed class WebView2HelpViewer : HelpViewer {
         Files.DeleteOldTempDirs();
         var dataDir = Files.GenerateTempDirName();
         var options = new CoreWebView2EnvironmentOptions {
+            // TODO: This is a desktop application, and I'm only using CDNs
+            // during development for convenience. I plan eventually to bundle
+            // all dependencies, except those provided by NuGet, locally. (I'll
+            // either use Git submodules or include them in this repository.)
+            // When I do that, the current kind of CORS problems should go
+            // go away. But I'd like to be able to maintain a CDN-using branch.
+            // The current workaround isn't great for security. I should both:
+            //
+            // (1) Find a better workaround to be used until dependencies
+            //     are bundled, as well as on a future non-bundling branch.
+            //
+            // (2) If this workaround is still in place when dependnecies are
+            //     bundled, remove it (from all active non-CDN branches).
             AdditionalBrowserArguments = "--disable-web-security",
         };
         var env = await CoreWebView2Environment.CreateAsync(
