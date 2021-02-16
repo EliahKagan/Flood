@@ -1,6 +1,9 @@
 (function () {
     'use strict';
 
+    // Highlights the element specified in the query string, if any, with a
+    // colored vertical bar running along it, to the left of the body. Links in
+    // tips.html use this to open the help with the relevant part highlighted.
     function applyHighlighting() {
         const params = new URLSearchParams(location.search);
         const idToMark = params.get('highlight');
@@ -17,33 +20,26 @@
 
     function scrollToFragment() {
         if (location.hash.length > 1) {
-            // document.querySelector(location.hash).scrollIntoView({
-            //     behavior: 'smooth',
-            //     block: 'start'
-            // });
-
+            // Even after waiting for all assets to load, scrolling often
+            // doesn't work, on initial page load in IE. It seems some task is
+            // interfering with it, but I don't know what. Waiting until the
+            // next cycle of the event loop seems to work. (Raising an alert,
+            // either before *or* after the scrollIntoView call, also works.
+            // The unwanted alert makes that unsuitable as a solution, but this
+            // information may be relevant to future debugging.)
             setTimeout(function() {
                 document.querySelector(location.hash).scrollIntoView(true);
             });
+        }
+    }
 
-            //document.querySelector(location.hash).scrollIntoView(true);
-
-            // const fragment = document.querySelector(location.hash);
-            // scroll(0, fragment.getBoundingClientRect().top);
-
-            //console.log(location.hash);
-
-            //alert(location.hash);
-
-            // document.getElementById(location.hash.slice(1))
-            //         .scrollIntoView(true);
+    // Works around how IE doesn't reliably scroll to a fragment on first load.
+    function applyScrollingFix() {
+        if (browserIsInternetExplorer()) {
+            addEventListener('load', scrollToFragment);
         }
     }
 
     applyHighlighting();
-
-    if (browserIsInternetExplorer()) {
-        // Scroll to the right place. IE doesn't do it reliably on first load.
-        addEventListener('load', scrollToFragment);
-    }
+    applyScrollingFix();
 })();

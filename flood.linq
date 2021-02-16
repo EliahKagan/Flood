@@ -2959,7 +2959,8 @@ internal abstract class ConfigurableNeighborEnumerationStrategy
     /// Switches to a (conceptually) much later substrategy. May wrap.
     /// </summary>
     /// <remarks>
-
+    /// Implementation-defined semantics. Not necessarily equivalent to calling
+    /// <see cref="CycleNextSubStrategy"/> a fixed number of times.
     /// </remarks>
     internal abstract void CycleFastAheadSubStrategy();
 
