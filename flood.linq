@@ -27,6 +27,7 @@
 
 // flood.linq - Interactive flood-fill visualizer.
 
+#LINQPad optimize+
 #nullable enable
 
 const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
