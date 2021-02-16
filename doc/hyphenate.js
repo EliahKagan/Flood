@@ -5,9 +5,9 @@ var Hyphenopoly = {
         "en-us": "Supercalifragilisticexpialidocious"
     },
     setup: {
-        timeout: 10000, // FIXME: Still times out. Something is wrong.
         selectors: {
-            ".container": {}
+            "p": {},
+            "li": {}
         }
     }
 };
