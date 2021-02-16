@@ -27,7 +27,7 @@
             // before *or* after the scrollIntoView call, is also sufficient.
             // The unwanted alert makes that unsuitable as a solution, but the
             // fact that it also works may be relevant to future debugging.)
-            setTimeout(function() {
+            setTimeout(function () {
                 document.querySelector(location.hash).scrollIntoView(true);
             });
         }
