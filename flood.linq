@@ -2309,12 +2309,14 @@ internal sealed class HelpButton : DualUseButton {
 }
 
 /// <summary>
-/// Adds a <c>PreviewKeyUp</c> event to <see cref="Windows.Forms.WebBrowser"/>.
+/// Adds a <c>PreviewKeyUp</c> event to
+/// <see cref="System.Windows.Forms.WebBrowser"/>.
 /// </summary>
 /// <remarks>
-/// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
-/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown"/> and
-/// <see cref="Windows.Forms.WebBrowserBase.KeyUp"/>). It does support
+/// <see cref="System.Windows.Forms.WebBrowser"/> doesn't support
+/// <c>KeyDown</c> and <c>KeyUp</c> (see
+/// <see cref="System.Windows.Forms.WebBrowserBase.KeyDown"/> and
+/// <see cref="System.Windows.Forms.WebBrowserBase.KeyUp"/>). It does support
 /// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
 /// </remarks>
 internal class MyWebBrowser : WebBrowser {
