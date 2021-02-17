@@ -394,7 +394,7 @@ internal interface IPanelSwitcher {
 
     /// <summary>
     /// Opens an output panel for a control. Tries not to switch to it.
-    /// </summary?
+    /// </summary>
     /// <param name="control">The control to display in the panel.</param>
     /// <param name="panelTitle">The panel's title in the toolstrip.</param>
     /// <returns>The panel that was created.</returns>
@@ -1795,7 +1795,7 @@ internal sealed class ClearOverlay : Control {
 /// unchecked versions.
 /// </summary>
 /// <remarks>
-/// Animates only when <see cref="AnimatedCheckBox.Animated"/> is set to
+/// Animates only when <see cref="AnimatedBitmapCheckBox.Animated"/> is set to
 /// <c>true</c>. It is <c>false</c> by default. (Animation represents that an
 /// ongoing task, separate from whether the box is checked, is being done.)
 /// </remarks>
@@ -1905,7 +1905,7 @@ internal sealed class AnimatedBitmapCheckBox : CheckBox {
 /// Filenames for background bitmaps for the checked and unchecked states of
 /// a button-style checkbox.
 /// </summary>
-/// <remarks>See <see cref="CheckBoxBitmapPair"/>.</remarks>
+/// <remarks>See <see cref="CheckBoxImagePair"/>.</remarks>
 internal sealed record
 CheckBoxBitmapFilenamePair(string CheckedFilename, string UncheckedFilename);
 
@@ -2313,8 +2313,8 @@ internal sealed class HelpButton : DualUseButton {
 /// </summary>
 /// <remarks>
 /// <see cref="Windows.Forms.WebBrowser"/> doesn't support <c>KeyDown</c> and
-/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown/> and
-/// <see cref="Windows.Forms.WebBrowserBase.KeyUp/>). It does support
+/// <c>KeyUp</c> (see <see cref="Windows.Forms.WebBrowserBase.KeyDown"/> and
+/// <see cref="Windows.Forms.WebBrowserBase.KeyUp"/>). It does support
 /// <c>PreviewKeyDown</c>. but no <c>PreviewKeyUp</c>, which this provides.
 /// </remarks>
 internal class MyWebBrowser : WebBrowser {
