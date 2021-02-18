@@ -184,6 +184,11 @@ internal sealed class Launcher {
     private static LC.TextBox CreateNumberBox(int? initialValue)
         => new(initialValue.ToString()) { Width = NumberBoxWidth };
 
+    private static LC.Table MakeEmptyTable()
+        => new(noBorders: true,
+               cellPaddingStyle: ".3em .3em",
+               cellVerticalAlign: "middle");
+
     private static void Disable(params LC.Control[] controls)
     {
         foreach (var control in controls) control.Enabled = false;
@@ -217,11 +222,6 @@ internal sealed class Launcher {
                _magnifier,
                _stopButton,
                _charting);
-
-    private LC.Table MakeEmptyTable()
-        => new(noBorders: true,
-               cellPaddingStyle: ".3em .3em",
-               cellVerticalAlign: "middle");
 
     private void SubscribePrivateHandlers()
     {
@@ -525,7 +525,7 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
         (_oldest, _older, _old) = (_older, _old, last);
     }
 
-    private readonly Timer _timer = new Timer {
+    private readonly Timer _timer = new() {
         Interval = ForegroundSnapshotInterval,
         Enabled = true,
     };
@@ -706,13 +706,6 @@ internal sealed class MainPanel : TableLayoutPanel {
     KeystrokeProbablyNotInShortcutsOrAccelerators { get; } =
         Ch.UumlWedge.ToString();
 
-    private static string StopOfferToolTip { get; } =
-        "Click here to confirm you want to stop all running fills."
-            + Environment.NewLine
-            + "(To not be prompted, you can Ctrl+click the Stop button.)";
-
-    private static bool StoppingIsImmediate => GotKey.Ctrl;
-
     private static int DecideSpeed()
         => (ModifierKeys & (Keys.Shift | Keys.Control)) switch {
             Keys.Shift                =>  1,
@@ -720,6 +713,19 @@ internal sealed class MainPanel : TableLayoutPanel {
             Keys.Shift | Keys.Control => 10,
             _                         =>  5
         };
+
+    private static bool StoppingIsImmediate => GotKey.Ctrl;
+
+    private static string EnabledStopButtonToolTip
+        => StoppingIsImmediate
+            ? $"Stop running fills!{Environment.NewLine}"
+                + "(No confirmation, even for multiple fills.)"
+            : "Stop running fills";
+
+    private static string StopOfferToolTip { get; } =
+        "Click here to confirm you want to stop all running fills."
+            + Environment.NewLine
+            + "(To not be prompted, you can Ctrl+click the Stop button.)";
 
     private Graphics CreateCanvasGraphics()
     {
@@ -935,12 +941,6 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         _toolTip.SetToolTip(_status, details);
     }
-
-    private string EnabledStopButtonToolTip
-        => StoppingIsImmediate
-            ? $"Stop running fills!{Environment.NewLine}"
-                + "(No confirmation, even for multiple fills.)"
-            : $"Stop running fills";
 
     private void UpdateShowHideTips()
     {
@@ -1433,7 +1433,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 /// the caller to check later if it is still the most recent alert shown.
 /// </summary>
 internal interface IAlertCookie {
-    /// <summary>Tells if this this is still the current alert.</summary>
+    /// <summary>Tells if this is still the current alert.</summary>
     /// <remarks>
     /// An alert is no longer current when another alert has replaced it or the
     /// <c>AlertBar</c> is disposed. But hiding the alert bar (even if by the
@@ -2131,7 +2131,7 @@ internal sealed class MagnifyButton : ApplicationButton {
                 }
             } catch (SystemException ex) when (ex is SecurityException
                                                   or IOException) {
-                Warn($"Magnifier configuration inaccessible.");
+                Warn("Magnifier configuration inaccessible.");
                 return false;
             }
         }
@@ -2516,9 +2516,6 @@ internal sealed class WebView2HelpViewer : HelpViewer {
 
     /// <inheritdoc/>
     internal override Control WrappedControl => _webView2;
-
-    private static void Warn(string message)
-        => message.Dump($"Warning ({nameof(WebView2HelpViewer)})");
 
     private WebView2HelpViewer(WebView2 webView2)
     {
@@ -3048,7 +3045,7 @@ internal sealed class RandomPerFillStrategy : NeighborEnumerationStrategy {
 }
 
 /// <summary>
-/// Enumerates neighbors in an order that differs randomly each each time, even
+/// Enumerates neighbors in an order that differs randomly each time, even
 /// within the same fill, and even (as can happen in the case of interference
 /// from a concurrent fill) for multiple traversals from the same source pixel
 /// in the same fill.
