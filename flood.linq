@@ -2593,7 +2593,15 @@ internal static class Files {
     internal static void DeleteOldTempDirs()
     {
         var dirs = EnumerateTempDirs().ToList();
-        if (dirs.Count != 0) Task.Run(() => dirs.ForEach(TryDeleteDir));
+
+        if (dirs.Count == 0) return;
+
+        // Dispatch the work this way instead of with an unawaited Task.Run so
+        // uncaught exceptions are raised on the main thread rather than
+        // swallowed (which would potentially hide bugs).
+        ThreadPool.QueueUserWorkItem(delegate {
+            dirs.ForEach(TryDeleteDir);
+        });
     }
 
     /// <summary>
