@@ -5,6 +5,7 @@ var Hyphenopoly = {
         'en-us': 'Pseudopseudohypoparathyroidism'
     },
     setup: {
+        keepAlive: false,
         selectors: {
             'p, li': {
                 'orphanControl': '1'
