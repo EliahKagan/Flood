@@ -1,15 +1,18 @@
-// Configuraton for Hyphenopoly.
+(function () {
+    'use strict';
 
-var Hyphenopoly = {
-    require: {
-        'en-us': 'Pseudopseudohypoparathyroidism'
-    },
-    setup: {
-        keepAlive: false,
-        selectors: {
-            'p, li': {
-                'orphanControl': '1'
+    // Configuraton for Hyphenopoly.
+    window.Hyphenopoly = {
+        require: {
+            'en-us': 'Pseudopseudohypoparathyroidism'
+        },
+        setup: {
+            keepAlive: false,
+            selectors: {
+                'p, li': {
+                    'orphanControl': '1'
+                }
             }
         }
-    }
-};
+    };
+})();
