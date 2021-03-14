@@ -7,6 +7,7 @@
             'en-us': 'Pseudopseudohypoparathyroidism'
         },
         setup: {
+            hide: 'element',
             keepAlive: false,
             selectors: {
                 'p, li': {
