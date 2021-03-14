@@ -90,6 +90,7 @@ static void launcher_Launch(Launcher sender, LauncherEventArgs e)
         MagnifierButtonVisible = sender.ShowMagnifierButton,
         StopButtonVisible = sender.ShowStopButton,
         ChartingButtonVisible = sender.ShowChartButton,
+        RecordButtonVisible = sender.ShowRecordButton,
     };
 
     ui.Activated += delegate { sender.PauseUpdates(); };
@@ -160,6 +161,8 @@ internal sealed class Launcher {
 
     internal bool ShowChartButton => _charting.Checked;
 
+    internal bool ShowRecordButton => _recording.Checked;
+
     internal void Display()
     {
         // Make launcher text 12.5% bigger than with LINQPad's default CSS.
@@ -221,7 +224,8 @@ internal sealed class Launcher {
                _alertExpiration,
                _magnifier,
                _stopButton,
-               _charting);
+               _charting,
+               _recording);
 
     private void SubscribePrivateHandlers()
     {
@@ -311,6 +315,7 @@ internal sealed class Launcher {
                    _magnifier,
                    _stopButton,
                    _charting,
+                   _recording,
                    _launch);
 
     // Timer for polling the system timer's timings. Not the system timer.
@@ -340,6 +345,8 @@ internal sealed class Launcher {
         new("Stop button", isChecked: true);
 
     private readonly LC.CheckBox _charting = new("Charting", isChecked: true);
+
+    private readonly LC.CheckBox _recording = new ("Recording (experimental)");
 
     private readonly LC.Button _launch = new("Launch!");
 
@@ -564,6 +571,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         _stop = CreateStop();
         _stopHost = new(_stop, _toolTip);
         _charting = CreateCharting();
+        _record = CreateRecord();
         _infoBar = CreateInfoBar();
 
         _neighborEnumerationStrategies = CreateNeighborEnumerationStrategies();
@@ -596,6 +604,12 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         get => _charting.Visible;
         set => _charting.Visible = value;
+    }
+
+    internal bool RecordButtonVisible
+    {
+        get => _record.Visible;
+        set => _record.Visible = value;
     }
 
     internal event EventHandler? Activated;
@@ -774,17 +788,33 @@ internal sealed class MainPanel : TableLayoutPanel {
                _showHideTips.Height,
                FrameSequence.Oscillating);
 
+    private CheckBox CreateRecord()
+    {
+        var record = new CheckBox {
+            Appearance = Appearance.Button,
+            Width = _showHideTips.Height,
+            Height = _showHideTips.Height,
+            Margin = Padding.Empty,
+            Visible = false,
+        };
+
+        _toolTip.SetToolTip(record, "Record Video");
+
+        return record;
+    }
+
     private TableLayoutPanel CreateInfoBar()
     {
         var infoBar = new TableLayoutPanel {
             RowCount = 1,
-            ColumnCount = 5,
+            ColumnCount = 6,
             GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
             Width = _rect.Width,
+            Margin = Padding.Empty,
         };
 
-        infoBar.Controls.Add(_status, column: 3, row: 0);
-        infoBar.Controls.Add(_helpButtons, column: 4, row: 0);
+        infoBar.Controls.Add(_status, column: 4, row: 0);
+        infoBar.Controls.Add(_helpButtons, column: 5, row: 0);
 
         // Must be after adding _helpButtons.
         infoBar.Height = _helpButtons.Height;
@@ -792,6 +822,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         infoBar.Controls.Add(_magnify, column: 0, row: 0);
         infoBar.Controls.Add(_stopHost, column: 1, row: 0);
         infoBar.Controls.Add(_charting, column: 2, row: 0);
+        infoBar.Controls.Add(_record, column: 3, row: 0);
 
         return infoBar;
     }
@@ -1384,6 +1415,9 @@ internal sealed class MainPanel : TableLayoutPanel {
     private readonly Button _stop;
 
     private readonly AnimatedBitmapCheckBox _charting;
+
+    // TODO: Maybe make this an AnimatedBitmapCheckBox or something similar.
+    private readonly CheckBox _record;
 
     private readonly Button _showHideTips = new() {
         // Placeholder text for height computation. Without this, some other
