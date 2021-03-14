@@ -2276,29 +2276,10 @@ internal sealed class HelpButton : DualUseButton {
             Shell.Execute(e.Uri.AbsoluteUri);
     }
 
-    private void help_HandleCreated(object? sender, EventArgs e)
-    {
-        Debug.Assert(_help is not null);
-        Debug.Assert(_loading is not null);
-
-        var parent = (Form)_help.Parent;
-        parent.SuspendLayout();
-        parent.Controls.Add(_loading);
-        _loading.BringToFront();
-        _loading.Show();
-        parent.ResumeLayout();
-
-        parent.BeginInvoke((MethodInvoker)async delegate {
-            await Task.Delay(1000);
-            _loading.BringToFront();
-        });
-    }
-
     private void helpPanel_PanelClosed(object? sender, EventArgs e)
     {
         _helpPanel = null;
         _help = null;
-        _loading = null;
         UpdateToolTip();
     }
 
@@ -2311,12 +2292,6 @@ internal sealed class HelpButton : DualUseButton {
         _help = await _supplier();
         _help.Source = source;
         _help.Navigating += help_Navigating;
-        _help.HandleCreated += help_HandleCreated;
-        _loading = new Label {
-            Text = "Loading help...",
-            Location = new Point(x: 0, y: 0),
-            Size = new Size(width: 400, height: 200),
-        };
         _helpPanel = _switcher.DisplayForeground(_help.WrappedControl, Title);
         _helpPanel.PanelClosed += helpPanel_PanelClosed;
         UpdateToolTip();
@@ -2331,8 +2306,6 @@ internal sealed class HelpButton : DualUseButton {
     private HelpViewer? _help = null;
 
     private OutputPanel? _helpPanel = null;
-
-    private Label? _loading = null;
 }
 
 /// <summary>
@@ -2425,24 +2398,8 @@ internal abstract class HelpViewer {
     /// <summary>Occurs before navigation to a new document.</summary>
     internal event HelpViewerNavigatingEventHandler? Navigating = null;
 
-    /// <summary>Fires when the wrapped control's handle is created.</summary>
-    /// <remarks>
-    /// Convenience event. Same as <c>WrappedControl.HandleCreated</c>.
-    /// </remarks>
-    internal event EventHandler HandleCreated
-    {
-        add => WrappedControl.HandleCreated += value;
-        remove => WrappedControl.HandleCreated -= value;
-    }
-
     /// <summary>The wrapped control. The user interacts with this.</summary>
     internal abstract Control WrappedControl { get; }
-
-    /// <summary>The wrapped control's parent.</summary>
-    /// <remarks>
-    /// Convenience property. Same as <c>WrappedControl.Parent</c>.
-    /// </remarks>
-    internal Control Parent => WrappedControl.Parent;
 
     /// <summary>Invokes the <see cref="Navigating"/> event.</summary>
     private protected void OnNavigating(HelpViewerNavigatingEventArgs e)
