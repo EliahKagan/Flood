@@ -40,7 +40,6 @@
         }
     }
 
-    JsLoadingOverlay.show();
     applyHighlighting();
     applyScrollingFix();
 })();
