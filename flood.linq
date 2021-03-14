@@ -783,8 +783,8 @@ internal sealed class MainPanel : TableLayoutPanel {
             Width = _rect.Width,
         };
 
-        infoBar.Controls.Add(_status, column: 2, row: 0);
-        infoBar.Controls.Add(_helpButtons, column: 3, row: 0);
+        infoBar.Controls.Add(_status, column: 3, row: 0);
+        infoBar.Controls.Add(_helpButtons, column: 4, row: 0);
 
         // Must be after adding _helpButtons.
         infoBar.Height = _helpButtons.Height;
