@@ -410,10 +410,10 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
 
     // FIXME: Since I'm using this for important UI features--switching to the
     // open help panel when Help is clicked again, and to a chart when its
-    // notification is clicked--it's very bad I'm violating encapsulation.
+    // notification is clicked--it's very bad that I'm violating encapsulation.
     // OutputPanel.Activate has the "internal" acccess modifier; queries aren't
-    // expected to use it and it may be removed (or worse, change) at any time.
-    // Unfortunately, there doesn't seem to be another way to do this.
+    // expected to use it, and it may be removed (or worse, change) at any
+    // time. Unfortunately, there doesn't seem to be another way to do this.
     //
     // PanelManager.GetOutputPanels() returns an array of output panels, and
     // writing to Util.SelectedOutputPanelIndex switches panels. When output
@@ -423,19 +423,19 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
     // in the same order and it is sufficient to add and subtract 1 [since
     // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
     // actually an OutputPanel object and thus doesn't appear in
-    // PanelManager.GetOutputPanels()]. Otherwise, the orders needn't agree, I
+    // PanelManager.GetOutputPanels()]. The order needn't otherwise agree, I
     // believe because new panels are not necessarily added to the very end of
     // the strip, but are instead usually added just to the right of the panel
     // from which they're displayed.
     //
     // I don't think it's reasonable to attempt to maintain a correspondence
     // between the two orders. Besides writing to Util.SelectOutputPanelIndex,
-    // it is also possible to read from it, but the indices are not stable as
-    // panels open and close; caching an index to get back to it does not seems
-    // to work either, aside from 0 for getting back to the Results panel or
-    // checking if we are there. What I need to do is investigate a bit futher;
-    // produce simple, reproducible examples; and inquire on the LINQPad forums
-    // and/or request a feature.
+    // it is also possible to read from it, but indices aren't stable as other
+    // panels open and close; caching an index to get back to it does not seem
+    // to work either (aside from 0 for getting back to the Results panel or
+    // checking if we are there). What I need to do is investigate a bit
+    // futher; produce simple, reproducible examples; and inquire on the
+    // LINQPad forums and/or request a feature.
     /// <inheritdoc/>
     public bool TrySwitch(OutputPanel? panel)
     {
