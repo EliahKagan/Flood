@@ -2,6 +2,7 @@
   <NuGetReference Version="1.0.790-prerelease" Prerelease="true">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference Version="3.3.2">morelinq</NuGetReference>
   <NuGetReference Version="1.1.0">Nito.Collections.Deque</NuGetReference>
+  <NuGetReference Version="2.1.2">SharpAvi.NetStandard</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
@@ -790,16 +791,8 @@ internal sealed class MainPanel : TableLayoutPanel {
 
     private CheckBox CreateRecord()
     {
-        var record = new CheckBox {
-            Appearance = Appearance.Button,
-            Width = _showHideTips.Height,
-            Height = _showHideTips.Height,
-            Margin = Padding.Empty,
-            Visible = false,
-        };
-
+        var record = new CheckTile(_showHideTips.Height) { Visible = false };
         _toolTip.SetToolTip(record, "Record Video");
-
         return record;
     }
 
@@ -1823,6 +1816,15 @@ internal sealed class ClearOverlay : Control {
     }
 }
 
+/// <summary>A square button-style checkbox.</summary>
+internal class CheckTile : CheckBox {
+    internal CheckTile(int sideLength)
+    {
+        this.StyleAsTile(sideLength);
+        Appearance = Appearance.Button;
+    }
+}
+
 /// <summary>
 /// A square button-style checkbox showing an animation of several bitmaps,
 /// which can be paused and resumed, and of which each frame has checked and
@@ -1833,19 +1835,16 @@ internal sealed class ClearOverlay : Control {
 /// <c>true</c>. It is <c>false</c> by default. (Animation represents that an
 /// ongoing task, separate from whether the box is checked, is being done.)
 /// </remarks>
-internal sealed class AnimatedBitmapCheckBox : CheckBox {
+internal sealed class AnimatedBitmapCheckBox : CheckTile {
     internal AnimatedBitmapCheckBox(
             IEnumerable<CheckBoxBitmapFilenamePair> filenamePairs,
             int sideLength,
             Func<int, IEnumerable<int>> frameSequenceSupplier)
+        : base(sideLength)
     {
-        var pairs = filenamePairs.ToList();
-
-        Width = Height = sideLength;
-        Margin = Padding.Empty;
-        Appearance = Appearance.Button;
         BackgroundImageLayout = ImageLayout.Stretch;
 
+        var pairs = filenamePairs.ToList();
         _timer = new(_components) { Interval = DefaultInterval };
         _timer.Tick += timer_Tick;
         _frame = frameSequenceSupplier(pairs.Count).GetStartedEnumerator();
@@ -1991,7 +1990,7 @@ internal static class FrameSequence {
             next = current + delta;
 
             if (!(min <= next && next <= max)) {
-                delta *= -1;
+                delta = -delta;
                 next = current + delta;
             }
 
@@ -2061,7 +2060,7 @@ internal abstract class ApplicationButton : DualUseButton {
                                string? fallbackDescription = null)
         : base(toolTip)
     {
-        Width = Height = sideLength;
+        this.StyleAsTile(sideLength);
         BackgroundImageLayout = ImageLayout.Stretch;
 
         _path = executablePath;
@@ -2190,8 +2189,7 @@ internal sealed class BitmapButton : Button {
                           string disabledBitmapFilename,
                           int sideLength)
     {
-        Width = Height = sideLength;
-        Margin = Padding.Empty;
+        this.StyleAsTile(sideLength);
         BackgroundImageLayout = ImageLayout.Stretch;
 
         (_enabledImage, _disabledImage) =
@@ -2890,7 +2888,8 @@ internal static class EnumeraExtensions {
 }
 
 /// <summary>
-/// Provides extension methods for region invalidation and mouse polling.
+/// Provides extension methods for region invalidation, mouse polling, and
+/// layout.
 /// </summary>
 internal static class ControlExtensions {
     internal static void Invalidate(this Control control, Point point)
@@ -2909,6 +2908,12 @@ internal static class ControlExtensions {
     {
         var clientPoint = control.PointToClient(Control.MousePosition);
         return control.ClientRectangle.Contains(clientPoint);
+    }
+
+    internal static void StyleAsTile(this Control control, int sideLength)
+    {
+        control.Width = control.Height = sideLength;
+        control.Margin = Padding.Empty;
     }
 }
 
