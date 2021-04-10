@@ -1182,7 +1182,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         }
 
         _stop.Enabled = false;
-        _stopHost.DisabledToolTip = "Stopping fills...";
+        _stopHost.DisabledToolTip = $"Stopping fills{Ch.Hellip}";
 
         // A few more pixels may draw, but this message is much more intuitive
         // than "Told {_jobs} job(s) to stop."
@@ -3444,13 +3444,14 @@ internal readonly ref struct LockedBits {
     internal LockedBits(Bitmap bmp, Rectangle rect)
     {
         _bmp = bmp;
+
         _metadata = _bmp.LockBits(rect,
                                   ImageLockMode.ReadWrite,
                                   PixelFormat.Format32bppArgb);
-        Width = _metadata.Width;
-        Height = _metadata.Height;
+
         unsafe {
-            _argbs = new(_metadata.Scan0.ToPointer(), Width * Height);
+            _argbs = new(_metadata.Scan0.ToPointer(),
+                         _metadata.Width * _metadata.Height);
         }
     }
 
@@ -3462,11 +3463,11 @@ internal readonly ref struct LockedBits {
         set => _argbs[GetIndex(x, y)] = value;
     }
 
-    internal int Width { get; }
-
-    internal int Height { get; }
-
     internal bool Has(int x, int y) => HasX(x) && HasY(y);
+
+    private int Width => _metadata.Width;
+
+    private int Height => _metadata.Height;
 
     private bool HasX(int x) => 0 <= x && x < Width;
 
@@ -3515,6 +3516,9 @@ internal static class Ch {
 
     /// <summary>En dash.</summary>
     internal const char Ndash = '\u2013';
+
+    /// <summary>Horizontal ellipsis.</summary>
+    internal const char Hellip = '\u2026';
 
     /// <summary>Multiplication sign.</summary>
     internal const char Times = '\u00D7';
