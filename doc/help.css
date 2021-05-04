@@ -7,6 +7,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+main {
+  line-height: 1.45;
+}
+
 h1 {
   font-family: 'Ubuntu', sans-serif;
   font-weight: 300;
