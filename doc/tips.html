@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -9,6 +10,11 @@
     <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/nimbus-sans-l">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="tips.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.2.20180112/classList.min.js"
+            integrity="sha512-ISyiBXwG69Utm2wNP5ex+4P5+JmPaXmBMV82Uq/Yuck54FnOC4ZIJ9vDIT9TzHzZZC/xdYgivc2wmKuJkAZHmQ=="
+            crossorigin="anonymous"
+            defer></script>
+    <script src="tips.js" defer></script>
   </head>
   <body>
     <table class="cheat-sheet">
@@ -17,41 +23,117 @@
           <td>
             <table>
               <thead>
-                <tr title="Draw on the canvas or fill a region.
+                <tr class="heading" title="Draw on the canvas or fill a region.
 Different fills use different data structures for the fringe, which affects the order pixel locations are TAKEN OUT OF the fringe.">
-                  <th colspan="3">Fills</th>
+                  <th colspan="3">
+                    <a class="fill-cell" href="help.html?highlight=fills-content#fills">
+                      Fills
+                    </a>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr title="Use a stack/LIFO (last-in first-out) for the fringe.">
-                  <td><div class="box box-red" title="red"></div></td>
-                  <td>Stack</td>
-                  <td>Right click</td>
+                <tr class="item" title="Use a stack/LIFO (last-in first-out) for the fringe.">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=stack-content#stack">
+                      <div class="box box-red" title="red"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=stack-content#stack">
+                      Stack
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=stack-content#stack">
+                      Right click
+                    </a>
+                  </td>
                 </tr>
-                <tr title="Use a queue/FIFO (first-in first-out) for the fringe.">
-                  <td><div class="box box-blue" title="blue"></div></td>
-                  <td>Queue</td>
-                  <td>Middle click</td>
+                <tr class="item" title="Use a queue/FIFO (first-in first-out) for the fringe.">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=queue-content#queue">
+                      <div class="box box-blue" title="blue"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=queue-content#queue">
+                      Queue
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=queue-content#queue">
+                      Middle click
+                    </a>
+                  </td>
                 </tr>
-                <tr title="Use a fringe where extraction is by random selection.">
-                  <td><div class="box box-yellow" title="yellow"></div></td>
-                  <td>Random</td>
-                  <td><kbd>Alt</kbd>+Right-click</td>
+                <tr class="item" title="Use a fringe where extraction is by random selection.">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=random-content#random">
+                      <div class="box box-yellow" title="yellow"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=random-content#random">
+                      Random
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=random-content#random">
+                      <kbd>Alt</kbd>+Right-click
+                    </a>
+                  </td>
                 </tr>
-                <tr title="Use a deque for the fringe, extracting from either end with equal probability.">
-                  <td><div class="box box-purple" title="purple"></div></td>
-                  <td>Deque</td>
-                  <td><kbd>Alt</kbd>+Middle-click</td>
+                <tr class="item" title="Use a deque for the fringe, extracting from either end with equal probability.">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=deque-content#deque">
+                      <div class="box box-purple" title="purple"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=deque-content#deque">
+                      Deque
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=deque-content#deque">
+                      <kbd>Alt</kbd>+Middle-click
+                    </a>
+                  </td>
                 </tr>
-                <tr title="Recursive depth-first fill (similar to stack fill).">
-                  <td><div class="box box-orange" title="orange"></div></td>
-                  <td>Recursive</td>
-                  <td><kbd>&#8862;Win</kbd>+Right-click</td>
+                <tr class="item" title="Recursive depth-first fill (similar to stack fill).">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=recursive-content#recursive">
+                      <div class="box box-orange" title="orange"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=recursive-content#recursive">
+                      Recursive
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=recursive-content#recursive">
+                      <kbd>&#8862;Win</kbd>+Right-click
+                    </a>
+                  </td>
                 </tr>
-                <tr title="Non-animated fill, performed all at once.">
-                  <td><div class="box box-black" title="black"></div></td>
-                  <td>Instant</td>
-                  <td><kbd>&#8862;Win</kbd>+Left-click</td>
+                <tr class="item" title="Non-animated fill, performed all at once.">
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=instant-content#instant">
+                      <div class="box box-black" title="black"></div>
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=instant-content#instant">
+                      Instant
+                    </a>
+                  </td>
+                  <td>
+                    <a class="fill-cell" href="help.html?highlight=instant-content#instant">
+                      <kbd>&#8862;Win</kbd>+Left-click
+                    </a>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -59,10 +141,12 @@ Different fills use different data structures for the fringe, which affects the 
           <td>
             <table>
               <tr>
-                <td class="standalone">
-                  Left click/drag to draw a
-                  <span class="box box-black" title="black">
-                  </span>&#8239;Point/curve.
+                <td class="standalone" title="Just draw in the usual way, like in Paint.">
+                  <a class="fill-cell" href="help.html?highlight=drawing-content#drawing">
+                    Left click/drag to draw a
+                    <span class="box box-black" title="black">
+                    </span>&#8239;Point/curve.
+                  </a>
                 </td>
               </tr>
               <tr>
@@ -72,26 +156,62 @@ Different fills use different data structures for the fringe, which affects the 
                       <td>
                         <table>
                           <thead>
-                            <tr title="The speed of a fill is determined by how many pixels are drawn before the canvas is updated. (Each running fill updates the canvas in roughly equal intervals.)">
-                              <th colspan="2">Speed Control</th>
+                            <tr class="heading" title="The speed of a fill is determined by how many pixels are drawn before the canvas is updated. (Each running fill updates the canvas in roughly equal intervals.)">
+                              <th colspan="2">
+                                <a class="fill-cell" href="help.html?highlight=speed-modifiers-content#speed-modifiers">
+                                  Speed Control
+                                </a>
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr title="Update the canvas for each pixel.">
-                              <td><kbd>Shift</kbd></td>
-                              <td class="number-cell">1&times;</td>
+                            <tr class="item" title="Update the canvas for each pixel.">
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=speed-shift#speed-modifiers">
+                                  <kbd>Shift</kbd>
+                                </a>
+                              </td>
+                              <td class="number-cell">
+                                <a class="fill-cell" href="help.html?highlight=speed-shift#speed-modifiers">
+                                  1&times;
+                                </a>
+                              </td>
                             </tr>
-                            <tr title="Update the canvas after every 5 pixels.">
-                              <td>(default)</td>
-                              <td class="number-cell">5&times;</td>
+                            <tr class="item" title="Update the canvas after every 5 pixels.">
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=speed-default#speed-modifiers">
+                                  (default)
+                                </a>
+                              </td>
+                              <td class="number-cell">
+                                <a class="fill-cell" href="help.html?highlight=speed-default#speed-modifiers">
+                                  5&times;
+                                </a>
+                              </td>
                             </tr>
-                            <tr title="Update the canvas after every 10 pixels.">
-                              <td><kbd>Ctrl</kbd>+<kbd>Shift</kbd></td>
-                              <td class="number-cell">10&times;</td>
+                            <tr class="item" title="Update the canvas after every 10 pixels.">
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=speed-ctrl-shift#speed-modifiers">
+                                  <kbd>Ctrl</kbd>+<kbd>Shift</kbd>
+                                </a>
+                              </td>
+                              <td class="number-cell">
+                                <a class="fill-cell" href="help.html?highlight=speed-ctrl-shift#speed-modifiers">
+                                  10&times;
+                                </a>
+                              </td>
                             </tr>
-                            <tr title="Update the canvas after every 20 pixels.">
-                              <td><kbd>Ctrl</kbd></td>
-                              <td class="number-cell">20&times;</td>
+                            <tr class="item" title="Update the canvas after every 20 pixels.">
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=speed-ctrl#speed-modifiers">
+                                  <kbd>Ctrl</kbd>
+                                </a>
+                              </td>
+                              <td class="number-cell">
+                                <a class="fill-cell" href="help.html?highlight=speed-ctrl#speed-modifiers">
+                                  20&times;
+                                </a>
+                              </td>
                             </tr>
                           </tbody>
                         </table>
@@ -99,19 +219,29 @@ Different fills use different data structures for the fringe, which affects the 
                       <td>
                         <table>
                           <thead>
-                            <tr title="The order neighbors are enumerated in, or the algorithm for picking an order dynamically. This is the order pixel locations are PUT INTO the fringe.">
-                              <th colspan="2">Neighbor Enumeration Strategies</th>
+                            <tr class="heading" title="The order neighbors are enumerated in, or the algorithm for picking an order dynamically. This is the order pixel locations are PUT INTO the fringe.">
+                              <th colspan="2">
+                                <a class="fill-cell" href="help.html?highlight=neighbor-enumeration-strategies-content#neighbor-enumeration-strategies">
+                                  Neighbor Enumeration Strategies
+                                </a>
+                              </th>
                             </tr>
                             <tr class="subheading" title="Scroll down with the mouse wheel to pick the next strategy, or up to pick the previous strategy. To change sub-strategy instead, hold Shift while scrolling. Currently, only the Uniform strategy has sub-strategies.">
-                              <th colspan="2">Cycle with the scroll wheel.</th>
+                              <th colspan="2">
+                                <a class="fill-cell" href="help.html?highlight=scrolling#neighbor-enumeration-strategies">
+                                  Cycle with the scroll wheel.
+                                </a>
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr>
-                              <td title="Add neighbors to the fringe in a specific, fixed order.">
-                                Uniform
+                              <td class="item" title="Add neighbors to the fringe in a specific, fixed order.">
+                                <a class="fill-cell" href="help.html?highlight=uniform-content#uniform">
+                                  Uniform
+                                </a>
                               </td>
-                              <td title="Choose between the 24 orders:
+                              <td class="item" title="Choose between the 24 orders:
 LRUD, LRDU, LURD, etc.
 
 Shift+WheelDown &mdash; next permutation
@@ -121,22 +251,48 @@ Ctrl+Shift+WheelUp &mdash; reverse permutation
 
 (Ctrl+Shift+WheelDown / Ctrl+Shift+WheelUp
 behave the same.)">
-                                <kbd>Shift</kbd>+scroll to set order
+                                <a class="fill-cell" href="help.html?highlight=uniform-modifiers#uniform">
+                                  <kbd>Shift</kbd>+scroll to set order
+                                </a>
                               </td>
                             </tr>
-                            <tr title="In a fill, add neighbors to the fringe in the same order.
+                            <tr class="item" title="In a fill, add neighbors to the fringe in the same order.
 But choose this order randomly at the start of each fill.">
-                              <td>Random per fill</td>
-                              <td>(order same within a fill)</td>
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-per-fill-content#random-per-fill">
+                                  Random per fill
+                                </a>
+                              </td>
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-per-fill-content#random-per-fill">
+                                  (order same within a fill)
+                                </a>
+                              </td>
                             </tr>
-                            <tr title="Add neighbors to the fringe in random order.
+                            <tr class="item" title="Add neighbors to the fringe in random order.
 Pick an order each time neighbors are added.">
-                              <td>Random always</td>
-                              <td>(random during traversal)</td>
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-always-content#random-always">
+                                  Random always
+                                </a>
+                              </td>
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-always-content#random-always">
+                                  (random during traversal)
+                                </a>
+                              </td>
                             </tr>
-                            <tr title="Each pixel has a predetermined order of it neighbors, randomly chosen when the program starts and used in all fills. (This looks very similar to &quot;Random always&quot;.)">
-                              <td>Random per pixel</td>
-                              <td>(randomized on launch)</td>
+                            <tr class="item" title="Each pixel has a predetermined order of its neighbors, randomly chosen when the program starts and used in all fills. (This looks very similar to &quot;Random always&quot;.)">
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-per-pixel-content#random-per-pixel">
+                                  Random per pixel
+                                </a>
+                              </td>
+                              <td>
+                                <a class="fill-cell" href="help.html?highlight=random-per-pixel-content#random-per-pixel">
+                                  (randomized on launch)
+                                </a>
+                              </td>
                             </tr>
                           </tbody>
                         </table>
@@ -151,9 +307,12 @@ Pick an order each time neighbors are added.">
       </tbody>
       <tfoot>
         <tr>
-          <td class="standalone" colspan="2">
-            The mouse pointer must be on the canvas to use the wheel.
-            <strong>Running fills are not changed.</strong>
+          <td class="standalone-bifurcated" colspan="2">
+            <a href="help.html?highlight=canvas-scroll#neighbor-enumeration-strategies" title="Scrolling outside the canvas tries to scroll the whole UI (which is sometimes scrollable).">
+              The mouse pointer must be on the canvas to use the wheel.</a>
+            <a href="help.html?highlight=running-fills-are-not-changed#speed-modifiers" title="The status bar show the speed and neighbor enumeration strategy that a fill started now would have.">
+              <strong>Running fills are not changed.</strong>
+            </a>
           </td>
         </tr>
       </tfoot>

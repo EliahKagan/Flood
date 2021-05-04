@@ -1,29 +1,45 @@
 body {
+  cursor: default;
   font-family: 'Segoe UI', 'Nimbus Sans L', sans-serif;
   font-size: small;
   font-variant-numeric: tabular-nums;
   margin: 0;
 }
 
-td {
-  padding: 0 1px;
-}
-
-td, th {
-  white-space: nowrap;
-}
-
-th, thead, tfoot {
-  padding: 0;
-}
-
-thead {
-  background-color: #333;
-  color: #eee;
+table {
+  border-collapse: collapse;
 }
 
 tfoot {
   text-align: center;
+}
+
+th, tr {
+  border: 1px solid white;
+}
+
+th, td {
+  padding-bottom: 0;
+  white-space: nowrap;
+}
+
+td {
+  border: 1px solid transparent;
+}
+
+a, .made-clickable {
+  cursor: help;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.fill-cell {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 kbd {
@@ -32,17 +48,39 @@ kbd {
   text-transform: uppercase;
 }
 
-.number-cell {
-  text-align: right;
+.heading {
+  background-color: #333;
+  color: #eee;
 }
 
-.standalone {
+.heading:hover {
+  background-color: #480000;
+}
+
+.subheading {
+  background-color: lightgray;
+  border-top-width: 2px;
+  color: black;
+}
+
+.subheading:hover {
+  background-color: #d3d3b0;
+}
+
+.item:hover {
+  background-color: lightgoldenrodyellow;
+}
+
+.standalone, .standalone-bifurcated {
   background-color: #eef;
   color: black;
   text-align: center;
 }
 
-.subheading {
-  background-color: lightgray;
-  color: black;
+.standalone:hover, .standalone-bifurcated a:hover {
+  background-color: #d8d8ec;
+}
+
+.number-cell {
+  text-align: right;
 }
