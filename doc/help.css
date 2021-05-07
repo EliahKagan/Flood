@@ -18,6 +18,7 @@ main {
 h1 {
   font-size: 2.3em;
   font-weight: 300;
+  letter-spacing: .05em;
 }
 
 h2 {
@@ -28,6 +29,7 @@ h2 {
 
 main h2 {
   border-top: 1px solid;
+  letter-spacing: .05em;
   margin-top: 1.1em;
 }
 
