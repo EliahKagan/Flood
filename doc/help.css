@@ -142,7 +142,6 @@ a.navlink {
   display: inline-block;
   font-family: 'Ubuntu', sans-serif;
   font-size: .75em;
-  font-weight: 300;
   padding-left: .375em;
   text-decoration: none;
   vertical-align: 10%;
@@ -150,6 +149,14 @@ a.navlink {
 
 a.navlink:hover {
   color: black;
+}
+
+h1>a.navlink, h2>a.navlink {
+  font-weight: 300;
+}
+
+h3>a.navlink, h4>a.navlink {
+  font-weight: 400;
 }
 
 abbr {
