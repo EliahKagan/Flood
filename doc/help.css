@@ -11,8 +11,18 @@ h1, h2, h3, h4 {
   font-family: 'Inter', sans-serif;
 }
 
+nav {
+  line-height: 1.275;
+}
+
 main {
   line-height: 1.45;
+}
+
+@media(max-width: 400px) {
+  main {
+    line-height: 1.35;
+  }
 }
 
 h1 {
