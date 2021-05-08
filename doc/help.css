@@ -1,5 +1,7 @@
 body {
   background-color: #f8f8f8;
+  font-feature-settings: 'kern' 1;
+  font-kerning: normal;
   font-size: 1.3em;
   margin: 0 auto;
   max-width: 32.75em;
