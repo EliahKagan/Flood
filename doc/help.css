@@ -87,8 +87,9 @@ main ul.markable-item-list, main ul.markable-item-list>li {
   padding: 0;
 }
 
-main ul.markable-item-list>li ul>li {
-  list-style-type: disc;
+main ul>li, main ul.markable-item-list>li ul>li {
+  list-style-type: '\2731';
+  padding-left: .5em;
 }
 
 a, abbr, kbd, .command {
