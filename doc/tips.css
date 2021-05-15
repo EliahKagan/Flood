@@ -1,6 +1,6 @@
 body {
   cursor: default;
-  font-family: 'Segoe UI', 'DM Sans', 'Selawik', 'Nimbus Sans L', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-family: 'Segoe UI', 'DM Sans', 'Selawik', '-apple-system', system-ui, 'BlinkMacSystemFont', 'Nimbus Sans L', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   font-size: small;
   font-variant-numeric: tabular-nums;
   margin: 0;
@@ -43,7 +43,7 @@ a.fill-cell {
 }
 
 kbd {
-  font-family: 'IBM Plex Mono', 'Consolas', 'Source Code Pro', monospace;
+  font-family: 'IBM Plex Mono', 'Consolas', monospace;
   font-variant: normal;
   text-transform: uppercase;
 }
