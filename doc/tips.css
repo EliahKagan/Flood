@@ -1,7 +1,6 @@
 body {
   cursor: default;
   font-family: 'Segoe UI', 'Nimbus Sans L', 'DM Sans', 'Selawik', '-apple-system', system-ui, 'BlinkMacSystemFont', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
-  font-size: small;
   font-variant-numeric: tabular-nums;
   margin: 0;
 }
