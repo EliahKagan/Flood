@@ -44,6 +44,7 @@ a.fill-cell {
 
 kbd {
   font-family: 'IBM Plex Mono', 'Consolas', monospace;
+  font-size: .75em;
   font-variant: normal;
   text-transform: uppercase;
 }
