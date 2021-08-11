@@ -27,7 +27,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3, h4 {
+h1, h2, h3, h4, details>summary {
   font-family: 'Inter', sans-serif;
 }
 
@@ -85,6 +85,16 @@ p, li {
   -ms-hyphenate-limit-chars: 6 2 2;
   -ms-hyphenate-limit-last: always;
   -ms-hyphens: auto;
+}
+
+details>summary {
+  font-size: .85em;
+}
+
+details>pre {
+  background-color: aliceblue;
+  font-family: 'Source Code Pro', monospace;
+  font-size: .7em;
 }
 
 nav>ol>li {

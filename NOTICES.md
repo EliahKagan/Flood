@@ -66,8 +66,8 @@ control](https://docs.microsoft.com/en-us/previous-versions/windows/internet-exp
 (Also, the &ldquo;tips&rdquo; mini-help always uses the WebBrowser control.)
 The help is written in such a way as to work properly via either engine, as
 well as in any popular standalone web browsers such as Firefox or Chrome (for
-perusal outside the application). Flood does not require WebView2 to run and
-does not offer to install WebView2 or automate its installation.
+perusal outside the application). Flood does not require WebView2 and does not
+offer to install WebView2 or automate its installation.
 
 Other than LINQPad&mdash;and Windows itself&mdash;the software Flood requires
 to run is free and open source. See [Other Library

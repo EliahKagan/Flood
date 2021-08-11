@@ -20,13 +20,6 @@ kbd {
   /*
     Based on https://developer.mozilla.org/en-US/docs/Web/HTML/Element/kbd but
     simplified and also modified so elements take up a little less space.
-
-    TODO: In preparation for shipping fonts (and polyfills) rather than
-    retrieving them from CDNs (so Flood, which is a desktop application,
-    doesn't need to access the internet every time it runs), remove the
-    dependency on Source Code Pro. I'm only using it as a fallback font, which
-    doesn't justify the excess size required to include it. Use a richer list
-    of system font fallbacks instead.
   */
   background-color: #eeeeee;
   border: 1px solid #b4b4b4;

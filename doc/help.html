@@ -95,6 +95,16 @@
             </li>
           </ol>
         </li>
+        <li id="toc-dependencies">
+          <a href="#dependencies">Dependencies (and licenses)</a>
+          <ol type="1">
+            <li id="toc-platform"><a href="#platform">Platform</a></li>
+            <li id="toc-other-libraries">
+              <a href="#other-libraries">Other libraries</a>
+            </li>
+            <li id="fonts"><a href="#fonts">Fonts</a></li>
+          </ol>
+        </li>
       </ol>
     </nav>
     <main>
@@ -830,6 +840,169 @@
             <a href="#random-always">Random always</a>.
           </p>
         </section>
+      </section>
+      <section id="dependencies-content">
+        <h2 id="dependencies">
+          Dependencies (and licenses)
+          <a class="navlink" href="#dependencies" title="Link to this section">
+            &sect;
+          </a>
+          <a class="navlink" href="#toc-dependencies" title="Table of contents">
+            &uarr;
+          </a>
+        </h2>
+        <p>
+          Flood is free open source software. It is written by Eliah Kagan and
+          licensed under <a href="https://spdx.org/licenses/0BSD.html">0BSD</a>
+          (the &ldquo;Zero-Clause BSD License&rdquo;):
+        </p>
+        <details>
+          <summary>
+            <strong>View 0BSD</strong>&nbsp;&nbsp;&nbsp;
+            <em>&ldquo;Copyright 2020, 2021 Eliah Kagan&hellip;&rdquo;</em>
+          </summary>
+          <pre>Copyright 2020, 2021 Eliah Kagan <degeneracypressure@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.</pre>
+        </details>
+        <p>
+          However, it depends on some other software to run that is
+          <strong>written by other authors</strong> and
+          <strong>offered under different licenses</strong> than 0BSD.
+        </p>
+        <section id="platform-content">
+          <h3 id="platform">
+            Platform
+            <a class="navlink" href="#platform" title="Link to this subsection">
+              &sect;
+            </a>
+            <a class="navlink" href="#toc-platform" title="Table of contents">
+              &uarr;
+            </a>
+          </h3>
+          <p>
+            Flood is a C# program targeting
+            <a class="external"
+               href="https://dotnet.microsoft.com/"
+               title=".NET | Microsoft">.NET 5</a>
+            on Windows. It uses
+            <a class="external"
+               href="https://github.com/dotnet/winforms"
+               title="Windows Forms on GitHub">Windows Forms</a>,
+            and to a much lesser extent
+            <a class="external"
+               href="https://github.com/dotnet/wpf"
+               title="Windows Presentation Foundation on GitHub">WPF</a>,
+            which are part of .NET. It is implemented as a LINQPad 6 query;
+            <a class="external"
+               href="https://www.linqpad.net/"
+               title="LINQPad website">LINQPad</a>
+            is a properietary freeware application written by Joseph Albahari.
+            Flood&rsquo;s charting feature uses the version of
+            <a class="external"
+               href="https://github.com/dotnet/winforms-datavisualization"
+               title="System.Windows.Forms.DataVisualization on GitHub">System.Windows.Forms.DataVisualization</a>
+            that is included in LINQPad 6 (which I believe is
+            <a class="external wide"
+               href="https://github.com/albahari/winforms-datavisualization"
+               title="System.Windows.Forms.DataVisualization on GitHub - Fork by Joseph Albahari">the fork by Joseph Albahari</a>).
+          </p>
+          <p>
+            If the
+            <a class="external wide"
+               href="https://docs.microsoft.com/en-us/microsoft-edge/webview2/"
+               title="Introduction to Microsoft Edge WebView2 | Microsoft">Microsoft Edge WebView2 control</a>
+            is installed, Flood&rsquo;s built-in help browser will use it
+            automatically. If not, it falls back to the
+            <a class="external wide"
+               href="https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/aa752040(v=vs.85)"
+               title="WebBrowser Control | Microsoft">classic WebBrowser control</a>.
+            (Also, the &ldquo;tips&rdquo; mini-help always uses the WebBrowser
+            control.) The help is written in such a way as to work properly via
+            either engine, as well as in any popular standalone web browsers
+            such as Firefox or Chrome (for perusal outside the application).
+            Flood does not require WebView2 and does not offer to install
+            WebView2 or automate its installation.
+          </p>
+          <p>
+            Other than LINQPad&mdash;and Windows itself&mdash;the software
+            Flood requires to run is free and open source. See
+            <a href="#other-libraries">Other Libraries</a> and
+            <a href="#fonts">Fonts</a> below.
+          </p>
+        </section>
+        <section id="other-libraries-content">
+          <h3 id="other-libraries">
+            Other Libraries
+            <a class="navlink" href="#platform" title="Link to this subsection">
+              &sect;
+            </a>
+            <a class="navlink" href="#toc-platform" title="Table of contents">
+              &uarr;
+            </a>
+          </h3>
+          <p>
+            In addition to the components listed above, Flood uses these
+            libraries:
+          </p>
+          <section id="classlistjs-content">
+            <h4 id="classlistjs">classList.js</h4>
+            <p>
+              <a class="external"
+                 href="https://github.com/eligrey/classList.js/"
+                 title="classList.js | GitHub">classList.js</a>
+                 1.2.20180112 is written by Eli Grey.
+              <a href="https://github.com/eligrey/classList.js/blob/1.2.20180112/LICENSE.md">
+                It is offered
+              </a>
+              under the
+              <a class="external"
+                 href="https://unlicense.org/"
+                 title="Unlicense Yourself: Set Your Code Free">Unlicense</a>:
+            </p>
+            <details>
+              <summary>
+                <strong>View Unlicense</strong>&nbsp;&nbsp;&nbsp;
+                <em>&ldquo;This is free and unencumbered software released into
+                the public domain.&hellip;&rdquo;</em>
+              </summary>
+              <pre>This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or
+distribute this software, either in source code form or as a compiled
+binary, for any purpose, commercial or non-commercial, and by any
+means.
+
+In jurisdictions that recognize copyright laws, the author or authors
+of this software dedicate any and all copyright interest in the
+software to the public domain. We make this dedication for the benefit
+of the public at large and to the detriment of our heirs and
+successors. We intend this dedication to be an overt act of
+relinquishment in perpetuity of all present and future rights to this
+software under copyright law.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+For more information, please refer to &lt;http://unlicense.org/&gt;</pre>
+            </details>
+          </section>
+        </section>
+
       </section>
     </main>
   </body>
