@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference Version="1.0.818.41">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="1.0.902.49">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference Version="3.3.2">morelinq</NuGetReference>
   <NuGetReference Version="1.1.0">Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
