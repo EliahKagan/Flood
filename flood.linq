@@ -25,7 +25,7 @@
   <RuntimeVersion>5.0</RuntimeVersion>
 </Query>
 
-// flood.linq - Entry point.
+// flood.linq - Entry point and main source code file.
 // This file is part of Flood, an interactive flood-fill visualizer.
 //
 // Copyright 2021 Eliah Kagan <degeneracypressure@gmail.com>
