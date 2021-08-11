@@ -22,6 +22,13 @@ Flood is free open source software. It is written by Eliah Kagan and
 &ldquo;Zero-Clause BSD License&rdquo;). For convenience, that license is
 reproduced here:
 
+
+<details>
+<summary>
+<strong>View 0BSD</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright 2020, 2021 Eliah Kagan&hellip;&rdquo;</em>
+</summary>
+
 > Copyright 2020, 2021 Eliah Kagan &lt;degeneracypressure@gmail.com&gt;
 >
 > Permission to use, copy, modify, and/or distribute this software for any
@@ -34,6 +41,7 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
 LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
+</details>
 
 However, it depends on some other software to run that is **written by other
 authors** and **offered under different licenses** than 0BSD.
@@ -83,6 +91,12 @@ written by Eli Grey. [**It is
 offered**](https://github.com/eligrey/classList.js/blob/1.2.20180112/LICENSE.md)
 under the [Unlicense](https://unlicense.org/):
 
+<details>
+<summary>
+<strong>View Unlicense</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;This is free and unencumbered software released into the public domain.&hellip;&rdquo;</em>
+</summary>
+
 > This is free and unencumbered software released into the public domain.
 >
 > Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -107,6 +121,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 >
 > For more information, please refer to <http://unlicense.org/>
+</details>
 
 ### Deque (Nito.Collections.Deque)
 
@@ -114,6 +129,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 Cleary and [**licensed
 under**](https://github.com/StephenCleary/Deque/blob/v1.1.0/LICENSE) the [MIT
 license](https://spdx.org/licenses/MIT.html):
+
+<details>
+<summary>
+<strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (c) 2015 Stephen Cleary&hellip;&rdquo;</em>
+</summary>
 
 > The MIT License (MIT)
 >
@@ -136,6 +157,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+</details>
 
 ### Hyphenopoly
 
@@ -143,6 +165,12 @@ SOFTWARE.
 Mathias Nater and [**licensed
 under**](https://github.com/mnater/Hyphenopoly/blob/v3.4.0/LICENSE) the [MIT
 license](https://spdx.org/licenses/MIT.html):
+
+<details>
+<summary>
+<strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (c) 2019 Mathias Nater&hellip;&rdquo;</em>
+</summary>
 
 > The MIT License (MIT)
 >
@@ -165,6 +193,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+</details>
 
 ### Microsoft.Web.WebView2
 
@@ -172,6 +201,12 @@ SOFTWARE.
 1.0.902.49 is written by software developers at Microsoft and [**licensed
 under**](https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.902.49/License)
 the following license (which is similar to the 3-clause BSD license):
+
+<details>
+<summary>
+<strong>View license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (C) Microsoft Corporation. All rights reserved.&hellip;&rdquo;</em>
+</summary>
 
 > Copyright (C) Microsoft Corporation. All rights reserved.
 >
@@ -211,6 +246,7 @@ Flood does not require the WebView2 control, but it does require the
 Microsoft.Web.WebView2 library even in the absence of the WebView2 control.
 (The mechanism Flood uses to check if the WebView2 control is present uses that
 library.)
+</details>
 
 ### MoreLINQ
 
@@ -222,6 +258,12 @@ under**](https://github.com/morelinq/MoreLINQ/blob/v3.3.2/COPYING.txt) the
 [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0) with a small
 portion of the code (from Microsoft) carrying the [MIT
 license](https://spdx.org/licenses/MIT.html):
+
+<details>
+<summary>
+<strong>View Apache License 2.0 + MIT license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION&hellip;&rdquo;</em>
+</summary>
 
 > **Apache License**\
 > **Version 2.0, January 2004**\
@@ -425,6 +467,7 @@ license](https://spdx.org/licenses/MIT.html):
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+</details>
 
 ### URLSearchParams
 
@@ -432,6 +475,12 @@ license](https://spdx.org/licenses/MIT.html):
 by Andrea Giammarchi and [**licensed
 under**](https://github.com/ungap/url-search-params/blob/v0.2.2/LICENSE) the
 [ISC license](https://spdx.org/licenses/ISC.html):
+
+<details>
+<summary>
+<strong>View ISC license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (c) 2018, Andrea Giammarchi, @WebReflection&hellip;&rdquo;</em>
+</summary>
 
 > ISC License
 >
@@ -448,6 +497,7 @@ INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
 LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
+</details>
 
 ## Fonts
 
@@ -465,6 +515,12 @@ Aside from fonts supplied by the operating system, Flood uses these fonts:
 and the [Bold Monday](https://boldmonday.com/custom/ibm/) team. It [**is
 licensed**](https://github.com/IBM/plex/blob/master/LICENSE.txt) under the [SIL
 OFL 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
+
+<details>
+<summary>
+<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"&hellip;&rdquo;</em>
+</summary>
 
 > Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
 >
@@ -559,6 +615,7 @@ OFL 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
 > DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 > FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 > OTHER DEALINGS IN THE FONT SOFTWARE.
+</details>
 
 ### Inter
 
@@ -567,6 +624,12 @@ Andersson. It [**is
 licensed**](https://github.com/rsms/inter/blob/master/LICENSE.txt) under the
 [SIL OFL
 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
+
+<details>
+<summary>
+<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (c) 2016-2020 The Inter Project Authors&hellip;&rdquo;</em>
+</summary>
 
 > Copyright (c) 2016-2020 The Inter Project Authors.\
 > "Inter" is trademark of Rasmus Andersson.\
@@ -662,8 +725,15 @@ licensed**](https://github.com/rsms/inter/blob/master/LICENSE.txt) under the
 > DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 > FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 > OTHER DEALINGS IN THE FONT SOFTWARE.
+</details>
 
 ### Source Code Pro
+
+<details>
+<summary>
+<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+</summary>
 
 [Source Code Pro](https://adobe-fonts.github.io/source-code-pro/) is
 principally designed by Paul D. Hunt. It [**is
@@ -764,6 +834,7 @@ under the [SIL OFL
 > DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 > FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 > OTHER DEALINGS IN THE FONT SOFTWARE.
+</details>
 
 ### Source Serif Pro
 
@@ -772,6 +843,12 @@ designed by Frank Grießhammer. It [**is
 licensed**](https://github.com/adobe-fonts/source-serif/blob/release/LICENSE.md)
 under the [SIL OFL
 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
+
+<details>
+<summary>
+<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+</summary>
 
 > Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
 >
@@ -866,6 +943,7 @@ under the [SIL OFL
 > DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 > FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 > OTHER DEALINGS IN THE FONT SOFTWARE.
+</details>
 
 Although the current version is Source Serif 4, Flood uses [an earlier version
 of the font](https://fonts.google.com/specimen/Source+Serif+Pro), which went by
@@ -882,9 +960,15 @@ Canonical Ltd. by typographers at the font foundry Dalton Maag, with some other
 > This Font Software is licensed under the Ubuntu Font Licence, Version
 1.0.  https://launchpad.net/ubuntu-font-licence
 
-As stated in the copyright notice, [**is
+As stated in the copyright notice, [**it is
 licensed**](https://ubuntu.com/legal/font-licence) under the Ubuntu Font
 License, Version 1.0:
+
+<details>
+<summary>
+<strong>View Ubuntu font license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed&hellip;&rdquo;</em>
+</summary>
 
 > # Ubuntu font licence
 >
@@ -934,3 +1018,4 @@ License, Version 1.0:
 > ### Disclaimer
 >
 > THE FONT SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM OTHER DEALINGS IN THE FONT SOFTWARE.
+</details>
