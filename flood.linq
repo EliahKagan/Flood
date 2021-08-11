@@ -1,5 +1,5 @@
 <Query Kind="Statements">
-  <NuGetReference Version="1.0.818.41">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="1.0.902.49">Microsoft.Web.WebView2</NuGetReference>
   <NuGetReference Version="3.3.2">morelinq</NuGetReference>
   <NuGetReference Version="1.1.0">Nito.Collections.Deque</NuGetReference>
   <NuGetReference Version="2.1.2">SharpAvi.NetStandard</NuGetReference>
@@ -2398,7 +2398,8 @@ internal sealed class TipsViewer : MyWebBrowser {
         if (e.Url.SchemeIs(Uri.UriSchemeFile)) HelpRequest?.Invoke(this, e);
     }
 
-    private readonly Uri _home = Files.GetDocUrl("tips.html");
+    private readonly Uri _home =
+        Files.GetDocUrl(filename: "tips.html", query: "size=small");
 }
 
 /// <summary>
@@ -2578,7 +2579,10 @@ internal delegate Task<HelpViewer> HelpViewerSupplier();
 /// </summary>
 internal static class Files {
     internal static Uri GetDocUrl(string filename)
-        => new(Path.Combine(QueryDirectory, "doc", filename));
+        => new(GetDocPath(filename));
+
+    internal static Uri GetDocUrl(string filename, string query)
+        => new UriBuilder(GetDocPath(filename)) { Query = query }.Uri;
 
     internal static string GetSystem32ExePath(string basename)
         => Path.Combine(WindowsDirectory, "system32", $"{basename}.exe");
@@ -2670,6 +2674,9 @@ internal static class Files {
         bitmap.MakeTransparent();
         return bitmap;
     }
+
+    private static string GetDocPath(string filename)
+        => Path.Combine(QueryDirectory, "doc", filename);
 
     private static string GetImagePath(string filename)
         => Path.Combine(QueryDirectory, "images", filename);

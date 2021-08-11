@@ -5,8 +5,7 @@
     // colored vertical bar running along it, to the left of the body. Links in
     // tips.html use this to open the help with the relevant part highlighted.
     function applyHighlighting() {
-        const params = new URLSearchParams(location.search);
-        const idToMark = params.get('highlight');
+        const idToMark = new URLSearchParams(location.search).get('highlight');
         if (idToMark === null) return;
 
         document.getElementById(idToMark).classList.add('highlighted');

@@ -1,5 +1,7 @@
 body {
   background-color: #f8f8f8;
+  font-feature-settings: 'kern' 1;
+  font-kerning: normal;
   font-size: 1.3em;
   margin: 0 auto;
   max-width: 32.75em;
@@ -7,35 +9,49 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+h1, h2, h3, h4 {
+  font-family: 'Inter', sans-serif;
+}
+
+nav {
+  line-height: 1.275;
+}
+
+main {
+  line-height: 1.45;
+}
+
+@media(max-width: 400px) {
+  main {
+    line-height: 1.35;
+  }
+}
+
 h1 {
-  font-family: 'Ubuntu', sans-serif;
+  font-size: 2.3em;
   font-weight: 300;
   letter-spacing: .05em;
 }
 
 h2 {
-  font-family: 'Noto Sans', sans-serif;
+  font-size: 1.8em;
+  font-weight: 400;
   margin-top: 1.1em;
 }
 
 main h2 {
   border-top: 1px solid;
-  letter-spacing: .1em;
+  letter-spacing: .05em;
   margin-top: 1.1em;
 }
 
 h3 {
-  font-family: 'Noto Sans', sans-serif;
-  font-size: 1em;
-  letter-spacing: .07em;
+  font-weight: 600;
   margin-top: 1.4em;
 }
 
 h4 {
-  font-family: 'DM Sans', sans-serif;
-  font-feature-settings: 'liga' off;
-  font-weight: normal;
-  letter-spacing: .07em;
+  font-weight: 500;
   margin-top: 1.4em;
 }
 
@@ -71,8 +87,9 @@ main ul.markable-item-list, main ul.markable-item-list>li {
   padding: 0;
 }
 
-main ul.markable-item-list>li ul>li {
-  list-style-type: disc;
+main ul>li, main ul.markable-item-list>li ul>li {
+  list-style-type: '\2731';
+  padding-left: .5em;
 }
 
 a, abbr, kbd, .command {
@@ -138,7 +155,6 @@ a.navlink {
   display: inline-block;
   font-family: 'Ubuntu', sans-serif;
   font-size: .75em;
-  font-weight: 300;
   padding-left: .375em;
   text-decoration: none;
   vertical-align: 10%;
@@ -146,6 +162,14 @@ a.navlink {
 
 a.navlink:hover {
   color: black;
+}
+
+h1>a.navlink, h2>a.navlink {
+  font-weight: 300;
+}
+
+h3>a.navlink, h4>a.navlink {
+  font-weight: 400;
 }
 
 abbr {
