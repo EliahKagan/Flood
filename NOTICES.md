@@ -26,7 +26,7 @@ reproduced here:
 <details>
 <summary>
 <strong>View 0BSD</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright 2020, 2021 Eliah Kagan&hellip;&rdquo;</em>
+<em>&ldquo;Copyright 2020, 2021 Eliah Kagan &hellip;&rdquo;</em>
 </summary>
 
 > Copyright 2020, 2021 Eliah Kagan &lt;degeneracypressure@gmail.com&gt;
@@ -75,14 +75,11 @@ Dependencies](#Other-Library-Depenencies) and [Fonts](#Fonts) below.
 
 ## Other Library Dependencies
 
-In addition to the components listed above, Flood uses these libraries:
-
-- [classList.js](#classListjs) by Eli Grey
-- [Deque](#Deque-NitoCollectionsDeque) by Stephen Cleary
-- [Hyphenopoly](#Hyphenopoly) by Mathias Nater
-- [Microsoft.Web.WebView2](#MicrosoftWebWebView2) from Microsoft Corporation
-- [MoreLINQ](#MoreLINQ), maintained by Atif Aziz
-- [URLSearchParams](#URLSearchParams) by Andrea Giammarchi
+In addition to the components listed above, Flood uses the libraries
+[classList.js](#classListjs), [Deque](#Deque-NitoCollectionsDeque),
+[details-element-polyfill](#details-element-polyfill),
+[Hyphenopoly](#Hyphenopoly), [Microsoft.Web.WebView2](#MicrosoftWebWebView2),
+[MoreLINQ](#MoreLINQ), and [URLSearchParams](#URLSearchParams).
 
 ### classList.js
 
@@ -94,7 +91,7 @@ under the [Unlicense](https://unlicense.org/):
 <details>
 <summary>
 <strong>View Unlicense</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;This is free and unencumbered software released into the public domain.&hellip;&rdquo;</em>
+<em>&ldquo;This is free and unencumbered software released into the public domain. &hellip;&rdquo;</em>
 </summary>
 
 > This is free and unencumbered software released into the public domain.
@@ -133,7 +130,7 @@ license](https://spdx.org/licenses/MIT.html):
 <details>
 <summary>
 <strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright (c) 2015 Stephen Cleary&hellip;&rdquo;</em>
+<em>&ldquo;Copyright (c) 2015 Stephen Cleary &hellip;&rdquo;</em>
 </summary>
 
 > The MIT License (MIT)
@@ -159,6 +156,42 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 </details>
 
+### details-element-polyfill
+
+[details-element-polyfill](https://github.com/javan/details-element-polyfill)
+2.4.0 is written by Javan Makhmali and [**licensed
+under**](https://github.com/javan/details-element-polyfill/blob/2.4.0/LICENSE)
+the [MIT license](https://spdx.org/licenses/MIT.html):
+
+<details>
+<summary>
+<strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright (c) 2019 Javan Makhmali &hellip;&rdquo;</em>
+</summary>
+
+> The MIT License (MIT)
+>
+> Copyright (c) 2019 Javan Makhmali
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+</details>
+
 ### Hyphenopoly
 
 [Hyphenopoly](https://mnater.github.io/Hyphenopoly/) 3.4.0 is written by
@@ -169,7 +202,7 @@ license](https://spdx.org/licenses/MIT.html):
 <details>
 <summary>
 <strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright (c) 2019 Mathias Nater&hellip;&rdquo;</em>
+<em>&ldquo;Copyright (c) 2019 Mathias Nater &hellip;&rdquo;</em>
 </summary>
 
 > The MIT License (MIT)
@@ -205,7 +238,7 @@ the following license (which is similar to the 3-clause BSD license):
 <details>
 <summary>
 <strong>View license</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright (C) Microsoft Corporation. All rights reserved.&hellip;&rdquo;</em>
+<em>&ldquo;Copyright (C) Microsoft Corporation. All rights reserved. &hellip;&rdquo;</em>
 </summary>
 
 > Copyright (C) Microsoft Corporation. All rights reserved.
@@ -262,7 +295,7 @@ license](https://spdx.org/licenses/MIT.html):
 <details>
 <summary>
 <strong>View Apache License 2.0 + MIT license</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION&hellip;&rdquo;</em>
+<em>&ldquo;TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION &hellip;&rdquo;</em>
 </summary>
 
 > **Apache License**\
@@ -479,7 +512,7 @@ under**](https://github.com/ungap/url-search-params/blob/v0.2.2/LICENSE) the
 <details>
 <summary>
 <strong>View ISC license</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright (c) 2018, Andrea Giammarchi, @WebReflection&hellip;&rdquo;</em>
+<em>&ldquo;Copyright (c) 2018, Andrea Giammarchi, @WebReflection &hellip;&rdquo;</em>
 </summary>
 
 > ISC License
@@ -501,13 +534,10 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ## Fonts
 
-Aside from fonts supplied by the operating system, Flood uses these fonts:
-
-- [IBM Plex Mono](#IBM-Plex-Mono)
-- [Inter](#Inter)
-- [Source Code Pro](#Source-Code-Pro)
-- [Source Serif Pro](#Source-Serif-Pro)
-- [Ubuntu](#Ubuntu)
+Aside from fonts supplied by the operating system, Flood uses the fonts [IBM
+Plex Mono](#IBM-Plex-Mono), [Inter](#Inter), [Source Code
+Pro](#Source-Code-Pro), [Source Serif Pro](#Source-Serif-Pro), and
+[Ubuntu](#Ubuntu).
 
 ### IBM Plex Mono
 
@@ -520,7 +550,7 @@ OFL 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
 <details>
 <summary>
 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"&hellip;&rdquo;</em>
+<em>&ldquo;Copyright © 2017 IBM Corp. with Reserved Font Name "Plex" &hellip;&rdquo;</em>
 </summary>
 
 > Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
@@ -629,7 +659,7 @@ licensed**](https://github.com/rsms/inter/blob/master/LICENSE.txt) under the
 <details>
 <summary>
 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright (c) 2016-2020 The Inter Project Authors&hellip;&rdquo;</em>
+<em>&ldquo;Copyright (c) 2016-2020 The Inter Project Authors &hellip;&rdquo;</em>
 </summary>
 
 > Copyright (c) 2016-2020 The Inter Project Authors.\
@@ -739,7 +769,7 @@ under the [SIL OFL
 <details>
 <summary>
 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+<em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source' &hellip;&rdquo;</em>
 </summary>
 
 > Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
@@ -848,7 +878,7 @@ under the [SIL OFL
 <details>
 <summary>
 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+<em>&ldquo;Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source' &hellip;&rdquo;</em>
 </summary>
 
 > Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
@@ -968,7 +998,7 @@ Licence, Version 1.0:
 <details>
 <summary>
 <strong>View Ubuntu Font Licence</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed&hellip;&rdquo;</em>
+<em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed &hellip;&rdquo;</em>
 </summary>
 
 > # Ubuntu font licence

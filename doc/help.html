@@ -33,6 +33,9 @@
     <script src="https://cdn.jsdelivr.net/npm/hyphenopoly@3.4.0/min/Hyphenopoly_Loader.js"
             integrity="sha256-9y5yGIQ1ZberXzR11keKqYRT0bNndPTyZpXjK76CBUo="
             crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/details-element-polyfill@2.4.0/dist/details-element-polyfill.js"
+            integrity="sha256-yut4cccRuQ4wDMqIa8lYof0FUeFSI9ud0D/uRHpTnls="
+            crossorigin="anonymous"></script>
     <script src="https://unpkg.com/@ungap/url-search-params@0.2.2/min.js"
             integrity="sha384-cduzXFJp9BFmTpHsZ9dKgXokrdxGJ5Ix5rWJdBihjdTpqdmtvn48NpDmTLwB79Bf"
             crossorigin="anonymous"
@@ -859,7 +862,7 @@
         <details>
           <summary>
             <strong>View 0BSD</strong>&nbsp;&nbsp;&nbsp;
-            <em>&ldquo;Copyright 2020, 2021 Eliah Kagan&hellip;&rdquo;</em>
+            <em>&ldquo;Copyright 2020, 2021 Eliah Kagan &hellip;&rdquo;</em>
           </summary>
           <pre>Copyright 2020, 2021 Eliah Kagan <degeneracypressure@gmail.com>
 
@@ -955,6 +958,7 @@ PERFORMANCE OF THIS SOFTWARE.</pre>
             libraries
             <a href="#classlist-js">classList.js</a>,
             <a href="#nito-collections-deque">Deque</a>,
+            <a href="#details-element-polyfill">details-element-polyfill</a>,
             <a href="#hyphenopoly">Hyphenopoly</a>,
             <a href="#microsoft-web-webview2">Microsoft.Web.WebView2</a>,
             <a href="#morelinq">MoreLINQ</a>, and
@@ -977,7 +981,7 @@ PERFORMANCE OF THIS SOFTWARE.</pre>
               <summary>
                 <strong>View Unlicense</strong>&nbsp;&nbsp;&nbsp;
                 <em>&ldquo;This is free and unencumbered software released into
-                the public domain.&hellip;&rdquo;</em>
+                the public domain. &hellip;&rdquo;</em>
               </summary>
               <pre>This is free and unencumbered software released into the public domain.
 
@@ -1023,7 +1027,7 @@ For more information, please refer to &lt;http://unlicense.org/&gt;</pre>
             <details>
               <summary>
                 <strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright (c) 2015 Stephen Cleary&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright (c) 2015 Stephen Cleary &hellip;&rdquo;</em>
               </summary>
               <pre>The MIT License (MIT)
 
@@ -1048,6 +1052,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</pre>
             </details>
           </section>
+          <section id="details-element-polyfill-content">
+            <h4 id="details-element-polyfill">details-element-polyfill</h4>
+            <p>
+              <a class="external"
+                 href="https://github.com/javan/details-element-polyfill"
+                 title="details-element-polyfill | GitHub">details-element-polyfill</a>
+              2.4.0 is written by Javan Makhmali and
+              <a href="https://github.com/javan/details-element-polyfill/blob/2.4.0/LICENSE"><b>licensed under</b></a>
+              the
+              <a class="external"
+                 href="https://spdx.org/licenses/MIT.html"
+                 title="MIT license | SPDX">MIT license</a>:
+            </p>
+            <details>
+              <summary>
+                <strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
+                <em>&ldquo;Copyright (c) 2019 Javan Makhmali &hellip;&rdquo;</em>
+              </summary>
+              <pre>The MIT License (MIT)
+
+Copyright (c) 2019 Javan Makhmali
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.</pre>
+            </details>
+          </section>
           <section id="hyphenopoly-content">
             <h4 id="hyphenopoly">Hyphenopoly</h4>
             <p>
@@ -1064,7 +1109,7 @@ SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View MIT license</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright (c) 2019 Mathias Nater&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright (c) 2019 Mathias Nater &hellip;&rdquo;</em>
               </summary>
               <pre>The MIT License (MIT)
 
@@ -1103,7 +1148,7 @@ SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View license</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright (C) Microsoft Corporation. All rights reserved.&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright (C) Microsoft Corporation. All rights reserved. &hellip;&rdquo;</em>
               </summary>
               <pre>Copyright (C) Microsoft Corporation. All rights reserved.
 
@@ -1176,7 +1221,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</pre>
             <details>
               <summary>
                 <strong>View Apache License 2.0 + MIT license</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION&hellip;&rdquo;</em>
+                <em>&ldquo;TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION &hellip;&rdquo;</em>
               </summary>
               <pre>
                 Apache License
@@ -1379,8 +1424,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-</pre>
+SOFTWARE.</pre>
             </details>
           </section>
           <section id="url-search-params-content">
@@ -1399,7 +1443,7 @@ SOFTWARE.
             <details>
               <summary>
                 <strong>View ISC license</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright (c) 2018, Andrea Giammarchi, @WebReflection&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright (c) 2018, Andrea Giammarchi, @WebReflection &hellip;&rdquo;</em>
               </summary>
               <pre>ISC License
 
@@ -1459,7 +1503,7 @@ PERFORMANCE OF THIS SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright © 2017 IBM Corp. with Reserved Font Name "Plex" &hellip;&rdquo;</em>
               </summary>
               <pre>Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
 
@@ -1572,7 +1616,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright (c) 2016-2020 The Inter Project Authors&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright (c) 2016-2020 The Inter Project Authors &hellip;&rdquo;</em>
               </summary>
               <pre>Copyright (c) 2016-2020 The Inter Project Authors.
 "Inter" is trademark of Rasmus Andersson.
@@ -1686,7 +1730,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source' &hellip;&rdquo;</em>
               </summary>
               <pre>Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name
 'Source'. All Rights Reserved. Source is a trademark of Adobe in the
@@ -1802,7 +1846,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</pre>
             <details>
               <summary>
                 <strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+                <em>&ldquo;Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source' &hellip;&rdquo;</em>
               </summary>
               <pre>Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name
 'Source'. All Rights Reserved. Source is a trademark of Adobe in the
@@ -1934,7 +1978,7 @@ This Font Software is licensed under the Ubuntu Font Licence, Version
             <details>
               <summary>
                 <strong>View Ubuntu Font Licence</strong>&nbsp;&nbsp;&nbsp;
-                <em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed&hellip;&rdquo;</em>
+                <em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed &hellip;&rdquo;</em>
               </summary>
               <pre>-------------------------------
 UBUNTU FONT LICENCE Version 1.0

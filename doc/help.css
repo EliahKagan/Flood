@@ -88,6 +88,7 @@ p, li {
 }
 
 details>summary {
+  cursor: pointer;
   font-size: .85em;
 }
 
