@@ -91,7 +91,7 @@ details>summary {
   font-size: .85em;
 }
 
-details>pre {
+pre, details>pre {
   background-color: aliceblue;
   font-family: 'Source Code Pro', monospace;
   font-size: .7em;
@@ -209,7 +209,7 @@ b {
   font-weight: 600;
 }
 
-code {
+code, pre>code, details>pre>code {
   font-family: 'Consolas', 'Source Code Pro', monospace;
 }
 

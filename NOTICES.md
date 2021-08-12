@@ -235,6 +235,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+</details>
 
 Microsoft.Web.WebView2 is a library that exposes the WebView2 control for use
 by .NET programs, but it is not itself that control. This is to say
@@ -246,7 +247,6 @@ Flood does not require the WebView2 control, but it does require the
 Microsoft.Web.WebView2 library even in the absence of the WebView2 control.
 (The mechanism Flood uses to check if the WebView2 control is present uses that
 library.)
-</details>
 
 ### MoreLINQ
 
@@ -511,8 +511,9 @@ Aside from fonts supplied by the operating system, Flood uses these fonts:
 
 ### IBM Plex Mono
 
-[IBM Plex Mono](https://www.ibm.com/plex/) is designed for IBM by Mike Abbink
-and the [Bold Monday](https://boldmonday.com/custom/ibm/) team. It [**is
+[IBM Plex](https://www.ibm.com/plex/) (including its Mono subfamily) is
+designed for IBM by Mike Abbink and the [Bold
+Monday](https://boldmonday.com/custom/ibm/) team. It [**is
 licensed**](https://github.com/IBM/plex/blob/master/LICENSE.txt) under the [SIL
 OFL 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
 
@@ -729,17 +730,17 @@ licensed**](https://github.com/rsms/inter/blob/master/LICENSE.txt) under the
 
 ### Source Code Pro
 
-<details>
-<summary>
-<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
-</summary>
-
 [Source Code Pro](https://adobe-fonts.github.io/source-code-pro/) is
 principally designed by Paul D. Hunt. It [**is
 licensed**](https://github.com/adobe-fonts/source-code-pro/blob/release/LICENSE.md)
 under the [SIL OFL
 1.1](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL):
+
+<details>
+<summary>
+<strong>View SIL OFL 1.1</strong>&nbsp;&nbsp;&nbsp;
+<em>&ldquo;Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'&hellip;&rdquo;</em>
+</summary>
 
 > Copyright 2010-2019 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries.
 >
@@ -962,11 +963,11 @@ Canonical Ltd. by typographers at the font foundry Dalton Maag, with some other
 
 As stated in the copyright notice, [**it is
 licensed**](https://ubuntu.com/legal/font-licence) under the Ubuntu Font
-License, Version 1.0:
+Licence, Version 1.0:
 
 <details>
 <summary>
-<strong>View Ubuntu font license</strong>&nbsp;&nbsp;&nbsp;
+<strong>View Ubuntu Font Licence</strong>&nbsp;&nbsp;&nbsp;
 <em>&ldquo;This licence allows the licensed fonts to be used, studied, modified and redistributed&hellip;&rdquo;</em>
 </summary>
 
