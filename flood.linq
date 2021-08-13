@@ -26,14 +26,30 @@
   <RuntimeVersion>5.0</RuntimeVersion>
 </Query>
 
-// flood.linq - Interactive flood-fill visualizer.
+// flood.linq - Entry point and main source code file.
+// This file is part of Flood, an interactive flood-fill visualizer.
+//
+// Copyright (C) 2020, 2021 Eliah Kagan <degeneracypressure@gmail.com>
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+// OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #LINQPad optimize+
 #nullable enable
 
 const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
-var devmode = GotKey.Shift;
+var devmode = GotKey.Shift || Files.QueryBaseName.Equals(
+                                "devmode",
+                                StringComparison.InvariantCultureIgnoreCase);
 
 // Make dump headings bigger. (See Launcher.Display for further customization.)
 Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
@@ -2578,6 +2594,10 @@ internal delegate Task<HelpViewer> HelpViewerSupplier();
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
+    internal static string QueryBaseName
+        => Path.GetFileNameWithoutExtension(Util.CurrentQueryPath)
+            ?? throw new NotSupportedException("Can't find query filename.");
+
     internal static Uri GetDocUrl(string filename)
         => new(GetDocPath(filename));
 

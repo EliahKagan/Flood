@@ -1,4 +1,7 @@
-// hyphenate.js - Dynamic hyphenation configuration.
+<Query Kind="Statements" />
+
+// devmode.linq - Chains to "developer mode" for Flood.
+// You probably want to open and run the "flood.linq" query directly instead.
 // This file is part of Flood, an interactive flood-fill visualizer.
 //
 // Copyright (C) 2021 Eliah Kagan <degeneracypressure@gmail.com>
@@ -14,21 +17,4 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-(function () {
-    'use strict';
-
-    // Configuraton for Hyphenopoly.
-    window.Hyphenopoly = {
-        require: {
-            'en-us': 'Pseudopseudohypoparathyroidism'
-        },
-        setup: {
-            keepAlive: false,
-            selectors: {
-                'p, li': {
-                    'orphanControl': '1'
-                }
-            }
-        }
-    };
-})();
+#load "./flood.linq"
