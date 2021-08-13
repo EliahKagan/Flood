@@ -1,7 +1,7 @@
 <!--
   This file is part of Flood, an interactive flood-fill visualizer.
 
-  Copyright 2021 Eliah Kagan <degeneracypressure@gmail.com>
+  Copyright (C) 2021 Eliah Kagan <degeneracypressure@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted.
@@ -26,10 +26,10 @@ reproduced here:
 <details>
 <summary>
 <strong>View 0BSD</strong>&nbsp;&nbsp;&nbsp;
-<em>&ldquo;Copyright 2020, 2021 Eliah Kagan &hellip;&rdquo;</em>
+<em>&ldquo;Copyright (C) 2020, 2021 Eliah Kagan &hellip;&rdquo;</em>
 </summary>
 
-> Copyright 2020, 2021 Eliah Kagan &lt;degeneracypressure@gmail.com&gt;
+> Copyright (C) 2020, 2021 Eliah Kagan &lt;degeneracypressure@gmail.com&gt;
 >
 > Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted.

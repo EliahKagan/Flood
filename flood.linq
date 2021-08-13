@@ -28,7 +28,7 @@
 // flood.linq - Entry point and main source code file.
 // This file is part of Flood, an interactive flood-fill visualizer.
 //
-// Copyright 2020, 2021 Eliah Kagan <degeneracypressure@gmail.com>
+// Copyright (C) 2020, 2021 Eliah Kagan <degeneracypressure@gmail.com>
 //
 // Permission to use, copy, modify, and/or distribute this software for any
 // purpose with or without fee is hereby granted.

@@ -1,7 +1,7 @@
 <!--
   This file is part of Flood, an interactive flood-fill visualizer.
 
-  Copyright 2021 Eliah Kagan <degeneracypressure@gmail.com>
+  Copyright (C) 2021 Eliah Kagan <degeneracypressure@gmail.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted.
@@ -104,6 +104,9 @@ copyright/licensing information.
 
 I&rsquo;d like to thank:
 
+- David Vassallo, for testing the program and giving usability feedback.
+- Another user, for testing the program and giving usability feedback, and
+  finding a severe performance bug.
 - [Zanna Star](https://github.com/ZannaStar), for examining and giving advice
   about how to improve the presentation and styling for `help.html`. It was
   rather difficult to read before, and it is much better as a result of her
