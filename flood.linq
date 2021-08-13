@@ -32,7 +32,9 @@
 
 const float defaultScreenFractionForCanvas = 5.0f / 9.0f;
 
-var devmode = GotKey.Shift;
+var devmode = GotKey.Shift || Files.QueryBaseName.Equals(
+                                "devmode",
+                                StringComparison.InvariantCultureIgnoreCase);
 
 // Make dump headings bigger. (See Launcher.Display for further customization.)
 Util.RawHtml("<style>h1.headingpresenter { font-size: 1rem }</style>").Dump();
@@ -2546,6 +2548,10 @@ internal delegate Task<HelpViewer> HelpViewerSupplier();
 /// this program uses and expects to be present.
 /// </summary>
 internal static class Files {
+    internal static string QueryBaseName
+        => Path.GetFileNameWithoutExtension(Util.CurrentQueryPath)
+            ?? throw new NotSupportedException("Can't find query filename.");
+
     internal static Uri GetDocUrl(string filename)
         => new(GetDocPath(filename));
 
