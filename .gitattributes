@@ -1,1 +1,9 @@
+# Recognize .linq files as C# even if mirrored on GitLab.
 *.linq gitlab-language=csharp
+
+# Consider CSS and JavaScript, as well as tips.html (which is part of the main
+# UI and is not perceived as a web page by users), as code, not documentation.
+/doc/* -linguist-documentation
+
+# But help.html is documentation.
+/doc/help.html linguist-documentation
