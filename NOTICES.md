@@ -71,7 +71,7 @@ offer to install WebView2 or automate its installation.
 
 Other than LINQPad&mdash;and Windows itself&mdash;the software Flood requires
 to run is free and open source. See [Other Library
-Dependencies](#Other-Library-Depenencies) and [Fonts](#Fonts) below.
+Dependencies](#Other-Library-Dependencies) and [Fonts](#Fonts) below.
 
 ## Other Library Dependencies
 
