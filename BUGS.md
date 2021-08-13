@@ -46,6 +46,23 @@ that has the current modifier-key-driven behavior.
 Flood should provide a facility to record (appropriately compressed) video
 files of fills, but I have not yet implemented that feature.
 
+## Code Style
+
+### The main source code file is too long and should be split up.
+
+Flood is a LINQPad query and I had, originally, intended for the user to be
+able to peruse most of the code in the left pane while interacting with the
+application via the toolstrip and panels in the right pane.
+
+Although ease of demonstration is sometimes a justification for cramming more
+source code into a single file than one otherwise would, this is currently
+excessive: the main source code file, `flood.linq`, is over 3500 lines. I
+regard this situation to be a bug and I intend to split that file into several
+files and/or make the code more easy to navigate in other ways.
+
+(LINQPad fully supports queries spanning multiple files, so that&rsquo;s not
+the issue.)
+
 ## Documentation
 
 ### The help and tips retrieve assets from the internet on each run.
