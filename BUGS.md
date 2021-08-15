@@ -31,6 +31,17 @@ color.)
 
 ## UI/Features
 
+### Neighbor enumeration strategies don&rsquo;t scroll before Windows 10.
+
+On Windows 8.1 and earlier&mdash;and on Windows 10 if &ldquo;Scroll inactive
+windows when I hover over them&rdquo; has been turned off&mdash;the neighbor
+enumeration strategy (and sub-strategies) cannot be adjusted, hugely
+diminishing the program&rsquo;s functionality.
+
+This bug exists because I forgot that, unlike many other OSes, Windows has not
+always allowed inactive windows to be scrolled with the mouse wheel. I think it
+should be fairly easy to fix.
+
 ### The UI is confusing.
 
 People who&rsquo;ve tried out this program could not immediately tell how to
@@ -97,7 +108,7 @@ supplied by a library, being present as a separate assembly from the query
 assembly) and calling the `Activate` method.
 
 The comment gives details about why I don&rdquo;t think any currently available
-good means of doing this exist. But as long as I&rsquo;m doin that, Flood
+good means of doing this exist. But as long as I&rsquo;m doing that, Flood
 cannot have a stable release, as `OutputPanel.Activate` has the `internal`
 access modifier and it may be removed, or change behavior, in any future
 version of LINQPad.
