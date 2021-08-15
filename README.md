@@ -62,8 +62,8 @@ far from universal.
 
 This README file provides only condensed documentation. For more documentation,
 including detailed usage guidance and implementation notes, please see the full
-help, `doc/help.html`, which can also be viewed in
-Flood&rsquo;s built-in help browser.
+help, `doc/help.html`, which can also be viewed in Flood&rsquo;s built-in help
+browser [or visited online](https://eliahkagan.github.io/Flood/doc/help.html).
 
 When running Flood, you can also click the *Show Tips* button to open brief
 help, which I recommend. The tips are presented in condensed, tabular form.
@@ -72,8 +72,9 @@ information, and clicking on an item opens (or switches to) the built-in help
 browser, scrolling to the relevant section of the help and highlighting the
 specific relevant part.
 
-The tips can also be browsed by going to `doc/tips.html` in a web browser. When
-viewed that way, the items behave as ordinary hyperlinks into `doc/help.html`.
+The tips can also be browsed by going to `doc/tips.html` in a web browser,
+locally [or on the web](https://eliahkagan.github.io/Flood/doc/tips.html). When
+viewed that way, the items behave as ordinary hyperlinks into the full help.
 
 ## License
 
@@ -105,7 +106,7 @@ copyright/licensing information.
 I&rsquo;d like to thank:
 
 - David Vassallo, for testing the program and giving usability feedback.
-- Another user, for testing the program and giving usability feedback, and
+- Thomas Fallon, for testing the program and giving usability feedback, and
   finding a severe performance bug.
 - [Zanna Star](https://github.com/ZannaStar), for examining and giving advice
   about how to improve the presentation and styling for `help.html`. It was
