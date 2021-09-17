@@ -442,7 +442,7 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
     // PanelManager.GetOutputPanels() returns an array of output panels, and
     // writing to Util.SelectedOutputPanelIndex switches panels. When output
     // panels are created in such a way as to be listed from left to right in
-    // the order of creation--such as when they are created sequentally by
+    // the order of creation--such as when they are created sequentially by
     // interacting with LINQPad controls in the Results panel--they are indexed
     // in the same order and it is sufficient to add and subtract 1 [since
     // Util.SelectedOutputPanelIndex is 0 for the Results panel, which is not
@@ -565,7 +565,7 @@ internal sealed class PanelSwitcher : Component, IPanelSwitcher {
 
 /// <summary>
 /// The main user interface, containing an interactive canvas, an info bar, and
-/// expandable/collapsable tips.
+/// expandable/collapsible tips.
 /// </summary>
 internal sealed class MainPanel : TableLayoutPanel {
     internal static int DefaultDelayInMilliseconds { get; } = 10;
@@ -893,7 +893,7 @@ internal sealed class MainPanel : TableLayoutPanel {
 
         var detail = (_jobsCharting, _charting.Checked) switch {
             (0, false) =>
-                "Also, no currenty running fills are charting.",
+                "Also, no currently running fills are charting.",
             (0, true) =>
                 "But no currently running fills are charting.",
             (1, false) =>
@@ -1161,7 +1161,7 @@ internal sealed class MainPanel : TableLayoutPanel {
         // the charting button, since users are likely to accidentally turn
         // charting on or off in that situation. This is mostly important when
         // the stop button is disabled due to the last fill completing, since
-        // the user could press Spacebar or Enter just a monent too late (and
+        // the user could press Spacebar or Enter just a moment too late (and
         // not notice that charting was affected). But I think focus shouldn't
         // go to the charting button due to successfully using the stop button
         // either.
@@ -1228,7 +1228,7 @@ internal sealed class MainPanel : TableLayoutPanel {
     {
         if (_jobsCharting <= 0) {
             throw new InvalidOperationException(
-                    "Bug: negatvely many jobs are charting?!");
+                    "Bug: negatively many jobs are charting?!");
         }
 
         --_jobsCharting;
@@ -1485,7 +1485,7 @@ internal interface IAlertCookie {
     bool IsCurrent { get; }
 }
 
-/// <summary>A horizontal bar to show dismissable text-based alerts.</summary>
+/// <summary>A horizontal bar to show dismissible text-based alerts.</summary>
 internal sealed class AlertBar : TableLayoutPanel {
     internal AlertBar(ToolTip toolTip)
     {
@@ -1959,7 +1959,7 @@ internal sealed record
 CheckBoxBitmapFilenamePair(string CheckedFilename, string UncheckedFilename);
 
 /// <summary>
-/// Background images for the checked and uchecked states of a button-style
+/// Background images for the checked and unchecked states of a button-style
 /// checkbox.
 /// </summary>
 /// <remarks>See <see cref="CheckBoxBitmapFilenamePair"/>.</remarks>
@@ -2504,7 +2504,7 @@ internal sealed class WebView2HelpViewer : HelpViewer {
             // (1) Find a better workaround to be used until dependencies
             //     are bundled, as well as on a future non-bundling branch.
             //
-            // (2) If this workaround is still in place when dependnecies are
+            // (2) If this workaround is still in place when dependencies are
             //     bundled, remove it (from all active non-CDN branches).
             AdditionalBrowserArguments = "--disable-web-security",
         };
