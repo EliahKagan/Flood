@@ -35,7 +35,7 @@ interacting with the fill&mdash;including by starting additional concurrent
 flood fills.
 
 **This is alpha 6 of Flood.** The program is not yet production quality, and it
-has a some major bugs. See [`BUGS.md`](BUGS.md).
+has some major bugs. See [`BUGS.md`](BUGS.md).
 
 See also
 [TreeTraversalAnimations](https://github.com/EliahKagan/TreeTraversalAnimations).
