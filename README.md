@@ -37,6 +37,9 @@ flood fills.
 **This is alpha 6 of Flood.** The program is not yet production quality, and it
 has a some major bugs. See [`BUGS.md`](BUGS.md).
 
+See also
+[TreeTraversalAnimations](https://github.com/EliahKagan/TreeTraversalAnimations).
+
 *Note: Flood&rsquo;s built-in help retrieves fonts and JavaScript libraries
 from the internet every time it runs, even though Flood is not itself a webapp.
 This was convenient for development, but I do not regard it to be a good

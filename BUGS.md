@@ -103,9 +103,9 @@ rewritten.
 
 As commented on `PanelSwitcher.TrySwitch`, the way program-driven switching
 between LINQPad output panels is implemented is by circumventing encapsulation
-on on the `OutputPanel` object (which runs in the query process, but is
-supplied by a library, being present as a separate assembly from the query
-assembly) and calling the `Activate` method.
+on the `OutputPanel` object (which runs in the query process, but is supplied
+by a library, being present as a separate assembly from the query assembly) and
+calling the `Activate` method.
 
 The comment gives details about why I don&rdquo;t think any currently available
 good means of doing this exist. But as long as I&rsquo;m doing that, Flood
