@@ -183,7 +183,7 @@ source code in writing this, however.)
 
 When multiple concurrent flood fills are *nested*&mdash;with some working to
 fill a region that others are trying to expand&mdash;they can interact and
-interfere (&ldquo;fight&rdquo;) with each other.This is rarely relevant to
+interfere (&ldquo;fight&rdquo;) with each other. This is rarely relevant to
 practical applications of flood fills, since flood fills are usually carried
 out atomically rather than having their steps interleaved with other
 operations. But it can produce visually interesting patterns that take a long
