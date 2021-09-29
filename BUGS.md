@@ -107,7 +107,7 @@ on the `OutputPanel` object (which runs in the query process, but is supplied
 by a library, being present as a separate assembly from the query assembly) and
 calling the `Activate` method.
 
-The comment gives details about why I don&rdquo;t think any currently available
+The comment gives details about why I don&rsquo;t think any currently available
 good means of doing this exist. But as long as I&rsquo;m doing that, Flood
 cannot have a stable release, as `OutputPanel.Activate` has the `internal`
 access modifier and it may be removed, or change behavior, in any future
