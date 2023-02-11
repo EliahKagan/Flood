@@ -2,9 +2,6 @@ name: Check Markdown links
 
 on:
   push:
-    branches:
-      - master
-      - gh-pages
   pull_request:
   schedule:
     - cron: '15 0,12 * * *'
