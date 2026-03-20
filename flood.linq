@@ -1,7 +1,7 @@
 <Query Kind="Statements">
-  <NuGetReference Version="1.0.902.49">Microsoft.Web.WebView2</NuGetReference>
-  <NuGetReference Version="3.3.2">morelinq</NuGetReference>
-  <NuGetReference Version="1.1.0">Nito.Collections.Deque</NuGetReference>
+  <NuGetReference Version="1.0.3856.49">Microsoft.Web.WebView2</NuGetReference>
+  <NuGetReference Version="4.4.0">morelinq</NuGetReference>
+  <NuGetReference Version="1.2.1">Nito.Collections.Deque</NuGetReference>
   <Namespace>Cursor = System.Windows.Forms.Cursor</Namespace>
   <Namespace>Key = System.Windows.Input.Key</Namespace>
   <Namespace>Keyboard = System.Windows.Input.Keyboard</Namespace>
@@ -22,7 +22,7 @@
   <Namespace>System.Windows.Forms</Namespace>
   <Namespace>System.Windows.Forms.DataVisualization.Charting</Namespace>
   <Namespace>Timer = System.Windows.Forms.Timer</Namespace>
-  <RuntimeVersion>5.0</RuntimeVersion>
+  <RuntimeVersion>10.0</RuntimeVersion>
 </Query>
 
 // flood.linq - Entry point and main source code file.
